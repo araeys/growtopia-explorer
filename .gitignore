@@ -15,7 +15,6 @@ data/
 test_sprites/
 gtsetplanner_src/
 items_parsed.json
-tiles_page1.png
 
 # One-off scraper & test scripts
 build_*.py
@@ -38,3 +37,5 @@ test_*.py
 tint_*.py
 verify_*.py
 server.py
+
+/tiles_page1.png
