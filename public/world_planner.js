@@ -354,6 +354,7 @@
         }
         if (item && player.active) {
           spawnBlockPlaceEffect(x, y, item);
+          playSfx("pop", 0.95 + Math.random() * 0.15, 0.4);
         }
         return true;
       }
@@ -1819,6 +1820,7 @@
         player.jumpCount = 0;
         player.jumpConsumed = false;
         player.state = "idle";
+        if (player.active) playSfx("punch", 1.0, 0.5);
         if (msg) onStatusMessage(msg);
       }
 
@@ -1943,11 +1945,13 @@
               player.jumpCount = 1;
               player.jumpConsumed = true;
               player.state = "jump";
+              playJumpSound(false);
             } else if (player.jumpCount === 1) {
               player.vy = -5.6;
               player.jumpCount = 2;
               player.jumpConsumed = true;
               player.state = "jump";
+              playJumpSound(true);
             }
           }
 
@@ -2254,13 +2258,100 @@
         ctx.restore();
       }
 
-      // ── Music Sheet Web Audio Sequencer ──
+      // ── Audio Engine: SFX, BGM & Music Sheet Sequencer ──
+      let bgmAudio = null;
+      let isBgmActive = false;
+
       function getAudioContext() {
         if (!audioContext && typeof window !== "undefined") {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           if (AudioCtx) audioContext = new AudioCtx();
         }
+        if (audioContext && audioContext.state === "suspended") {
+          audioContext.resume().catch(() => {});
+        }
         return audioContext;
+      }
+
+      function playSfx(name, playbackRate = 1.0, volume = 0.6) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+        const key = `sfx_${name}`;
+        const playBuffer = (buffer) => {
+          try {
+            const src = ctx.createBufferSource();
+            const gain = ctx.createGain();
+            gain.gain.value = volume;
+            src.buffer = buffer;
+            src.playbackRate.value = playbackRate;
+            src.connect(gain);
+            gain.connect(ctx.destination);
+            src.start(0);
+          } catch(e) {}
+        };
+
+        if (audioBufferCache.has(key)) {
+          playBuffer(audioBufferCache.get(key));
+          return;
+        }
+
+        const ext = (name.endsWith('.ogg') || name.endsWith('.wav')) ? '' : '.wav';
+        fetch(`audio/${name}${ext}`)
+          .then(r => r.arrayBuffer())
+          .then(ab => ctx.decodeAudioData(ab))
+          .then(buf => {
+            audioBufferCache.set(key, buf);
+            playBuffer(buf);
+          })
+          .catch(() => {});
+      }
+
+      function playJumpSound(isDoubleJump = false) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        // 1. Play authentic Growtopia jump sound sample
+        playSfx("jump", isDoubleJump ? 1.28 : 1.0, 0.65);
+
+        // 2. Play immediate synth chirp fallback for zero-latency response
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          const startF = isDoubleJump ? 380 : 250;
+          const endF = isDoubleJump ? 600 : 440;
+          osc.frequency.setValueAtTime(startF, now);
+          osc.frequency.exponentialRampToValueAtTime(endF, now + 0.08);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } catch(e) {}
+      }
+
+      function startBgm() {
+        if (typeof Audio !== "undefined") {
+          if (!bgmAudio) {
+            bgmAudio = new Audio("audio/theme.ogg");
+            bgmAudio.loop = true;
+            bgmAudio.volume = 0.4;
+          }
+          bgmAudio.play().catch(err => console.warn("BGM play error:", err));
+          isBgmActive = true;
+        }
+      }
+
+      function stopBgm() {
+        if (bgmAudio) {
+          bgmAudio.pause();
+          bgmAudio.currentTime = 0;
+          isBgmActive = false;
+        }
       }
 
       async function loadNoteAudio(inst, pitch) {
@@ -2288,15 +2379,42 @@
       function playNoteSound(inst, pitch) {
         const ctx = getAudioContext();
         if (!ctx) return;
-        if (ctx.state === "suspended") ctx.resume();
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
 
+        // 1. Synthesize immediate note tone (zero latency)
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          const baseFreq = inst === "bass" ? 65.41 : (inst === "flute" ? 261.63 : 130.81);
+          const p = typeof pitch === "number" ? pitch : 12;
+          const freq = baseFreq * Math.pow(2, p / 12);
+          
+          osc.type = inst === "drum" ? "square" : (inst === "bass" ? "sawtooth" : (inst === "flute" ? "sine" : "triangle"));
+          osc.frequency.setValueAtTime(freq, now);
+          
+          const dur = inst === "drum" ? 0.08 : 0.32;
+          gain.gain.setValueAtTime(inst === "drum" ? 0.35 : 0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + dur + 0.02);
+        } catch(e) {}
+
+        // 2. Play sample WAV buffer from audio folder
         const key = `${inst}_${pitch}`;
         const buffer = audioBufferCache.get(key);
         if (buffer) {
           try {
             const src = ctx.createBufferSource();
+            const g = ctx.createGain();
+            g.gain.value = 0.55;
             src.buffer = buffer;
-            src.connect(ctx.destination);
+            src.connect(g);
+            g.connect(ctx.destination);
             src.start(0);
           } catch(e) {}
         } else {
@@ -2304,8 +2422,11 @@
             if (buf && ctx) {
               try {
                 const src = ctx.createBufferSource();
+                const g = ctx.createGain();
+                g.gain.value = 0.55;
                 src.buffer = buf;
-                src.connect(ctx.destination);
+                src.connect(g);
+                g.connect(ctx.destination);
                 src.start(0);
               } catch(e) {}
             }
@@ -2364,15 +2485,17 @@
 
       function toggleMusic(forceState) {
         sequencer.isPlaying = typeof forceState === "boolean" ? forceState : !sequencer.isPlaying;
-        if (sequencer.isPlaying) {
-          const ctx = getAudioContext();
-          if (ctx && ctx.state === "suspended") ctx.resume();
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
 
+        if (sequencer.isPlaying) {
+          startBgm();
           if (sequencer.timer) clearInterval(sequencer.timer);
           const intervalMs = Math.round(60000 / (sequencer.bpm * 2));
           sequencer.timer = setInterval(stepSequencer, intervalMs);
           onStatusMessage(`🎵 Music Playing at ${sequencer.bpm} BPM...`);
         } else {
+          stopBgm();
           if (sequencer.timer) {
             clearInterval(sequencer.timer);
             sequencer.timer = null;
