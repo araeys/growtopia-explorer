@@ -1,0 +1,282 @@
+{
+  "title": "Growtopia Character Base Assets Manifest",
+  "downloaded_gtsetplanner_media": [
+    "player_eyes.png",
+    "player_eyes3.png",
+    "Default.png",
+    "Farmer.png",
+    "Builder.png",
+    "Surgeon.png",
+    "Fisher.png",
+    "Chef.png",
+    "Star_Captain.png",
+    "DefaultGesture.png",
+    "UpGesture.png",
+    "DownGesture.png",
+    "PointyGesture.png",
+    "mainicon.png",
+    "clothes.png",
+    "playericon.png",
+    "dyesicon.png",
+    "wrench.png"
+  ],
+  "separated_character_body_parts": {
+    "head_skins": [
+      "player_head_skin1.png",
+      "player_head_skin2.png",
+      "player_head_skin3.png",
+      "player_head_skin4.png",
+      "player_head_skin5.png",
+      "player_head_skin6.png",
+      "player_head_skin7.png",
+      "player_head_skin8.png",
+      "player_head_skin9.png",
+      "player_head_skin10.png",
+      "player_head_skin11.png",
+      "player_head_skin12.png",
+      "player_head.png"
+    ],
+    "body_torso_skins": [
+      "player_body_only.png",
+      "player_cosmetics1.png",
+      "role_default.png",
+      "role_farmer.png",
+      "role_builder.png",
+      "role_surgeon.png",
+      "role_fisher.png",
+      "role_chef.png",
+      "role_star_captain.png"
+    ],
+    "arms_hand_gestures": [
+      "default_arm.png",
+      "thumbs_up.png",
+      "thumbs_down.png",
+      "pointing.png",
+      "punch_arm.png",
+      "arm_v2.png",
+      "arm_v3.png",
+      "arm_v4.png"
+    ],
+    "feet_legs": [
+      "player_feet.png",
+      "player_feet2.png",
+      "player_feet3.png",
+      "player_feet4.png"
+    ],
+    "facial_expression_eyes": [
+      "default.png",
+      "jump_1.png",
+      "jump_2.png",
+      "pain.png",
+      "punch.png",
+      "respawn.png",
+      "duct_taped.png",
+      "smile.png",
+      "sad.png",
+      "tongue.png",
+      "omg.png",
+      "mad.png",
+      "talk.png",
+      "idk.png",
+      "laugh.png",
+      "sassy.png",
+      "sleep_1.png",
+      "sleep_2.png",
+      "wink.png",
+      "love.png",
+      "troll.png",
+      "sing_1.png",
+      "sing_2.png",
+      "swim.png",
+      "flushed.png",
+      "expression_blank.png",
+      "shy.png",
+      "grumpy.png"
+    ]
+  },
+  "skin_color_palettes": [
+    {
+      "name": "Tone 1",
+      "hex": "#785C50",
+      "rgb": [
+        120,
+        92,
+        80
+      ]
+    },
+    {
+      "name": "Tone 2",
+      "hex": "#967264",
+      "rgb": [
+        150,
+        114,
+        100
+      ]
+    },
+    {
+      "name": "Tone 3",
+      "hex": "#B48A78",
+      "rgb": [
+        180,
+        138,
+        120
+      ]
+    },
+    {
+      "name": "Tone 4",
+      "hex": "#C39582",
+      "rgb": [
+        195,
+        149,
+        130
+      ]
+    },
+    {
+      "name": "Tone 5",
+      "hex": "#E1AC96",
+      "rgb": [
+        225,
+        172,
+        150
+      ]
+    },
+    {
+      "name": "Tone 6",
+      "hex": "#FFC3AA",
+      "rgb": [
+        255,
+        195,
+        170
+      ]
+    },
+    {
+      "name": "Tone 7",
+      "hex": "#FFCEB4",
+      "rgb": [
+        255,
+        206,
+        180
+      ]
+    },
+    {
+      "name": "Tone 8",
+      "hex": "#FFE5C8",
+      "rgb": [
+        255,
+        229,
+        200
+      ]
+    },
+    {
+      "name": "White",
+      "hex": "#F0F0F0",
+      "rgb": [
+        240,
+        240,
+        240
+      ]
+    },
+    {
+      "name": "Light Green",
+      "hex": "#B1DDA3",
+      "rgb": [
+        177,
+        221,
+        163
+      ]
+    },
+    {
+      "name": "Aqua",
+      "hex": "#41C2C5",
+      "rgb": [
+        65,
+        194,
+        197
+      ]
+    },
+    {
+      "name": "Red",
+      "hex": "#D74B2B",
+      "rgb": [
+        215,
+        75,
+        43
+      ]
+    },
+    {
+      "name": "Green",
+      "hex": "#418A2A",
+      "rgb": [
+        65,
+        138,
+        42
+      ]
+    },
+    {
+      "name": "Purple",
+      "hex": "#A951D5",
+      "rgb": [
+        169,
+        81,
+        213
+      ]
+    },
+    {
+      "name": "Blue",
+      "hex": "#397DCE",
+      "rgb": [
+        57,
+        125,
+        206
+      ]
+    },
+    {
+      "name": "Light Blue",
+      "hex": "#AFC6ED",
+      "rgb": [
+        175,
+        198,
+        237
+      ]
+    },
+    {
+      "name": "Orange",
+      "hex": "#FF920B",
+      "rgb": [
+        255,
+        146,
+        11
+      ]
+    },
+    {
+      "name": "Red (Transparent)",
+      "hex": "#A2294099",
+      "rgba": [
+        162,
+        41,
+        64,
+        153
+      ]
+    },
+    {
+      "name": "Purple (Transparent)",
+      "hex": "#A952D599",
+      "rgba": [
+        169,
+        82,
+        213,
+        153
+      ]
+    },
+    {
+      "name": "Aqua (Transparent)",
+      "hex": "#41C2C599",
+      "rgba": [
+        65,
+        194,
+        197,
+        153
+      ]
+    }
+  ]
+}

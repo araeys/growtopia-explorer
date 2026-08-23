@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Growtopia Sprite Explorer - 16,000+ Items, World Planner & Set Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="styles.css?v=three-pane-studio-v3">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-icon"><img src="logo.png" alt="Logo" class="brand-logo-img"></div>
+          <div>
+            <h1 class="brand-title">Growtopia <span class="accent-text">Sprite Explorer & Studio</span></h1>
+            <p class="brand-subtitle">Database 16,304 Item, GT World Planner & Set Studio Engine (v26)</p>
+          </div>
+        </div>
+
+        <div class="header-stats">
+          <div class="stat-badge">
+            <span class="stat-value" id="total-items-badge">16,304</span>
+            <span class="stat-label">Total Sprite</span>
+          </div>
+          <div class="stat-badge highlight">
+            <span class="stat-value" id="active-count-badge">16,304</span>
+            <span class="stat-label">Ditampilkan</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="main-tabs">
+        <button class="nav-tab active" id="tab-items-btn" data-tab="items">
+          🎮 Item Sprite Explorer
+        </button>
+        <button class="nav-tab" id="tab-sheets-btn" data-tab="sheets">
+          🖼️ Spritesheet Mentahan (<span id="total-sheets-nav-count">0</span> PNG)
+        </button>
+        <button class="nav-tab" id="tab-avatar-btn" data-tab="avatar">
+          🧍 GT Set Planner / Avatar Studio
+        </button>
+        <a class="nav-tab" id="tab-world-btn" href="world.html" target="_blank" rel="noopener" style="text-decoration:none;">
+          🌍 GT World Planner ↗
+        </a>
+        <button class="nav-tab" id="tab-audio-btn" data-tab="audio">
+          🎵 Audio & SFX Library (558)
+        </button>
+        <button class="nav-tab" id="tab-import-btn" data-tab="import">
+          📥 Import Spritesheet Studio
+        </button>
+      </nav>
+    </header>
+
+    <!-- SECTION 1: Item Explorer View -->
+    <div id="view-items" class="view-section">
+      <!-- Controls & Filters Section -->
+      <section class="controls-section">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Cari nama item atau ID (contoh: World Lock, Dirt, #242)..." autocomplete="off">
+            <button id="clear-search" class="clear-btn" title="Hapus Pencarian">&times;</button>
+          </div>
+        </div>
+
+        <!-- Categories & Anim/Static Pills -->
+        <div class="category-pills" id="category-pills">
+          <button class="pill active" data-cat="ALL">✨ Semua (<span class="cat-count">16,304</span>)</button>
+          <button class="pill pill-anim" data-cat="ANIMATED">🎞️ Animated (<span class="cat-count">1,640</span>)</button>
+          <button class="pill pill-static" data-cat="STATIC">🖼️ Non-Animated / Statis (<span class="cat-count">14,664</span>)</button>
+          <button class="pill" data-cat="Locks & Keys">🔒 Locks & Keys (<span class="cat-count">48</span>)</button>
+          <button class="pill" data-cat="Blocks & Building">🧱 Blocks & Building (<span class="cat-count">5,735</span>)</button>
+          <button class="pill" data-cat="Seeds">🌱 Seeds (<span class="cat-count">5,999</span>)</button>
+          <button class="pill" data-cat="Clothing & Cosmetics">👕 Clothing & Cosmetics (<span class="cat-count">4,000</span>)</button>
+          <button class="pill" data-cat="Tools & Weapons">⚔️ Tools & Weapons (<span class="cat-count">428</span>)</button>
+          <button class="pill" data-cat="Furniture & Doors">🚪 Furniture & Doors (<span class="cat-count">58</span>)</button>
+          <button class="pill" data-cat="Weather & Backgrounds">🌌 Weather & Backgrounds (<span class="cat-count">29</span>)</button>
+          <button class="pill" data-cat="Consumables & Currencies">🧪 Consumables (<span class="cat-count">7</span>)</button>
+        </div>
+
+        <!-- Options Toolbar -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <select id="sort-select" class="select-input">
+              <option value="id-desc">🔥 Item Terbaru (ID Terbesar)</option>
+              <option value="id-asc">ID Item (Terkecil - Terbesar)</option>
+              <option value="name-asc">Nama (A - Z)</option>
+              <option value="name-desc">Nama (Z - A)</option>
+            </select>
+          </div>
+
+          <div class="toolbar-right">
+            <button id="batch-zip-btn" class="pg-btn highlight-btn" title="Download Zip Kategori">📦 Batch ZIP Downloader</button>
+            <span class="pagination-info" id="pagination-info">Menampilkan 1 - 80 dari 16,304</span>
+            <div class="pagination-buttons">
+              <button id="prev-page" class="pg-btn" disabled>&larr; Prev</button>
+              <span id="page-num" class="page-num">1 / 204</span>
+              <button id="next-page" class="pg-btn">Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Items Grid Container -->
+      <main class="grid-container">
+        <div id="items-grid" class="items-grid"></div>
+        <div id="empty-state" class="empty-state hidden">
+          <div class="empty-icon">🔍</div>
+          <h3>Item Tidak Ditemukan</h3>
+          <p>Coba gunakan kata kunci atau filter pencarian yang berbeda.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- SECTION 2: Mentahan Spritesheet View -->
+    <div id="view-sheets" class="view-section hidden">
+      <section class="controls-section">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="sheet-search-input" placeholder="Cari mentahan tilesheet (contoh: bt_mov, blogox, tiles_page1, player_cosmetics)..." autocomplete="off">
+            <button id="sheet-clear-search" class="clear-btn" title="Hapus Pencarian">&times;</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <span class="pagination-info" id="sheet-info-text">Total 852 File Tilesheet Mentahan PNG</span>
+        </div>
+      </section>
+
+      <main class="grid-container">
+        <div id="sheets-grid" class="sheets-grid"></div>
+        <div id="sheet-empty-state" class="empty-state hidden">
+          <div class="empty-icon">🖼️</div>
+          <h3>Tilesheet Tidak Ditemukan</h3>
+          <p>Coba gunakan kata kunci nama file tilesheet yang berbeda.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- SECTION 3: GT Set Planner Avatar Studio -->
+    <div id="view-avatar" class="view-section hidden">
+      <div id="avatar-workbench" class="avatar-workbench">
+        <header class="avatar-command-bar" aria-label="Set commands">
+          <label class="avatar-set-name-field" for="set-name-input">
+            <span>Set name</span>
+            <input type="text" id="set-name-input" class="set-name-input" placeholder="Unnamed Set" maxlength="48" autocomplete="off">
+          </label>
+          <div class="avatar-command-actions">
+            <button id="avatar-save-set" class="btn btn-cyan" type="button"><span>💾</span> Save</button>
+            <button id="avatar-saved-sets-toggle" class="btn btn-secondary" type="button" aria-expanded="false" aria-controls="saved-sets-panel"><span>📁</span> Saved Sets</button>
+            <button id="avatar-set-menu-toggle" class="btn btn-secondary avatar-menu-toggle" type="button" aria-expanded="false" aria-controls="avatar-set-menu"><span>⚙️</span> More ▾</button>
+          </div>
+          <div id="avatar-set-menu" class="avatar-set-menu" hidden>
+            <button id="avatar-randomize" class="avatar-menu-action" type="button"><span>🎲</span> Random Set</button>
+            <button id="avatar-reset" class="avatar-menu-action avatar-menu-danger" type="button"><span>🧹</span> Reset Set</button>
+            <button id="avatar-reset-all-positions" class="avatar-menu-action avatar-menu-danger" type="button"><span>🎯</span> Reset Positions</button>
+            <div class="avatar-menu-separator" role="separator"></div>
+            <button id="avatar-export-set" class="avatar-menu-action" type="button"><span>📦</span> Export Set JSON</button>
+            <button id="avatar-import-set" class="avatar-menu-action" type="button"><span>📥</span> Import Set JSON</button>
+            <input type="file" id="avatar-import-file" accept=".json" hidden>
+          </div>
+          <div id="saved-sets-panel" class="saved-sets-panel" hidden>
+            <div class="saved-sets-header">
+              <span class="saved-sets-title">Saved Sets</span>
+              <span id="saved-sets-count" class="saved-sets-count">0 saved</span>
+            </div>
+            <div id="saved-sets-list" class="saved-sets-list"></div>
+          </div>
+        </header>
+
+        <div class="avatar-workspace-tabs" role="tablist" aria-label="Workspace panel">
+          <button class="avatar-workspace-tab" type="button" role="tab" data-workspace-tab="wearables" aria-selected="true"><span>👕</span> Wearables</button>
+          <button class="avatar-workspace-tab" type="button" role="tab" data-workspace-tab="inspector" aria-selected="false"><span>🔍</span> Inspector</button>
+        </div>
+
+        <div class="avatar-studio-grid">
+          <section id="avatar-inventory-pane" class="avatar-inventory-pane" aria-label="Wearable inventory">
+            <div class="avatar-inventory-header">
+              <div><span class="avatar-tools-kicker">Growtopia catalog</span><h3>Wearable Inventory</h3></div>
+            </div>
+            <div class="avatar-inventory-toolbar">
+              <label class="avatar-inventory-search"><span class="sr-only">Search wearable name or item ID</span><input id="avatar-inventory-query" type="search" placeholder="Search name or #ID" autocomplete="off"></label>
+              <label><span class="sr-only">Filter inventory slot</span><select id="avatar-inventory-slot"><option value="All">All slots</option></select></label>
+              <button id="avatar-inventory-clear" class="btn btn-secondary" type="button"><span>🧹</span> Clear</button>
+            </div>
+            <div id="avatar-catalog-status" class="avatar-catalog-status" role="status"></div>
+            <div id="avatar-inventory-count" class="avatar-inventory-count"></div>
+            <div id="avatar-inventory-grid" class="avatar-inventory-grid"></div>
+            <button id="avatar-inventory-sentinel" class="avatar-inventory-sentinel" type="button">Load more items</button>
+          </section>
+
+          <section id="avatar-preview-pane" class="avatar-preview-pane" aria-label="Avatar preview">
+            <div class="avatar-stage-toolbar">
+              <div><span class="avatar-tools-kicker">Live preview</span><h3>Your Set</h3></div>
+              <div class="avatar-zoom-controls" aria-label="Canvas Zoom Controls">
+                <button id="avatar-zoom-out" class="avatar-zoom-btn" type="button" title="Zoom Out (−)" aria-label="Zoom out">−</button>
+                <button id="avatar-zoom-reset" class="avatar-zoom-btn avatar-zoom-val" type="button" title="Reset Zoom (100%)" aria-label="Reset zoom">100%</button>
+                <button id="avatar-zoom-in" class="avatar-zoom-btn" type="button" title="Zoom In (+)" aria-label="Zoom in">+</button>
+              </div>
+            </div>
+            <div class="avatar-canvas-box" id="avatar-canvas-box">
+              <canvas id="avatar-canvas" width="384" height="384"></canvas>
+              <span class="preview-zoom-label">Pixel-Perfect GT Character (4x Scale)</span>
+            </div>
+            <div id="equipped-items-bar" class="equipped-items-bar"></div>
+          </section>
+
+          <aside id="avatar-inspector-pane" class="avatar-inspector-pane" aria-label="Avatar inspector">
+            <div class="avatar-inspector-heading"><div><span class="avatar-tools-kicker">Contextual controls</span><h3>Inspector</h3></div></div>
+            <div id="avatar-inspector-tabs" class="avatar-inspector-tabs" role="tablist" aria-label="Avatar inspector">
+              <button class="avatar-inspector-tab" type="button" role="tab" data-inspector-tab="item" aria-controls="avatar-inspector-item" aria-selected="true"><span>🎒</span> Item</button>
+              <button class="avatar-inspector-tab" type="button" role="tab" data-inspector-tab="look" aria-controls="avatar-inspector-look" aria-selected="false" tabindex="-1"><span>👁️</span> Look</button>
+              <button class="avatar-inspector-tab" type="button" role="tab" data-inspector-tab="export" aria-controls="avatar-inspector-export" aria-selected="false" tabindex="-1"><span>📤</span> Export</button>
+            </div>
+
+            <div class="avatar-inspector-body">
+              <section id="avatar-inspector-item" class="avatar-inspector-panel" role="tabpanel" data-inspector-panel="item">
+                <div id="avatar-active-target" class="avatar-active-target" role="status">Select an equipped item to adjust it</div>
+                <div class="avatar-position-tool"><div class="group-label">Selected Item Position</div><div id="avatar-active-position-controls"></div></div>
+                <div class="avatar-sequence-tool"><div class="group-label">Selected Item Sequence</div><div id="avatar-active-sequence-controls"></div></div>
+              </section>
+
+              <section id="avatar-inspector-look" class="avatar-inspector-panel" role="tabpanel" data-inspector-panel="look" hidden>
+                <div class="customizer-group"><div class="group-label">Skin Colors</div><div id="skin-tones-grid" class="skin-tones-grid"></div></div>
+                <div class="customizer-group"><div class="group-label">Facial Expressions</div><div id="expressions-grid" class="expressions-grid"></div></div>
+                <div class="customizer-group">
+                  <div class="group-label">Body Mode</div>
+                  <div class="naked-body-container"><button id="naked-body-toggle" class="naked-body-btn" type="button"><img src="Base Set GT/Body Naked.png" alt="" class="naked-body-icon" width="24" height="24"><span class="naked-body-label">Naked Body</span></button></div>
+                </div>
+              </section>
+
+              <section id="avatar-inspector-export" class="avatar-inspector-panel" role="tabpanel" data-inspector-panel="export" hidden>
+                <div class="avatar-export-actions" aria-label="Export controls">
+                  
+                  <!-- Scale / Upscale Resolution Selector -->
+                  <div class="avatar-export-card">
+                    <div class="avatar-export-card-header">
+                      <span class="export-card-title">🔍 Resolusi Gambar (Upscale)</span>
+                      <span class="export-card-badge">PNG Export</span>
+                    </div>
+                    <div class="avatar-export-scale-row" style="margin-top: 6px;">
+                      <select id="avatar-export-scale" class="select-input-sm" style="width: 100%; padding: 8px 10px; font-weight: 600; background: #0f172a; color: #f8fafc; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px;">
+                        <option value="1">1× Original (384 × 384 px)</option>
+                        <option value="2" selected>2× HD (768 × 768 px)</option>
+                        <option value="3">3× Ultra HD (1152 × 1152 px)</option>
+                        <option value="4">4× 4K Super Res (1536 × 1536 px)</option>
+                      </select>
+                    </div>
+                    <p class="export-card-desc" style="margin: 6px 0 0; font-size: 0.72rem; color: #94a3b8;">
+                      Pilih skala ukuran pixel untuk ekspor PNG karakter. Menggunakan <em>pixel-perfect nearest-neighbor scaling</em> tanpa buram.
+                    </p>
+                  </div>
+
+                  <!-- 1. Full Character Set PNG -->
+                  <div class="avatar-export-card">
+                    <div class="avatar-export-card-header">
+                      <span class="export-card-title">📸 Full Character PNG</span>
+                    </div>
+                    <p class="export-card-desc">
+                      Mengunduh satu gambar utuh karakter avatar lengkap beserta seluruh item, ekspresi wajah, dan warna kulit yang sedang dipakai dalam format PNG transparan.
+                    </p>
+                    <button id="avatar-download-png" class="btn btn-primary avatar-primary-export" type="button" style="width: 100%; margin-top: 8px;">
+                      ⬇️ Download Set PNG
+                    </button>
+                  </div>
+
+                  <!-- 2. Advanced Layer & Sequence Exports -->
+                  <details class="avatar-export-more" open>
+                    <summary class="avatar-export-more-summary">Advanced exports</summary>
+                    <div class="avatar-export-more-list">
+
+                      <!-- Separate Layers ZIP -->
+                      <div class="avatar-export-subcard">
+                        <div class="subcard-header">
+                          <span class="subcard-title">📂 Separate Layers ZIP</span>
+                          <span class="subcard-tag">Design / Edit</span>
+                        </div>
+                        <p class="export-card-desc">
+                          Mengekstrak setiap bagian tubuh dan pakaian (Hat, Hair, Shirt, Pants, Hand, dll.) menjadi file PNG terpisah 192×192 px + file <code>layers.json</code>, siap diedit di Photoshop / Affinity / Aseprite.
+                        </p>
+                        <button id="avatar-download-layers" class="btn btn-green btn-sm" type="button" style="width: 100%; margin-top: 6px;">
+                          📦 Download Separate Layers ZIP
+                        </button>
+                      </div>
+
+                      <!-- Selected Sequence ZIP -->
+                      <div class="avatar-export-subcard">
+                        <div class="subcard-header">
+                          <span class="subcard-title">🎞️ Selected Item Sequence ZIP</span>
+                          <span class="subcard-tag">Single Anim</span>
+                        </div>
+                        <p class="export-card-desc">
+                          Mengekspor seluruh frame animasi dari 1 item animasi yang sedang kamu pilih (misal: sayap mengepak, efek aura berputar).
+                        </p>
+                        <button id="avatar-download-selected-sequence" class="btn btn-purple btn-sm" type="button" style="width: 100%; margin-top: 6px;">
+                          🎞️ Download Selected Sequence ZIP
+                        </button>
+                      </div>
+
+                      <!-- All Equipped Sequences ZIP -->
+                      <div class="avatar-export-subcard">
+                        <div class="subcard-header">
+                          <span class="subcard-title">🎬 All Equipped Sequences ZIP</span>
+                          <span class="subcard-tag">Full Anim Pack</span>
+                        </div>
+                        <p class="export-card-desc">
+                          Mengekspor semua rangkaian frame animasi dari SELURUH item bergerak yang sedang dipakai karakter dalam satu paket ZIP terstruktur.
+                        </p>
+                        <button id="avatar-download-all-sequences" class="btn btn-green btn-sm" type="button" style="width: 100%; margin-top: 6px;">
+                          🎬 Download All Equipped Sequences ZIP
+                        </button>
+                      </div>
+
+                      <!-- Export Set JSON -->
+                      <div class="avatar-export-subcard">
+                        <div class="subcard-header">
+                          <span class="subcard-title">💾 Outfit Config JSON</span>
+                          <span class="subcard-tag">Backup / Share</span>
+                        </div>
+                        <p class="export-card-desc">
+                          Menyimpan data susunan outfit (Item IDs, warna kulit, ekspresi wajah, offset posisi) ke file JSON agar bisa di-share atau di-import kembali.
+                        </p>
+                        <button id="avatar-export-set-card-btn" class="btn btn-secondary btn-sm" type="button" style="width: 100%; margin-top: 6px;">
+                          💾 Export Set JSON
+                        </button>
+                      </div>
+
+                    </div>
+                  </details>
+                </div>
+                <div id="avatar-export-status" class="avatar-export-status" role="status" aria-live="polite"></div>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Audio & SFX Library -->
+    <div id="view-audio" class="view-section hidden">
+      <section class="controls-section">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="audio-search-input" placeholder="Cari efek suara (contoh: punch, break, piano, surgery, lock)..." autocomplete="off">
+            <button id="audio-clear-search" class="clear-btn" title="Hapus Pencarian">&times;</button>
+          </div>
+        </div>
+
+        <div class="category-pills" id="audio-category-pills">
+          <button class="pill active" data-audiocat="ALL">✨ Semua Suara (558)</button>
+          <button class="pill" data-audiocat="Music Notes">🎵 Not Musik Piano/Drums (269)</button>
+          <button class="pill" data-audiocat="Actions & Impacts">💥 Actions & Impacts</button>
+          <button class="pill" data-audiocat="Locks & Doors">🔒 Locks & Doors</button>
+          <button class="pill" data-audiocat="Items & Currency">🧪 Items & Gems</button>
+        </div>
+
+        <div class="toolbar">
+          <span class="pagination-info" id="audio-info-text">Menampilkan 558 Efek Suara Growtopia</span>
+        </div>
+      </section>
+
+      <main class="grid-container">
+        <div id="audio-grid" class="audio-grid"></div>
+        <div id="audio-empty-state" class="empty-state hidden">
+          <div class="empty-icon">🎵</div>
+          <h3>Suara Tidak Ditemukan</h3>
+          <p>Coba gunakan kata kunci pencarian efek suara yang lain.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- SECTION 6: Import Spritesheet Studio -->
+    <div id="view-import" class="view-section hidden">
+      <div class="import-studio-card">
+        <div class="import-header">
+          <h2>📥 Import Spritesheet & Custom Preview Studio</h2>
+          <p>Upload file custom PNG / Spritesheet milikmu, atur custom resize preview, dan convert ke GIF animasi tanpa glitch / bug!</p>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div class="upload-dropzone" id="upload-dropzone">
+          <input type="file" id="import-file-input" accept="image/png, image/jpeg, image/webp" class="hidden-file-input" style="display:none;">
+          <div class="dropzone-content">
+            <span class="dropzone-icon" style="font-size:40px; display:block; margin-bottom:8px;">📁</span>
+            <h3>Drag & Drop File Spritesheet / PNG Di Sini</h3>
+            <p style="margin: 8px 0;">atau <button id="btn-browse-file" class="btn btn-primary btn-sm">Pilih File dari Komputer</button></p>
+            <span class="dropzone-hint" style="font-size:0.8rem; color:var(--text-muted);">Format yang didukung: PNG, JPEG, WEBP (Animasi & Statis)</span>
+          </div>
+        </div>
+
+        <!-- Workspace Preview & Controls (Visible when file imported) -->
+        <div id="import-workspace" class="import-workspace hidden">
+          <div class="import-toolbar-bar">
+            <div class="file-meta-info">
+              <span class="file-name-tag" id="import-filename-tag">custom_sheet.png</span>
+              <span class="file-dim-tag" id="import-dim-tag">0 x 0 px</span>
+            </div>
+
+            <!-- Custom Resize Preview Controls -->
+            <div class="resize-controls-group">
+              <label for="import-scale-slider">Custom Resize Preview:</label>
+              <input type="range" id="import-scale-slider" min="1" max="10" value="4" step="0.5">
+              <span id="import-scale-val" class="scale-val-badge">4x Scale</span>
+
+              <div class="preset-scale-btns">
+                <button class="btn-scale-chip" data-scale="1">1x</button>
+                <button class="btn-scale-chip" data-scale="2">2x</button>
+                <button class="btn-scale-chip active" data-scale="4">4x</button>
+                <button class="btn-scale-chip" data-scale="8">8x</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="import-dual-grid">
+            <!-- Left: Full Spritesheet Custom Resize Viewport -->
+            <div class="import-box-card">
+              <h3>🖼️ Live Spritesheet Preview</h3>
+              <div class="import-canvas-viewport">
+                <canvas id="import-preview-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Right: Sequence Animation & GIF Converter Studio -->
+            <div class="import-box-card">
+              <h3>🎞️ Sequence GIF Generator Studio</h3>
+              
+              <div class="anim-preview-viewport">
+                <canvas id="import-anim-canvas" width="128" height="128"></canvas>
+                <span id="import-frame-status" class="frame-status-tag">Frame 1 dari 16</span>
+              </div>
+
+              <!-- GIF & Animation Settings with Number Inputs -->
+              <div class="gif-settings-panel">
+                <div class="setting-field">
+                  <label for="import-frame-size">Ukuran Crop Tile (px):</label>
+                  <input type="number" id="import-frame-size" value="32" min="8" max="1024" step="8" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-frame-count">Jumlah Frame:</label>
+                  <input type="number" id="import-frame-count" value="8" min="1" max="256" step="1" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-delay-ms">Kecepatan Delay (ms):</label>
+                  <input type="number" id="import-delay-ms" value="150" min="10" max="3000" step="10" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-export-scale">Export Scale Zoom (1x - 16x):</label>
+                  <input type="number" id="import-export-scale" value="4" min="1" max="16" step="1" class="number-input">
+                  <span id="import-out-resolution" class="out-res-tag">Output: 128 x 128 px</span>
+                </div>
+              </div>
+
+              <div class="import-action-buttons">
+                <button id="import-play-btn" class="btn btn-purple">▶ Play Preview</button>
+                <button id="import-convert-gif-btn" class="btn btn-success">🎞️ Convert Animated GIF</button>
+                <button id="import-convert-png-seq-btn" class="btn btn-primary">🖼️ Convert PNG Sequence</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Item Inspector Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+        <div class="modal-header">
+          <span class="modal-badge" id="modal-cat-badge">Category</span>
+          <h2 id="modal-title" class="modal-item-title">Item Name</h2>
+          <span class="modal-id-tag" id="modal-id-tag">ID: #0</span>
+        </div>
+        
+        <div class="modal-body">
+          <div class="modal-preview-box">
+            <canvas id="modal-canvas" width="32" height="32"></canvas>
+            <span class="preview-zoom-label" id="modal-frame-indicator">Frame 1 dari 1 (4x Zoom)</span>
+            
+            <div class="anim-controls">
+              <button id="anim-play-btn" class="anim-btn" title="Play/Pause Animasi">▶ Play</button>
+              <div class="frame-select-group">
+                <label for="frame-count-select">Jumlah Frame:</label>
+                <select id="frame-count-select" class="select-input-sm">
+                  <option value="1">1 Frame (Static)</option>
+                  <option value="2">2 Frames</option>
+                  <option value="4" selected>4 Frames</option>
+                  <option value="6">6 Frames</option>
+                  <option value="8">8 Frames</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="frame-slider-container">
+              <input type="range" id="frame-slider" min="0" max="3" value="0" step="1">
+            </div>
+          </div>
+
+          <div class="modal-details">
+            <div class="detail-row">
+              <span class="detail-label">Tilesheet Texture:</span>
+              <span class="detail-val" id="modal-texture">tiles_page1.png</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Base Grid Coordinates:</span>
+              <span class="detail-val" id="modal-coords">X: 0, Y: 0 (32x32px)</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Action Type Code:</span>
+              <span class="detail-val" id="modal-action">0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status Animasi:</span>
+              <span class="detail-val" id="modal-anim-status">Static (Non-Animated)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions-container">
+          <div class="action-btn-group">
+            <button id="modal-download-btn" class="btn btn-primary">
+              <span>💾</span> Download Sprite PNG
+            </button>
+            <button id="modal-gif-btn" class="btn btn-purple">
+              <span>🎞️</span> Convert to Animated GIF
+            </button>
+            <button id="modal-extract-frames-btn" class="btn btn-primary">
+              <span>🖼️</span> Extract Frame 1 - dst (PNG)
+            </button>
+            <button id="modal-copy-btn" class="btn btn-secondary">
+              <span>📋</span> Salin Metadata
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Audio & SFX Library -->
+    <div id="view-audio" class="view-section hidden">
+      <section class="controls-section">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="audio-search-input" placeholder="Cari efek suara (contoh: punch, break, piano, surgery, lock)..." autocomplete="off">
+            <button id="audio-clear-search" class="clear-btn" title="Hapus Pencarian">&times;</button>
+          </div>
+        </div>
+
+        <div class="category-pills" id="audio-category-pills">
+          <button class="pill active" data-audiocat="ALL">✨ Semua Suara (558)</button>
+          <button class="pill" data-audiocat="Music Notes">🎵 Not Musik Piano/Drums (269)</button>
+          <button class="pill" data-audiocat="Actions & Impacts">💥 Actions & Impacts</button>
+          <button class="pill" data-audiocat="Locks & Doors">🔒 Locks & Doors</button>
+          <button class="pill" data-audiocat="Items & Currency">🧪 Items & Gems</button>
+        </div>
+
+        <div class="toolbar">
+          <span class="pagination-info" id="audio-info-text">Menampilkan 558 Efek Suara Growtopia</span>
+        </div>
+      </section>
+
+      <main class="grid-container">
+        <div id="audio-grid" class="audio-grid"></div>
+        <div id="audio-empty-state" class="empty-state hidden">
+          <div class="empty-icon">🎵</div>
+          <h3>Suara Tidak Ditemukan</h3>
+          <p>Coba gunakan kata kunci pencarian efek suara yang lain.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- SECTION 6: Import Spritesheet Studio -->
+    <div id="view-import" class="view-section hidden">
+      <div class="import-studio-card">
+        <div class="import-header">
+          <h2>📥 Import Spritesheet & Custom Preview Studio</h2>
+          <p>Upload file custom PNG / Spritesheet milikmu, atur custom resize preview, dan convert ke GIF animasi tanpa glitch / bug!</p>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div class="upload-dropzone" id="upload-dropzone">
+          <input type="file" id="import-file-input" accept="image/png, image/jpeg, image/webp" class="hidden-file-input" style="display:none;">
+          <div class="dropzone-content">
+            <span class="dropzone-icon" style="font-size:40px; display:block; margin-bottom:8px;">📁</span>
+            <h3>Drag & Drop File Spritesheet / PNG Di Sini</h3>
+            <p style="margin: 8px 0;">atau <button id="btn-browse-file" class="btn btn-primary btn-sm">Pilih File dari Komputer</button></p>
+            <span class="dropzone-hint" style="font-size:0.8rem; color:var(--text-muted);">Format yang didukung: PNG, JPEG, WEBP (Animasi & Statis)</span>
+          </div>
+        </div>
+
+        <!-- Workspace Preview & Controls (Visible when file imported) -->
+        <div id="import-workspace" class="import-workspace hidden">
+          <div class="import-toolbar-bar">
+            <div class="file-meta-info">
+              <span class="file-name-tag" id="import-filename-tag">custom_sheet.png</span>
+              <span class="file-dim-tag" id="import-dim-tag">0 x 0 px</span>
+            </div>
+
+            <!-- Custom Resize Preview Controls -->
+            <div class="resize-controls-group">
+              <label for="import-scale-slider">Custom Resize Preview:</label>
+              <input type="range" id="import-scale-slider" min="1" max="10" value="4" step="0.5">
+              <span id="import-scale-val" class="scale-val-badge">4x Scale</span>
+
+              <div class="preset-scale-btns">
+                <button class="btn-scale-chip" data-scale="1">1x</button>
+                <button class="btn-scale-chip" data-scale="2">2x</button>
+                <button class="btn-scale-chip active" data-scale="4">4x</button>
+                <button class="btn-scale-chip" data-scale="8">8x</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="import-dual-grid">
+            <!-- Left: Full Spritesheet Custom Resize Viewport -->
+            <div class="import-box-card">
+              <h3>🖼️ Live Spritesheet Preview</h3>
+              <div class="import-canvas-viewport">
+                <canvas id="import-preview-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Right: Sequence Animation & GIF Converter Studio -->
+            <div class="import-box-card">
+              <h3>🎞️ Sequence GIF Generator Studio</h3>
+              
+              <div class="anim-preview-viewport">
+                <canvas id="import-anim-canvas" width="128" height="128"></canvas>
+                <span id="import-frame-status" class="frame-status-tag">Frame 1 dari 16</span>
+              </div>
+
+              <!-- GIF & Animation Settings with Number Inputs -->
+              <div class="gif-settings-panel">
+                <div class="setting-field">
+                  <label for="import-frame-size">Ukuran Crop Tile (px):</label>
+                  <input type="number" id="import-frame-size" value="32" min="8" max="1024" step="8" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-frame-count">Jumlah Frame:</label>
+                  <input type="number" id="import-frame-count" value="8" min="1" max="256" step="1" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-delay-ms">Kecepatan Delay (ms):</label>
+                  <input type="number" id="import-delay-ms" value="150" min="10" max="3000" step="10" class="number-input">
+                </div>
+
+                <div class="setting-field">
+                  <label for="import-export-scale">Export Scale Zoom (1x - 16x):</label>
+                  <input type="number" id="import-export-scale" value="4" min="1" max="16" step="1" class="number-input">
+                  <span id="import-out-resolution" class="out-res-tag">Output: 128 x 128 px</span>
+                </div>
+              </div>
+
+              <div class="import-action-buttons">
+                <button id="import-play-btn" class="btn btn-purple">▶ Play Preview</button>
+                <button id="import-convert-gif-btn" class="btn btn-success">🎞️ Convert Animated GIF</button>
+                <button id="import-convert-png-seq-btn" class="btn btn-primary">🖼️ Convert PNG Sequence</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Item Inspector Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+        <div class="modal-header">
+          <span class="modal-badge" id="modal-cat-badge">Category</span>
+          <h2 id="modal-title" class="modal-item-title">Item Name</h2>
+          <span class="modal-id-tag" id="modal-id-tag">ID: #0</span>
+        </div>
+        
+        <div class="modal-body">
+          <div class="modal-preview-box">
+            <canvas id="modal-canvas" width="32" height="32"></canvas>
+            <span class="preview-zoom-label" id="modal-frame-indicator">Frame 1 dari 1 (4x Zoom)</span>
+            
+            <div class="anim-controls">
+              <button id="anim-play-btn" class="anim-btn" title="Play/Pause Animasi">▶ Play</button>
+              <div class="frame-select-group">
+                <label for="frame-count-select">Jumlah Frame:</label>
+                <select id="frame-count-select" class="select-input-sm">
+                  <option value="1">1 Frame (Static)</option>
+                  <option value="2">2 Frames</option>
+                  <option value="4" selected>4 Frames</option>
+                  <option value="6">6 Frames</option>
+                  <option value="8">8 Frames</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="frame-slider-container">
+              <input type="range" id="frame-slider" min="0" max="3" value="0" step="1">
+            </div>
+          </div>
+
+          <div class="modal-details">
+            <div class="detail-row">
+              <span class="detail-label">Tilesheet Texture:</span>
+              <span class="detail-val" id="modal-texture">tiles_page1.png</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Base Grid Coordinates:</span>
+              <span class="detail-val" id="modal-coords">X: 0, Y: 0 (32x32px)</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Action Type Code:</span>
+              <span class="detail-val" id="modal-action">0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status Animasi:</span>
+              <span class="detail-val" id="modal-anim-status">Static (Non-Animated)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions-container">
+          <div class="action-btn-group">
+            <button id="modal-download-btn" class="btn btn-primary">
+              <span>💾</span> Download Sprite PNG
+            </button>
+            <button id="modal-gif-btn" class="btn btn-purple">
+              <span>🎞️</span> Convert to Animated GIF
+            </button>
+          </div>
+          <div class="action-btn-group">
+            <button id="modal-extract-frames-btn" class="btn btn-green">
+              <span>🖼️</span> Extract Frame 1 - dst (PNG)
+            </button>
+            <button id="modal-copy-btn" class="btn btn-secondary">
+              <span>📋</span> Salin Metadata
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: GT World Planner Studio -->
+    <div id="view-world" class="view-section hidden">
+      <div class="world-studio-container">
+        <!-- Main World Canvas Area -->
+        <div class="world-canvas-wrapper" id="world-canvas-wrapper">
+          <canvas id="world-canvas"></canvas>
+          
+          <!-- Top Info Floating Bar -->
+          <div class="world-top-bar">
+            <div class="world-title-badge">
+              <span class="world-icon">🌍</span>
+              <span id="world-name-display" class="world-name-text">World</span>
+              <span id="world-coords-display" class="world-coords-text">X: 0, Y: 0</span>
+            </div>
+            <div class="world-zoom-badge">
+              <button id="world-zoom-out-btn" class="world-mini-btn" title="Zoom Out (−)">−</button>
+              <button id="world-zoom-reset-btn" class="world-mini-btn world-zoom-level" title="Reset Zoom">50%</button>
+              <button id="world-zoom-in-btn" class="world-mini-btn" title="Zoom In (+)">+</button>
+            </div>
+          </div>
+
+          <!-- Selection Action Floating Bar -->
+          <div id="world-selection-bar" class="world-selection-bar hidden">
+            <span class="selection-label">Selection Active</span>
+            <button id="world-render-selection-btn" class="btn btn-sm btn-primary" type="button">📸 Crop Render PNG</button>
+            <button id="world-fill-selection-btn" class="btn btn-sm btn-green" type="button">🪣 Fill Block</button>
+            <button id="world-clear-selection-btn" class="btn btn-sm btn-danger-lite" type="button">🧹 Clear Area</button>
+            <button id="world-cancel-selection-btn" class="btn btn-sm btn-secondary" type="button">✕ Cancel</button>
+          </div>
+
+          <!-- Minimap Floating Box -->
+          <div id="world-minimap-box" class="world-minimap-box">
+            <canvas id="world-minimap-canvas" width="200" height="120"></canvas>
+          </div>
+        </div>
+
+        <!-- Right Vertical Hotbar -->
+        <aside class="world-hotbar" id="world-hotbar" aria-label="Item Hotbar">
+          <button id="world-add-block-btn" class="hotbar-add-btn" type="button" title="Select Block (+)">
+            <span>+</span>
+          </button>
+          <div id="world-hotbar-slots" class="world-hotbar-slots">
+            <!-- 10 hotbar item slots generated dynamically -->
+          </div>
+        </aside>
+
+        <!-- Bottom Tools Toolbar -->
+        <nav class="world-bottom-bar" id="world-bottom-bar" aria-label="World Planner Tools">
+          <button class="world-tool-btn" data-tool="preview" type="button" title="Preview Mode (Hide UI/Grid)">
+            <span class="tool-icon">👁️</span>
+          </button>
+          <button class="world-tool-btn active" data-tool="pencil" type="button" title="Pencil / Place (B)">
+            <span class="tool-icon">✏️</span>
+          </button>
+          <button class="world-tool-btn" data-tool="eraser" type="button" title="Eraser (E / Right Click)">
+            <span class="tool-icon">🧹</span>
+          </button>
+          <button class="world-tool-btn" data-tool="picker" type="button" title="Eyedropper / Pick (I)">
+            <span class="tool-icon">🧪</span>
+          </button>
+          <button class="world-tool-btn" data-tool="bucket" type="button" title="Bucket Fill (G)">
+            <span class="tool-icon">🪣</span>
+          </button>
+          <button class="world-tool-btn" data-tool="select" type="button" title="Area Selection (S)">
+            <span class="tool-icon">⬚</span>
+          </button>
+          <button class="world-tool-btn" id="world-flip-btn" type="button" title="Flip Horizontal (F)">
+            <span class="tool-icon">⇄</span>
+          </button>
+          <div class="tool-separator"></div>
+          <button class="world-tool-btn" id="world-weather-btn" type="button" title="Weather Backgrounds">
+            <span class="tool-icon">🎨</span>
+          </button>
+          <button class="world-tool-btn" id="world-grid-toggle-btn" type="button" title="Toggle Grid Lines">
+            <span class="tool-icon">▦</span>
+          </button>
+          <button class="world-tool-btn" id="world-minimap-toggle-btn" type="button" title="Toggle Minimap">
+            <span class="tool-icon">🗺️</span>
+          </button>
+          <div class="tool-separator"></div>
+          <button class="world-tool-btn" id="world-undo-btn" type="button" title="Undo (Ctrl+Z)">
+            <span class="tool-icon">↩️</span>
+          </button>
+          <button class="world-tool-btn" id="world-redo-btn" type="button" title="Redo (Ctrl+Y)">
+            <span class="tool-icon">↪️</span>
+          </button>
+          <div class="tool-separator"></div>
+          <button class="world-tool-btn" id="world-settings-btn" type="button" title="World Settings & Export">
+            <span class="tool-icon">⚙️</span>
+          </button>
+        </nav>
+
+        <!-- World Settings / Export Dropdown Menu -->
+        <div id="world-menu-dropdown" class="world-menu-dropdown hidden">
+          <div class="world-menu-header">World Management</div>
+          <button class="world-menu-item" id="world-menu-new-std" type="button">🌱 New Standard World</button>
+          <button class="world-menu-item" id="world-menu-new-flat" type="button">🧱 New Flat World</button>
+          <button class="world-menu-item" id="world-menu-new-blank" type="button">⬜ New Blank World</button>
+          <div class="world-menu-divider"></div>
+          <button class="world-menu-item" id="world-menu-open-file" type="button">📂 Open World (.DAT / .gtworld)</button>
+          <input type="file" id="world-file-input" accept=".dat,.json,.gtworld" style="display:none;">
+          <button class="world-menu-item" id="world-menu-save-dat" type="button">💾 Save World (.DAT - Tommy's GT Planner)</button>
+          <button class="world-menu-item" id="world-menu-save-json" type="button">📦 Export .gtworld JSON</button>
+          <div class="world-menu-divider"></div>
+          <button class="world-menu-item" id="world-menu-render-png" type="button">📸 Render Full World PNG (3200x1920)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Select Block -->
+    <div id="world-block-modal" class="modal-overlay hidden">
+      <div class="world-modal-container block-modal-content">
+        <div class="world-modal-header">
+          <h2>Select Block</h2>
+          <button id="world-block-modal-close" class="modal-close-btn" type="button">&times;</button>
+        </div>
+        <div class="world-modal-body">
+          <div class="block-search-row">
+            <label for="world-block-search" class="sr-only">Search blocks</label>
+            <input type="text" id="world-block-search" class="block-search-input" placeholder="Search block name or ID...">
+          </div>
+          <div class="block-category-tabs" id="world-block-category-tabs">
+            <!-- category pills generated dynamically -->
+          </div>
+          <div class="block-grid-container" id="world-block-grid">
+            <!-- placeable item sprite cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Weather Backgrounds -->
+    <div id="world-weather-modal" class="modal-overlay hidden">
+      <div class="world-modal-container weather-modal-content">
+        <div class="world-modal-header">
+          <h2>Select Weather Background</h2>
+          <button id="world-weather-modal-close" class="modal-close-btn" type="button">&times;</button>
+        </div>
+        <div class="world-modal-body">
+          <div class="weather-search-row">
+            <input type="text" id="world-weather-search" class="block-search-input" placeholder="Search weather name...">
+          </div>
+          <div class="weather-grid-container" id="world-weather-grid"><button id="playmode-mod-btn" class="hidden"></button>
+            <!-- 68 weather cards with 16:9 previews -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULL PREVIEW & SEQUENCE ANIMATION MODAL FOR RAW TILESHEETS -->
+    <div id="sheet-modal-overlay" class="modal-overlay hidden">
+      <div class="sheet-modal-card">
+        <button id="sheet-modal-close" class="modal-close-btn">&times;</button>
+        <div class="modal-header">
+          <div class="header-tag-group">
+            <span class="modal-badge">RAW SPRITESHEET PREVIEW</span>
+            <span id="sheet-anim-badge" class="modal-badge highlight-purple hidden">🎞️ SEQUENCE ANIMATED SHEET</span>
+          </div>
+          <h2 id="sheet-modal-filename" class="modal-item-title">bt_mov.png</h2>
+          <span id="sheet-modal-meta" class="modal-id-tag">256 x 256 px | Sequence Animation</span>
+        </div>
+
+        <div class="sheet-mode-selector">
+          <button id="mode-full-sheet" class="mode-tab active">🖼️ Full Sheet View</button>
+          <button id="mode-sequence-anim" class="mode-tab">🎞️ Play Sequence Animation (GIF Mode)</button>
+        </div>
+
+        <div id="viewport-full-sheet" class="sheet-modal-viewport">
+          <div class="zoom-controls-floating" id="zoom-controls-bar">
+            <button id="sheet-zoom-out" class="zoom-btn" title="Zoom Out" type="button">-</button>
+            <span id="sheet-zoom-level" class="zoom-level">100%</span>
+            <button id="sheet-zoom-in" class="zoom-btn" title="Zoom In" type="button">+</button>
+            <button id="sheet-zoom-reset" class="zoom-btn" title="Reset Zoom" type="button">Reset</button>
+          </div>
+          <div id="sheet-zoom-wrapper" class="sheet-zoom-wrapper">
+            <img id="sheet-modal-img" class="sheet-full-image" src="" alt="Tilesheet Full Preview">
+          </div>
+        </div>
+
+        <div id="viewport-sequence-anim" class="sheet-modal-viewport hidden">
+          <div class="sequence-player-box">
+            <canvas id="sequence-canvas" width="64" height="64"></canvas>
+            <span id="sequence-frame-label" class="preview-zoom-label">Frame 1 dari 16</span>
+
+            <div class="sequence-controls">
+              <button id="seq-play-btn" class="anim-btn">▶ Play GIF</button>
+              
+              <div class="seq-config-row">
+                <label for="seq-frame-size">Ukuran Frame:</label>
+                <select id="seq-frame-size" class="select-input-sm">
+                  <option value="32">32 x 32 px</option>
+                  <option value="64" selected>64 x 64 px</option>
+                  <option value="128">128 x 128 px</option>
+                </select>
+              </div>
+
+              <div class="seq-config-row">
+                <label for="seq-frame-count">Total Frame Sequence:</label>
+                <select id="seq-frame-count" class="select-input-sm">
+                  <option value="4">4 Frames</option>
+                  <option value="8">8 Frames</option>
+                  <option value="12">12 Frames</option>
+                  <option value="16" selected>16 Frames</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-modal-footer">
+          <div class="sheet-actions-group">
+            <a id="sheet-modal-download-btn" class="btn btn-primary" href="" download="">
+              <span>💾</span> Download Raw PNG
+            </a>
+            <button id="sheet-modal-gif-btn" class="btn btn-purple">
+              <span>🎞️</span> Convert & Download Animated GIF
+            </button>
+            <button id="sheet-modal-extract-btn" class="btn btn-green">
+              <span>🖼️</span> Extract Sequence Frames (PNG)
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="gifencoder.js"></script>
+  <script src="lz-string.min.js"></script>
+  <script src="avatar_tint.js"></script>
+  <script src="wearable_catalog.js"></script>
+  <script src="avatar_positioning.js?v=96"></script>
+  <script src="avatar_inventory.js"></script>
+  <script src="avatar_layer_exporter.js"></script>
+  <script src="wearable_sequence.js?v=three-pane-studio-v3"></script>
+  <script src="world_catalog.js"></script>
+  <script src="world_planner.js"></script>
+  <script src="app.js?v=three-pane-studio-v3"></script>
+</body>
+</html>

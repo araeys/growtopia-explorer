@@ -1,0 +1,189 @@
+[
+  {
+    "name": "Tone 1 (Dark Brown)",
+    "filename": "skin_tone_1_dark_brown.png",
+    "hex": "#785C50",
+    "rgb": [
+      120,
+      92,
+      80
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_1_dark_brown.png"
+  },
+  {
+    "name": "Tone 2 (Deep Tan)",
+    "filename": "skin_tone_2_deep_tan.png",
+    "hex": "#967264",
+    "rgb": [
+      150,
+      114,
+      100
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_2_deep_tan.png"
+  },
+  {
+    "name": "Tone 3 (Tan)",
+    "filename": "skin_tone_3_tan.png",
+    "hex": "#B48A78",
+    "rgb": [
+      180,
+      138,
+      120
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_3_tan.png"
+  },
+  {
+    "name": "Tone 4 (Warm Peach)",
+    "filename": "skin_tone_4_warm_peach.png",
+    "hex": "#C39582",
+    "rgb": [
+      195,
+      149,
+      130
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_4_warm_peach.png"
+  },
+  {
+    "name": "Tone 5 (Soft Peach)",
+    "filename": "skin_tone_5_soft_peach.png",
+    "hex": "#E1AC96",
+    "rgb": [
+      225,
+      172,
+      150
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_5_soft_peach.png"
+  },
+  {
+    "name": "Tone 6 (Light Peach - Default)",
+    "filename": "skin_tone_6_light_peach_-_default.png",
+    "hex": "#FFC3AA",
+    "rgb": [
+      255,
+      195,
+      170
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_6_light_peach_-_default.png"
+  },
+  {
+    "name": "Tone 7 (Pale Pink)",
+    "filename": "skin_tone_7_pale_pink.png",
+    "hex": "#FFCEB4",
+    "rgb": [
+      255,
+      206,
+      180
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_7_pale_pink.png"
+  },
+  {
+    "name": "Tone 8 (Fair/Cream)",
+    "filename": "skin_tone_8_fair_cream.png",
+    "hex": "#FFE5C8",
+    "rgb": [
+      255,
+      229,
+      200
+    ],
+    "path": "character_base_assets/tinted_skins/skin_tone_8_fair_cream.png"
+  },
+  {
+    "name": "White / Neutral Base",
+    "filename": "skin_white___neutral_base.png",
+    "hex": "#F0F0F0",
+    "rgb": [
+      240,
+      240,
+      240
+    ],
+    "path": "character_base_assets/tinted_skins/skin_white___neutral_base.png"
+  },
+  {
+    "name": "Light Green",
+    "filename": "skin_light_green.png",
+    "hex": "#B1DDA3",
+    "rgb": [
+      177,
+      221,
+      163
+    ],
+    "path": "character_base_assets/tinted_skins/skin_light_green.png"
+  },
+  {
+    "name": "Aqua",
+    "filename": "skin_aqua.png",
+    "hex": "#41C2C5",
+    "rgb": [
+      65,
+      194,
+      197
+    ],
+    "path": "character_base_assets/tinted_skins/skin_aqua.png"
+  },
+  {
+    "name": "Red",
+    "filename": "skin_red.png",
+    "hex": "#D74B2B",
+    "rgb": [
+      215,
+      75,
+      43
+    ],
+    "path": "character_base_assets/tinted_skins/skin_red.png"
+  },
+  {
+    "name": "Green",
+    "filename": "skin_green.png",
+    "hex": "#418A2A",
+    "rgb": [
+      65,
+      138,
+      42
+    ],
+    "path": "character_base_assets/tinted_skins/skin_green.png"
+  },
+  {
+    "name": "Purple",
+    "filename": "skin_purple.png",
+    "hex": "#A951D5",
+    "rgb": [
+      169,
+      81,
+      213
+    ],
+    "path": "character_base_assets/tinted_skins/skin_purple.png"
+  },
+  {
+    "name": "Blue",
+    "filename": "skin_blue.png",
+    "hex": "#397DCE",
+    "rgb": [
+      57,
+      125,
+      206
+    ],
+    "path": "character_base_assets/tinted_skins/skin_blue.png"
+  },
+  {
+    "name": "Light Blue",
+    "filename": "skin_light_blue.png",
+    "hex": "#AFC6ED",
+    "rgb": [
+      175,
+      198,
+      237
+    ],
+    "path": "character_base_assets/tinted_skins/skin_light_blue.png"
+  },
+  {
+    "name": "Orange",
+    "filename": "skin_orange.png",
+    "hex": "#FF920B",
+    "rgb": [
+      255,
+      146,
+      11
+    ],
+    "path": "character_base_assets/tinted_skins/skin_orange.png"
+  }
+]

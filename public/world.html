@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌍 GT World Planner Studio</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark: #090d1a;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --accent: #00e5ff;
+      --accent2: #a855f7;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: rgba(56, 189, 248, 0.18);
+      --font: 'Inter', sans-serif;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+
+    /* ─── App Shell ─── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ─── Top Bar ─── */
+    #topbar {
+      flex-shrink: 0;
+      height: 48px;
+      background: rgba(9,13,26,0.95);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+
+    #topbar .logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    #topbar .sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+    .tb-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 7px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tb-btn:hover { background: rgba(0,229,255,0.1); color: var(--accent); border-color: var(--accent); }
+
+    #world-name-display {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--accent);
+    }
+    #world-coords-display {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .zoom-group { display: flex; align-items: center; gap: 2px; }
+    .zoom-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      width: 26px; height: 26px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .zoom-btn:hover { background: rgba(0,229,255,0.15); color: var(--accent); }
+    #zoom-level-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0 8px;
+      height: 26px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    .spacer { flex: 1; }
+
+    /* ─── Main Area ─── */
+    #main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* ─── Canvas ─── */
+    #canvas-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #040711;
+      cursor: crosshair;
+      user-select: none;
+    }
+
+    #world-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* ─── Floating Selection Bar ─── */
+    #world-selection-bar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(9,13,26,0.92);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    #world-selection-bar.hidden { display: none; }
+    .selection-label { font-size: 12px; color: var(--accent); font-weight: 600; }
+
+    /* ─── Minimap ─── */
+    #world-minimap-box {
+      position: absolute;
+      bottom: 14px;
+      right: 80px;
+      background: rgba(9,13,26,0.85);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 30;
+    }
+    #world-minimap-canvas { display: block; }
+
+    /* ─── Right Hotbar ─── */
+    #world-hotbar {
+      flex-shrink: 0;
+      width: 60px;
+      background: rgba(9,13,26,0.95);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+      gap: 4px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .hotbar-add-btn {
+      width: 44px; height: 44px;
+      background: rgba(0,229,255,0.1);
+      border: 2px dashed rgba(0,229,255,0.4);
+      border-radius: 10px;
+      color: var(--accent);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+    }
+    .hotbar-add-btn:hover { background: rgba(0,229,255,0.2); border-color: var(--accent); }
+    .world-hotbar-slots { display: flex; flex-direction: column; gap: 4px; }
+    .hotbar-slot {
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.15s;
+    }
+    .hotbar-slot.active { border-color: var(--accent); background: rgba(0,229,255,0.1); box-shadow: 0 0 8px rgba(0,229,255,0.3); }
+    .hotbar-slot:hover { border-color: rgba(0,229,255,0.5); }
+    .hotbar-slot-num {
+      position: absolute; top: 2px; left: 4px;
+      font-size: 9px; color: var(--text-muted); font-weight: 600;
+    }
+    .hotbar-slot canvas { image-rendering: pixelated; }
+
+    /* ─── Bottom Toolbar ─── */
+    #world-bottom-bar {
+      flex-shrink: 0;
+      height: 52px;
+      background: rgba(9,13,26,0.95);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 12px;
+      z-index: 20;
+    }
+
+    .world-tool-btn {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: all 0.15s;
+      color: var(--text-muted);
+    }
+    .world-tool-btn:hover { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3); }
+    .world-tool-btn.active { background: rgba(0,229,255,0.15); border-color: var(--accent); color: var(--accent); }
+    .tool-separator { width: 1px; height: 30px; background: var(--border); margin: 0 4px; }
+
+    /* ─── Dropdown Menu ─── */
+    #world-menu-dropdown {
+      position: fixed;
+      bottom: 60px;
+      right: 80px;
+      background: rgba(15,20,40,0.97);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      z-index: 200;
+      min-width: 260px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+    }
+    #world-menu-dropdown.hidden { display: none; }
+    .world-menu-header { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px 8px; }
+    .world-menu-item {
+      display: block; width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      text-align: left;
+      padding: 9px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: var(--font);
+      transition: all 0.12s;
+    }
+    .world-menu-item:hover { background: rgba(0,229,255,0.08); color: var(--accent); }
+    .world-menu-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+    /* ─── Small buttons ─── */
+    .btn-sm {
+      padding: 5px 12px; border-radius: 6px; border: none;
+      cursor: pointer; font-size: 12px; font-family: var(--font);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-primary { background: rgba(0,229,255,0.15); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+    .btn-primary:hover { background: rgba(0,229,255,0.25); }
+    .btn-green { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .btn-green:hover { background: rgba(34,197,94,0.25); }
+    .btn-danger-lite { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-danger-lite:hover { background: rgba(239,68,68,0.22); }
+    .btn-secondary { background: rgba(148,163,184,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(148,163,184,0.2); }
+
+    /* ─── Weather Modal ─── */
+    #weather-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #weather-modal.open { display: flex; }
+    .weather-modal-inner {
+      background: rgba(12,18,36,0.98);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 520px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .weather-modal-inner h3 { font-size: 16px; color: var(--accent); margin-bottom: 14px; }
+    #weather-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .weather-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 6px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .weather-item:hover { background: rgba(0,229,255,0.1); border-color: var(--accent); color: var(--accent); }
+    .weather-item.active { background: rgba(0,229,255,0.15); border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Item Picker Modal ─── */
+    #item-picker-modal {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #item-picker-modal.open { display: flex; }
+    .picker-inner {
+      background: rgba(12,18,36,0.98);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .picker-header { display: flex; align-items: center; justify-content: space-between; }
+    .picker-header h3 { font-size: 16px; color: var(--accent); }
+    .picker-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 20px; cursor: pointer; line-height: 1;
+    }
+    .picker-close:hover { color: var(--text-main); }
+    .picker-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .picker-filter-btn {
+      padding: 4px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      font-size: 12px; cursor: pointer;
+      transition: all 0.12s;
+    }
+    .picker-filter-btn.active, .picker-filter-btn:hover {
+      background: rgba(0,229,255,0.12); border-color: var(--accent); color: var(--accent);
+    }
+    #picker-search {
+      width: 100%; padding: 9px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text-main);
+      font-size: 13px;
+      font-family: var(--font);
+    }
+    #picker-search:focus { outline: none; border-color: var(--accent); }
+    #picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 440px;
+      padding: 6px;
+    }
+    .picker-item {
+      height: 72px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px;
+      overflow: hidden;
+      transition: all 0.12s;
+      position: relative;
+    }
+    .picker-item:hover {
+      border-color: var(--accent);
+      background: rgba(0,229,255,0.12);
+      transform: translateY(-2px);
+    }
+    .picker-item canvas {
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .picker-item-label {
+      font-size: 10px;
+      color: var(--text-main);
+      text-align: center;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.1;
+      font-weight: 500;
+    }
+    .picker-item-count { font-size: 11px; color: var(--text-muted); text-align: center; padding: 4px; }
+
+    /* ─── Loading overlay ─── */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg-dark);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      z-index: 9999;
+    }
+    #loading-overlay.hidden { display: none; }
+    .loading-logo {
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 28px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .loading-bar-wrap {
+      width: 280px; height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px; overflow: hidden;
+    }
+    .loading-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .loading-status { font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="loading-logo">🌍 GT World Planner</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+  <div class="loading-status" id="loading-status">Loading item database...</div>
+</div>
+
+<div id="app">
+  <!-- Top Bar -->
+  <div id="topbar">
+    <div class="logo">🌍 GT World Planner Studio</div>
+    <div class="sep"></div>
+    <span id="world-name-display">World</span>
+    <span id="world-coords-display">X: 0, Y: 0</span>
+    <div class="sep"></div>
+    <div class="zoom-group">
+      <button class="zoom-btn" id="world-zoom-out-btn" title="Zoom Out">−</button>
+      <button id="zoom-level-btn" id="world-zoom-reset-btn" title="Reset Zoom">50%</button>
+      <button class="zoom-btn" id="world-zoom-in-btn" title="Zoom In">+</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="tb-btn" onclick="window.close()">← Back to Explorer</button>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <!-- Canvas Area -->
+    <div id="canvas-wrapper">
+      <canvas id="world-canvas"></canvas>
+
+      <!-- Top Floating HUD Container (Prevents overlapping) -->
+      <div id="canvas-top-bars">
+        <!-- Play Mode HUD -->
+        <div id="playmode-hud" class="hidden">
+          <span style="font-weight:600;color:#38bdf8;font-size:12px;">🎮 Parkour Test Mode</span>
+          <span style="font-size:11px;color:#94a3b8;">Controls: <strong>WASD / Arrows</strong> run & jump | <strong>R</strong> Respawn</span>
+          <button class="btn-sm btn-secondary" id="playmode-mod-btn" title="Toggle Moderator Fly/Noclip Mode (M)">🛡️ Mod Mode: OFF</button>
+          <button class="btn-sm btn-danger-lite" id="playmode-respawn-btn">🔄 Respawn</button>
+          <button class="btn-sm btn-secondary" id="playmode-exit-btn">✕ Exit</button>
+        </div>
+
+        <!-- Selection bar (shown when select tool active) -->
+        <div id="world-selection-bar" class="hidden">
+          <span class="selection-label" style="font-weight:600;color:#38bdf8;">✂️ Selection</span>
+          <button class="btn-sm btn-primary" id="world-copy-selection-btn" title="Copy (Ctrl+C)">📋 Copy</button>
+          <button class="btn-sm btn-primary" id="world-cut-selection-btn" title="Cut (Ctrl+X)">✂️ Cut</button>
+          <button class="btn-sm btn-primary" id="world-paste-btn" title="Paste (Ctrl+V)">📑 Paste</button>
+          <button class="btn-sm btn-primary" id="world-flip-h-selection-btn" title="Flip Horizontal">🪞 Flip H</button>
+          <button class="btn-sm btn-primary" id="world-flip-v-selection-btn" title="Flip Vertical">🔃 Flip V</button>
+          <button class="btn-sm btn-green" id="world-fill-selection-btn" title="Fill Selection with Active Block">🪣 Fill</button>
+          <button class="btn-sm btn-primary" id="world-render-selection-btn" title="Render Selection PNG">📸 Render</button>
+          <button class="btn-sm btn-danger-lite" id="world-clear-selection-btn" title="Clear (Delete)">🧹 Clear</button>
+          <button class="btn-sm btn-secondary" id="world-cancel-selection-btn">✕</button>
+        </div>
+      </div>
+
+      <!-- Music Sequencer Bar -->
+      <div id="music-sequencer-bar" class="hidden">
+        <span style="font-weight:600;color:#00e5ff;font-size:12px;">🎵 Music Sequencer</span>
+        <button class="btn-sm btn-primary" id="music-play-btn">▶ Play</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label for="music-bpm-slider" style="font-size:11px;color:#94a3b8;">BPM:</label>
+          <input type="range" id="music-bpm-slider" min="60" max="240" value="100" style="width:70px;cursor:pointer;">
+          <span id="music-bpm-val" style="font-size:11px;color:#f8fafc;font-weight:600;min-width:28px;">100</span>
+        </div>
+        <button class="btn-sm btn-secondary" id="music-loop-btn" title="Loop Toggle">🔁 Loop</button>
+        <button class="btn-sm btn-secondary" id="music-close-btn">✕</button>
+      </div>
+    </div>
+
+    <!-- Right Hotbar -->
+    <aside id="world-hotbar">
+      <button class="hotbar-add-btn" id="world-add-block-btn" title="Pick item (+)">+</button>
+      <div id="world-hotbar-slots" class="world-hotbar-slots"></div>
+    </aside>
+  </div>
+
+  <!-- Bottom Toolbar with SVG Vector Icons -->
+  <nav id="world-bottom-bar">
+    <button class="world-tool-btn" data-tool="preview" title="Preview Mode (Hide UI)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button class="world-tool-btn active" data-tool="pencil" title="Pencil / Build (B)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </button>
+    <button class="world-tool-btn" data-tool="eraser" title="Eraser (E)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M20 20H7L3 16c-1-1-1-2.5 0-3.5l10-10c1-1 2.5-1 3.5 0l4 4c1 1 1 2.5 0 3.5L11 20"/><path d="M6 11l7 7"/></svg>
+    </button>
+    <button class="world-tool-btn" data-tool="picker" title="Eyedropper (I)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 2a2 2 0 0 1 2 2v2a2 2 0 0 1-.59 1.41l-3 3L15 8l-3-3 2.59-2.59A2 2 0 0 1 16 2h3z"/><path d="M11 7l3 3-8.5 8.5H3v-2.5L11 7z"/></svg>
+    </button>
+    <button class="world-tool-btn" data-tool="bucket" title="Bucket Fill (G)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 11L11 3 3 11l8 8 8-8z"/><path d="M11 3v8"/><path d="M21 15a2 2 0 1 1-4 0"/></svg>
+    </button>
+    <button class="world-tool-btn" data-tool="select" title="Area Select (S)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    </button>
+    <button class="world-tool-btn" id="world-flip-btn" title="Flip Block (F)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M8 7l-5 5 5 5V7z"/><path d="M16 7l5 5-5 5V7z"/><line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="2 2"/></svg>
+    </button>
+    <button class="world-tool-btn" id="world-weather-btn" title="Weather Background">
+      <img src="weather_icon.png" width="22" height="22" alt="Weather" style="object-fit:contain;vertical-align:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">
+    </button>
+    <button class="world-tool-btn" id="world-grid-toggle-btn" title="Grid Lines">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+    </button>
+    <div class="tool-separator"></div>
+    <button class="world-tool-btn" id="world-playmode-btn" title="Play Mode / Parkour Test (P)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
+    <button class="world-tool-btn" id="world-music-btn" title="Music Sequencer (M)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </button>
+    <div class="tool-separator"></div>
+    <button class="world-tool-btn" id="world-undo-btn" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+    </button>
+    <button class="world-tool-btn" id="world-redo-btn" title="Redo (Ctrl+Y / Ctrl+Shift+Z)">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+    </button>
+    <div class="tool-separator"></div>
+    <button class="world-tool-btn" id="world-settings-btn" title="World Menu">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </nav>
+</div>
+
+<!-- World Settings Dropdown -->
+<div id="world-menu-dropdown" class="hidden">
+  <div class="world-menu-header">World Management</div>
+  <button class="world-menu-item" id="world-menu-new-std">🌱 New Standard (100×60)</button>
+  <button class="world-menu-item" id="world-menu-new-flat">🧱 New Flat World</button>
+  <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
+  <button class="world-menu-item" id="world-menu-custom-size">📐 Custom World Size...</button>
+  <div class="world-menu-divider"></div>
+  <button class="world-menu-item" id="world-menu-open-file">📂 Open World (.DAT / .gtworld)</button>
+  <input type="file" id="world-file-input" accept=".dat,.json,.gtworld" style="display:none;">
+  <button class="world-menu-item" id="world-menu-save-dat">💾 Save World (.DAT)</button>
+  <button class="world-menu-item" id="world-menu-save-json">📦 Export .gtworld JSON</button>
+  <div class="world-menu-divider"></div>
+  <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
+</div>
+
+<!-- Custom World Size Modal -->
+<div id="world-size-modal" class="hidden">
+  <div class="custom-size-modal-inner">
+    <div class="picker-header" style="margin-bottom:8px;">
+      <h3 style="margin:0;font-size:16px;color:#f8fafc;">📐 Custom World Dimensions</h3>
+      <button class="picker-close" id="world-size-close-btn" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
+    </div>
+
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select a preset or enter custom tile dimensions:</div>
+    
+    <div class="size-presets-grid">
+      <button class="size-preset-btn active" data-w="100" data-h="60">🌱 Standard (100 × 60)</button>
+      <button class="size-preset-btn" data-w="60" data-h="60">⬜ Square (60 × 60)</button>
+      <button class="size-preset-btn" data-w="50" data-h="30">🔹 Small (50 × 30)</button>
+      <button class="size-preset-btn" data-w="25" data-h="15">🔸 Tiny (25 × 15)</button>
+      <button class="size-preset-btn" data-w="150" data-h="80">🏰 Large (150 × 80)</button>
+      <button class="size-preset-btn" data-w="200" data-h="100">👑 Epic (200 × 100)</button>
+    </div>
+
+    <div class="custom-dimension-inputs">
+      <div class="input-field-group">
+        <label for="custom-world-w">Width (Tiles, 10–200):</label>
+        <input type="number" id="custom-world-w" value="100" min="10" max="200" step="1">
+      </div>
+      <div class="input-field-group">
+        <label for="custom-world-h">Height (Tiles, 10–200):</label>
+        <input type="number" id="custom-world-h" value="60" min="10" max="200" step="1">
+      </div>
+      <div class="input-field-group">
+        <label for="custom-world-type">World Preset:</label>
+        <select id="custom-world-type">
+          <option value="standard">Standard World (Dirt & Bedrock)</option>
+          <option value="flat">Flat World (Bedrock Floor)</option>
+          <option value="blank">Blank World (Empty)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions-row">
+      <button class="btn-cancel" id="world-size-cancel-btn">Cancel</button>
+      <button class="btn-create" id="world-size-apply-btn">✨ Create World</button>
+    </div>
+  </div>
+</div>
+
+<!-- Render PNG Upscale Modal -->
+<div id="render-export-modal" class="hidden">
+  <div class="custom-size-modal-inner" style="max-width:440px;">
+    <div class="picker-header" style="margin-bottom:8px;">
+      <h3 style="margin:0;font-size:16px;color:#f8fafc;" id="render-modal-title">📸 Render PNG Image</h3>
+      <button class="picker-close" id="render-modal-close-btn" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
+    </div>
+
+    <div id="render-modal-desc" style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select resolution upscale multiplier:</div>
+
+    <div class="size-presets-grid" id="render-scale-grid" style="grid-template-columns:repeat(2, 1fr);margin-bottom:14px;">
+      <button class="size-preset-btn active" data-scale="1">
+        <strong>1× Original</strong><br><span style="font-size:11px;color:#94a3b8;">32px/tile (Standard)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="2">
+        <strong>2× HD Quality</strong><br><span style="font-size:11px;color:#94a3b8;">64px/tile (200%)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="3">
+        <strong>3× Ultra HD</strong><br><span style="font-size:11px;color:#94a3b8;">96px/tile (300%)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="4">
+        <strong>4× 4K Maximum</strong><br><span style="font-size:11px;color:#94a3b8;">128px/tile (400%)</span>
+      </button>
+    </div>
+
+    <div style="background:#090f1b;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:#94a3b8;">Estimated Resolution:</span>
+      <strong id="render-est-dim" style="font-size:13px;color:#38bdf8;">3200 × 1920 px</strong>
+    </div>
+
+    <div class="modal-actions-row">
+      <button class="btn-cancel" id="render-modal-cancel-btn">Cancel</button>
+      <button class="btn-create" id="render-modal-apply-btn">⬇️ Download PNG</button>
+    </div>
+  </div>
+</div>
+
+<!-- Weather Modal -->
+<div id="weather-modal">
+  <div class="weather-modal-inner" style="max-width:680px;">
+    <h3>🎨 Select Weather Background</h3>
+    <div id="weather-grid"></div>
+  </div>
+</div>
+
+<!-- Item Picker Modal -->
+<div id="item-picker-modal">
+  <div class="picker-inner">
+    <div class="picker-header">
+      <h3>🧱 Pick an Item</h3>
+      <button class="picker-close" id="picker-close-btn">×</button>
+    </div>
+    <div class="picker-filters" id="picker-filter-row">
+      <button class="picker-filter-btn active" data-cat="all">All</button>
+      <button class="picker-filter-btn" data-cat="fg">Blocks</button>
+      <button class="picker-filter-btn" data-cat="bg">Backgrounds</button>
+      <button class="picker-filter-btn" data-cat="furniture">Furniture</button>
+      <button class="picker-filter-btn" data-cat="door">Doors</button>
+      <button class="picker-filter-btn" data-cat="lock">Locks</button>
+      <button class="picker-filter-btn" data-cat="weather">Weather</button>
+      <button class="picker-filter-btn" data-cat="seed">Seeds</button>
+    </div>
+    <input type="text" id="picker-search" placeholder="Search item name or ID...">
+    <div id="picker-grid"></div>
+    <div class="picker-item-count" id="picker-count"></div>
+  </div>
+</div>
+
+<!-- Styles for Weather Cards & Modal -->
+<style>
+  .hidden { display: none !important; }
+  #world-size-modal, #render-export-modal { position: fixed; inset: 0; background: rgba(5, 8, 17, 0.82); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .custom-size-modal-inner { background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; width: 90%; max-width: 480px; padding: 20px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
+  .size-presets-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+  .size-preset-btn { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; padding: 8px 12px; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s ease; }
+  .size-preset-btn:hover { background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; }
+  .size-preset-btn.active { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; color: #fff; font-weight: 600; }
+  .custom-dimension-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .input-field-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-field-group label { font-size: 12px; color: #94a3b8; font-weight: 500; }
+  .input-field-group input, .input-field-group select { background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; color: #f8fafc; padding: 8px 12px; font-size: 13px; outline: none; }
+  .input-field-group input:focus, .input-field-group select:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25); }
+  .modal-actions-row { display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-cancel { background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #94a3b8; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+  .btn-cancel:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+  .btn-create { background: #0284c7; border: none; border-radius: 6px; color: #fff; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn-create:hover { background: #0369a1; }
+
+  #canvas-top-bars {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 95vw;
+  }
+
+  #world-selection-bar {
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 10px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    overflow-x: auto;
+  }
+
+  #playmode-hud {
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+  }
+
+  #music-sequencer-bar {
+    position: absolute;
+    bottom: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(0, 229, 255, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+  }
+
+  #weather-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 440px; overflow-y: auto; padding: 6px; }
+  .weather-card { background: rgba(15, 23, 42, 0.8); border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 8px; cursor: pointer; padding: 6px; text-align: center; transition: all 0.15s ease; }
+  .weather-card:hover { border-color: #38bdf8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25); }
+  .weather-card.active { border-color: #00e5ff; background: rgba(0, 229, 255, 0.18); box-shadow: 0 0 14px rgba(0, 229, 255, 0.4); }
+  .weather-thumb { width: 100%; height: 54px; border-radius: 4px; display: block; margin-bottom: 6px; object-fit: cover; background: #090f1b; }
+  .weather-card-label { font-size: 11px; color: #e2e8f0; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+<script src="lz-string.min.js"></script>
+<script src="world_catalog.js"></script>
+<script src="world_planner.js"></script>
+<script>
+(function initWorldPage() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+
+  let allItems = [];
+  let itemsLoaded = false;
+
+  const canvas = document.getElementById('world-canvas');
+  const worldNameDisplay = document.getElementById('world-name-display');
+  const worldSelectionBar = document.getElementById('world-selection-bar');
+
+  let engine;
+  try {
+    engine = window.GTWorldPlanner.createEngine({
+      canvas,
+      itemsDb: [],
+      catalog: window.GTWorldCatalog,
+      lzString: window.LZString,
+      onWorldChange: (w) => {
+        if (worldNameDisplay) worldNameDisplay.textContent = w.name || 'World';
+        if (worldSelectionBar) worldSelectionBar.classList.toggle('hidden', !engine.getSelection().active);
+      },
+      onToolChange: (toolName) => {
+        document.querySelectorAll('.world-tool-btn[data-tool]').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-tool') === toolName);
+        });
+        if (worldSelectionBar) worldSelectionBar.classList.toggle('hidden', !engine.getSelection().active);
+        const playmodeHud = document.getElementById('playmode-hud');
+        if (playmodeHud) playmodeHud.classList.toggle('hidden', !engine.isPlayMode());
+        const playBtn = document.getElementById('world-playmode-btn');
+        if (playBtn) playBtn.classList.toggle('active', engine.isPlayMode());
+      },
+      onHotbarChange: (hotbar, activeIdx) => renderHotbar(hotbar, activeIdx),
+      onStatusMessage: () => {}
+    });
+    engine.init();
+  } catch(err) {
+    console.error('Engine init error:', err);
+    loadingOverlay.innerHTML = `<div style="color:#f87171;font-size:16px;padding:20px;text-align:center">
+      Engine Error: ${err.message}<br><br>
+      <button onclick="location.reload()" style="padding:8px 20px;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;cursor:pointer">Retry</button>
+    </div>`;
+    return;
+  }
+
+  loadingOverlay.style.display = 'none';
+
+  // Background fetch items_db.json
+  fetch('items_db.json')
+    .then(r => r.json())
+    .then(data => {
+      allItems = data;
+      itemsLoaded = true;
+      if (engine && typeof engine.reloadItems === 'function') {
+        engine.reloadItems(allItems);
+      }
+    })
+    .catch(err => console.warn('Background items_db fetch failed:', err));
+
+  // ── Hotbar Render ──
+  function renderHotbar(hotbar, activeIdx) {
+    const container = document.getElementById('world-hotbar-slots');
+    if (!container) return;
+    container.innerHTML = '';
+    hotbar.forEach((item, idx) => {
+      const slot = document.createElement('div');
+      slot.className = `hotbar-slot ${idx === activeIdx ? 'active' : ''}`;
+      slot.title = item ? `#${item.id} ${item.name}` : `Slot ${idx+1} (Empty)`;
+      slot.dataset.slot = idx;
+
+      const num = document.createElement('span');
+      num.className = 'hotbar-slot-num';
+      num.textContent = idx < 9 ? idx + 1 : 0;
+      slot.appendChild(num);
+
+      if (item && item.texture) {
+        const c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        c.style.width = '36px'; c.style.height = '36px';
+        const ctx = c.getContext('2d');
+        const img = new Image();
+        img.src = `tilesheets/${item.texture}`;
+        img.onload = () => {
+          const sx = (item.tx !== undefined ? item.tx : (item.x || 0)) * 32;
+          const sy = (item.ty !== undefined ? item.ty : (item.y || 0)) * 32;
+          ctx.drawImage(img, sx, sy, 32, 32, 0, 0, 32, 32);
+        };
+        slot.appendChild(c);
+      } else if (item) {
+        slot.style.cssText = 'font-size:9px;color:var(--text-muted);text-align:center;padding:3px;';
+        slot.textContent += item.name?.slice(0, 6) || '?';
+      }
+
+      slot.addEventListener('click', () => engine.setActiveHotbarIndex(idx));
+      slot.addEventListener('contextmenu', (e) => { e.preventDefault(); openPickerForSlot(idx); });
+      container.appendChild(slot);
+    });
+  }
+  renderHotbar(engine.getHotbar(), engine.getActiveHotbarIndex());
+
+  // ── Tool Buttons ──
+  document.querySelectorAll('.world-tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => engine.setTool(btn.getAttribute('data-tool')));
+  });
+
+  // ── Zoom ──
+  document.getElementById('world-zoom-in-btn')?.addEventListener('click', () => engine.zoomIn());
+  document.getElementById('world-zoom-out-btn')?.addEventListener('click', () => engine.zoomOut());
+  document.getElementById('zoom-level-btn')?.addEventListener('click', () => engine.resetZoom());
+
+  // ── Flip / Grid / Undo / Redo ──
+  document.getElementById('world-flip-btn')?.addEventListener('click', () => engine.toggleFlip());
+  document.getElementById('world-grid-toggle-btn')?.addEventListener('click', () => engine.toggleGrid());
+  document.getElementById('world-undo-btn')?.addEventListener('click', () => engine.undo());
+  document.getElementById('world-redo-btn')?.addEventListener('click', () => engine.redo());
+
+  // ── Settings Menu ──
+  const menuDropdown = document.getElementById('world-menu-dropdown');
+  document.getElementById('world-settings-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuDropdown?.classList.toggle('hidden');
+  });
+  window.addEventListener('click', (e) => {
+    if (!menuDropdown?.contains(e.target) && e.target.id !== 'world-settings-btn') {
+      menuDropdown?.classList.add('hidden');
+    }
+  });
+  document.getElementById('world-menu-new-std')?.addEventListener('click', () => { engine.loadPreset('standard'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-flat')?.addEventListener('click', () => { engine.loadPreset('flat'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-blank')?.addEventListener('click', () => { engine.loadPreset('blank'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-save-dat')?.addEventListener('click', () => { engine.exportToDAT(); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-save-json')?.addEventListener('click', () => { engine.exportToJSON(); menuDropdown?.classList.add('hidden'); });
+
+  // ── Custom World Size Modal Handlers ──
+  const sizeModal = document.getElementById('world-size-modal');
+  const customWInput = document.getElementById('custom-world-w');
+  const customHInput = document.getElementById('custom-world-h');
+  const customTypeSelect = document.getElementById('custom-world-type');
+
+  document.getElementById('world-menu-custom-size')?.addEventListener('click', () => {
+    menuDropdown?.classList.add('hidden');
+    const cur = engine.getWorldState();
+    if (customWInput) customWInput.value = cur.width || 100;
+    if (customHInput) customHInput.value = cur.height || 60;
+    sizeModal?.classList.remove('hidden');
+  });
+
+  document.getElementById('world-size-close-btn')?.addEventListener('click', () => sizeModal?.classList.add('hidden'));
+  document.getElementById('world-size-cancel-btn')?.addEventListener('click', () => sizeModal?.classList.add('hidden'));
+  sizeModal?.addEventListener('click', (e) => { if (e.target === sizeModal) sizeModal.classList.add('hidden'); });
+
+  document.querySelectorAll('.size-preset-btn[data-w]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-preset-btn[data-w]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const w = btn.getAttribute('data-w');
+      const h = btn.getAttribute('data-h');
+      if (customWInput) customWInput.value = w;
+      if (customHInput) customHInput.value = h;
+    });
+  });
+
+  document.getElementById('world-size-apply-btn')?.addEventListener('click', () => {
+    const w = parseInt(customWInput?.value, 10) || 100;
+    const h = parseInt(customHInput?.value, 10) || 60;
+    const preset = customTypeSelect?.value || 'standard';
+    engine.createCustomWorld(w, h, preset);
+    sizeModal?.classList.add('hidden');
+  });
+
+  const fileInput = document.getElementById('world-file-input');
+  document.getElementById('world-menu-open-file')?.addEventListener('click', () => { fileInput?.click(); menuDropdown?.classList.add('hidden'); });
+  fileInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        if (file.name.endsWith('.dat')) engine.importFromDAT(evt.target.result);
+        else engine.importFromJSON(evt.target.result);
+      } catch(err) { alert('Gagal membuka: ' + err.message); }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+
+  // Restore autosaved world if available
+  engine.loadFromLocalStorage();
+  window.addEventListener('beforeunload', () => engine.saveToLocalStorage());
+
+  // ── Render / Export PNG Upscale Modal Handlers ──
+  const renderModal = document.getElementById('render-export-modal');
+  const renderModalTitle = document.getElementById('render-modal-title');
+  const renderModalDesc = document.getElementById('render-modal-desc');
+  const renderEstDim = document.getElementById('render-est-dim');
+  let renderExportIsSelection = false;
+  let renderExportScale = 1;
+
+  function updateRenderEstimate() {
+    const curWorld = engine.getWorldState();
+    let tileW = curWorld.width;
+    let tileH = curWorld.height;
+
+    if (renderExportIsSelection) {
+      const sel = engine.getSelection();
+      if (sel.active) {
+        tileW = Math.abs(sel.endX - sel.startX) + 1;
+        tileH = Math.abs(sel.endY - sel.startY) + 1;
+      }
+    }
+
+    const pxW = tileW * 32 * renderExportScale;
+    const pxH = tileH * 32 * renderExportScale;
+    const mp = ((pxW * pxH) / 1000000).toFixed(1);
+    if (renderEstDim) {
+      renderEstDim.textContent = `${pxW.toLocaleString()} × ${pxH.toLocaleString()} px (${mp} MP)`;
+    }
+  }
+
+  function openRenderModal(isSelection = false) {
+    renderExportIsSelection = isSelection;
+    renderExportScale = 1;
+    document.querySelectorAll('#render-scale-grid .size-preset-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-scale') === '1');
+    });
+
+    if (isSelection) {
+      if (renderModalTitle) renderModalTitle.textContent = '✂️ Render Selection PNG';
+      if (renderModalDesc) renderModalDesc.textContent = 'Export selected area with optional upscale (1x, 2x, 3x, 4x):';
+    } else {
+      if (renderModalTitle) renderModalTitle.textContent = '📸 Render Full World PNG';
+      if (renderModalDesc) renderModalDesc.textContent = 'Export complete world map with optional upscale (1x, 2x, 3x, 4x):';
+    }
+
+    updateRenderEstimate();
+    renderModal?.classList.remove('hidden');
+  }
+
+  document.getElementById('world-menu-render-png')?.addEventListener('click', () => {
+    menuDropdown?.classList.add('hidden');
+    openRenderModal(false);
+  });
+
+  document.getElementById('render-modal-close-btn')?.addEventListener('click', () => renderModal?.classList.add('hidden'));
+  document.getElementById('render-modal-cancel-btn')?.addEventListener('click', () => renderModal?.classList.add('hidden'));
+  renderModal?.addEventListener('click', (e) => { if (e.target === renderModal) renderModal.classList.add('hidden'); });
+
+  document.querySelectorAll('#render-scale-grid .size-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#render-scale-grid .size-preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderExportScale = parseInt(btn.getAttribute('data-scale'), 10) || 1;
+      updateRenderEstimate();
+    });
+  });
+
+  document.getElementById('render-modal-apply-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('render-modal-apply-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Rendering...';
+    }
+    try {
+      await engine.exportToPNG({ onlySelection: renderExportIsSelection, scale: renderExportScale });
+    } catch(err) {
+      console.error('Render error:', err);
+      alert('Gagal render: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⬇️ Download PNG';
+      }
+      renderModal?.classList.add('hidden');
+    }
+  });
+
+  // ── Selection Bar & Clipboard Handlers ──
+  document.getElementById('world-copy-selection-btn')?.addEventListener('click', () => engine.copySelection());
+  document.getElementById('world-cut-selection-btn')?.addEventListener('click', () => engine.cutSelection());
+  document.getElementById('world-paste-btn')?.addEventListener('click', () => engine.startPasteMode());
+  document.getElementById('world-flip-h-selection-btn')?.addEventListener('click', () => engine.flipSelectionHorizontal());
+  document.getElementById('world-flip-v-selection-btn')?.addEventListener('click', () => engine.flipSelectionVertical());
+  document.getElementById('world-render-selection-btn')?.addEventListener('click', () => openRenderModal(true));
+  document.getElementById('world-fill-selection-btn')?.addEventListener('click', () => {
+    const h = engine.getHotbar(); engine.fillSelectionTiles(h[engine.getActiveHotbarIndex()]);
+  });
+  document.getElementById('world-clear-selection-btn')?.addEventListener('click', () => engine.clearSelectionTiles());
+  document.getElementById('world-cancel-selection-btn')?.addEventListener('click', () => engine.setTool('pencil'));
+
+  // ── Play Mode / Parkour Tester Handlers ──
+  const playmodeHud = document.getElementById('playmode-hud');
+  const playmodeBtn = document.getElementById('world-playmode-btn');
+
+  playmodeBtn?.addEventListener('click', () => {
+    const active = engine.togglePlayMode();
+    playmodeHud?.classList.toggle('hidden', !active);
+    playmodeBtn?.classList.toggle('active', active);
+    if (active) {
+      document.getElementById('world-selection-bar')?.classList.add('hidden');
+    }
+  });
+  document.getElementById('playmode-mod-btn')?.addEventListener('click', () => {
+    engine.toggleModeratorMode();
+  });
+  document.getElementById('playmode-respawn-btn')?.addEventListener('click', () => engine.respawnPlayer("Respawned at spawn door!"));
+  document.getElementById('playmode-exit-btn')?.addEventListener('click', () => {
+    engine.togglePlayMode(false);
+    playmodeHud?.classList.add('hidden');
+    playmodeBtn?.classList.remove('active');
+  });
+
+  // ── Music Sequencer Bar Handlers ──
+  const musicBar = document.getElementById('music-sequencer-bar');
+  const musicBtn = document.getElementById('world-music-btn');
+  const musicPlayBtn = document.getElementById('music-play-btn');
+  const musicBpmSlider = document.getElementById('music-bpm-slider');
+  const musicBpmVal = document.getElementById('music-bpm-val');
+  const musicLoopBtn = document.getElementById('music-loop-btn');
+
+  musicBtn?.addEventListener('click', () => {
+    musicBar?.classList.toggle('hidden');
+    musicBtn?.classList.toggle('active', !musicBar?.classList.contains('hidden'));
+  });
+
+  musicPlayBtn?.addEventListener('click', () => {
+    const isPlaying = engine.toggleMusic();
+    if (musicPlayBtn) musicPlayBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+    if (musicPlayBtn) musicPlayBtn.classList.toggle('btn-green', isPlaying);
+  });
+
+  musicBpmSlider?.addEventListener('input', (e) => {
+    const bpm = parseInt(e.target.value, 10) || 100;
+    if (musicBpmVal) musicBpmVal.textContent = bpm;
+    engine.setMusicBpm(bpm);
+  });
+
+  musicLoopBtn?.addEventListener('click', () => {
+    const state = engine.getMusicState();
+    state.loop = !state.loop;
+    musicLoopBtn.classList.toggle('active', state.loop);
+    musicLoopBtn.style.color = state.loop ? '#00e5ff' : '#94a3b8';
+  });
+
+  document.getElementById('music-close-btn')?.addEventListener('click', () => {
+    engine.toggleMusic(false);
+    if (musicPlayBtn) {
+      musicPlayBtn.textContent = '▶ Play';
+      musicPlayBtn.classList.remove('btn-green');
+    }
+    musicBar?.classList.add('hidden');
+    musicBtn?.classList.remove('active');
+  });
+
+  // ── Add Block Button ──
+  document.getElementById('world-add-block-btn')?.addEventListener('click', () => openPickerForSlot(engine.getActiveHotbarIndex()));
+
+  // ── Item Picker Modal with Scroll Preservation & Strict Filtering ──
+  let pickerTargetSlot = 0;
+  let pickerFilter = 'all';
+  let pickerSearch = '';
+  let currentMatchingItems = [];
+  let pickerVisibleLimit = 120;
+  let lastPickerScrollTop = 0;
+  let lastRenderedFilter = 'all';
+  let lastRenderedSearch = '';
+
+  const pickerGridEl = document.getElementById('picker-grid');
+  pickerGridEl?.addEventListener('scroll', () => {
+    lastPickerScrollTop = pickerGridEl.scrollTop;
+    if (pickerGridEl.scrollTop + pickerGridEl.clientHeight >= pickerGridEl.scrollHeight - 150) {
+      if (pickerVisibleLimit < currentMatchingItems.length) {
+        pickerVisibleLimit += 120;
+        appendPickerItems();
+      }
+    }
+  });
+
+  async function openPickerForSlot(slot) {
+    pickerTargetSlot = slot;
+    const modal = document.getElementById('item-picker-modal');
+    modal?.classList.add('open');
+    while (!itemsLoaded && allItems.length === 0) {
+      await new Promise(res => setTimeout(res, 100));
+    }
+    
+    if (pickerGridEl.children.length > 0 && pickerFilter === lastRenderedFilter && pickerSearch === lastRenderedSearch) {
+      pickerGridEl.scrollTop = lastPickerScrollTop;
+    } else {
+      pickerVisibleLimit = 120;
+      renderPickerGrid();
+    }
+    document.getElementById('picker-search')?.focus();
+  }
+
+  document.getElementById('picker-close-btn')?.addEventListener('click', () => {
+    document.getElementById('item-picker-modal')?.classList.remove('open');
+  });
+  document.getElementById('item-picker-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'item-picker-modal') document.getElementById('item-picker-modal')?.classList.remove('open');
+  });
+  document.getElementById('picker-search')?.addEventListener('input', (e) => {
+    pickerSearch = e.target.value.toLowerCase();
+    pickerVisibleLimit = 120;
+    renderPickerGrid();
+  });
+  document.getElementById('picker-filter-row')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.picker-filter-btn');
+    if (!btn) return;
+    pickerFilter = btn.dataset.cat;
+    document.querySelectorAll('.picker-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === pickerFilter));
+    pickerVisibleLimit = 120;
+    renderPickerGrid();
+  });
+
+  function renderPickerGrid() {
+    const grid = document.getElementById('picker-grid');
+    const countEl = document.getElementById('picker-count');
+    if (!grid) return;
+    grid.innerHTML = '';
+    lastRenderedFilter = pickerFilter;
+    lastRenderedSearch = pickerSearch;
+
+    const catObj = window.GTWorldCatalog;
+
+    currentMatchingItems = allItems.filter(item => {
+      const cat = String(item.category || "");
+      const nameLow = String(item.name || "").toLowerCase();
+      const isBg = catObj.isBackgroundItem(item);
+      const isSeed = nameLow.endsWith("seed") || nameLow.includes(" seed") || item.action === 19 || cat === "Seeds";
+
+      if (pickerFilter === 'seed') {
+        if (!isSeed || !item.texture || nameLow.startsWith("item #")) return false;
+      } else {
+        if (!catObj.isPlaceableItem(item)) return false;
+
+        // Category tab filter
+        if (pickerFilter === 'fg') {
+          if (isBg) return false;
+        } else if (pickerFilter === 'bg') {
+          if (!isBg) return false;
+        } else if (pickerFilter === 'furniture') {
+          const isFurn = (
+            cat === 'Furniture & Doors' ||
+            nameLow.includes('couch') || nameLow.includes('table') || nameLow.includes('chair') ||
+            nameLow.includes('bed') || nameLow.includes('shelf') || nameLow.includes('display') ||
+            nameLow.includes('vending') || nameLow.includes('sign') || nameLow.includes('light') ||
+            nameLow.includes('lamp') || nameLow.includes('bench') || nameLow.includes('cabinet') ||
+            nameLow.includes('statue') || nameLow.includes('clock') || nameLow.includes('fountain') ||
+            nameLow.includes('desk') || nameLow.includes('piano') || nameLow.includes('easel') ||
+            nameLow.includes('tv') || nameLow.includes('oven') || nameLow.includes('mannequin')
+          );
+          if (!isFurn || nameLow.includes('door') || nameLow.includes('portal')) return false;
+        } else if (pickerFilter === 'door') {
+          const isDoor = nameLow.includes('door') || nameLow.includes('portal') || nameLow.includes('entrance') || nameLow.includes('gate') || nameLow.includes('passage') || item.action === 13 || item.action === 26 || item.action === 9;
+          if (!isDoor) return false;
+        } else if (pickerFilter === 'lock') {
+          const isLock = cat === 'Locks & Keys' || nameLow.includes('lock') || nameLow.includes('jammer') || item.action === 3;
+          if (!isLock) return false;
+        } else if (pickerFilter === 'weather') {
+          const isWeather = nameLow.includes('weather machine') || nameLow.includes('weather') || item.action === 81 || item.action === 89 || item.action === 134;
+          if (!isWeather) return false;
+        }
+      }
+
+      // Search query filter
+      if (pickerSearch) {
+        const q = pickerSearch;
+        if (!String(item.id).includes(q) && !nameLow.includes(q)) return false;
+      }
+      return true;
+    });
+
+    if (countEl) {
+      countEl.textContent = `Showing ${Math.min(pickerVisibleLimit, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+    }
+
+    appendPickerItems();
+    grid.scrollTop = 0;
+    lastPickerScrollTop = 0;
+  }
+
+  function appendPickerItems() {
+    const grid = document.getElementById('picker-grid');
+    const countEl = document.getElementById('picker-count');
+    if (!grid) return;
+
+    const startIdx = grid.children.length;
+    const itemsToAppend = currentMatchingItems.slice(startIdx, pickerVisibleLimit);
+
+    const catObj = window.GTWorldCatalog;
+
+    itemsToAppend.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'picker-item';
+      el.title = `#${item.id} ${item.name} (${catObj.isBackgroundItem(item) ? 'Background' : 'Block'})`;
+
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      c.style.width = '36px'; c.style.height = '36px';
+      const ctx = c.getContext('2d');
+      const img = new Image();
+      img.src = `tilesheets/${item.texture}`;
+      img.onload = () => {
+        const sx = (item.tx !== undefined ? item.tx : (item.x || 0)) * 32;
+        const sy = (item.ty !== undefined ? item.ty : (item.y || 0)) * 32;
+        ctx.drawImage(img, sx, sy, 32, 32, 0, 0, 32, 32);
+      };
+      el.appendChild(c);
+
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'picker-item-label';
+      nameLabel.textContent = item.name || `Item #${item.id}`;
+      el.appendChild(nameLabel);
+
+      el.addEventListener('click', () => {
+        engine.setHotbarItem(pickerTargetSlot, item);
+        engine.setActiveHotbarIndex(pickerTargetSlot);
+        document.getElementById('item-picker-modal')?.classList.remove('open');
+      });
+      grid.appendChild(el);
+    });
+
+    if (countEl) {
+      countEl.textContent = `Showing ${Math.min(grid.children.length, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+    }
+  }
+
+  // ── Weather Modal with Thumbnail Cards ──
+  const weatherModal = document.getElementById('weather-modal');
+  document.getElementById('world-weather-btn')?.addEventListener('click', () => {
+    weatherModal?.classList.toggle('open');
+    if (weatherModal?.classList.contains('open')) renderWeatherGrid();
+  });
+  weatherModal?.addEventListener('click', (e) => { if (e.target === weatherModal) weatherModal.classList.remove('open'); });
+
+  function renderWeatherGrid() {
+    const grid = document.getElementById('weather-grid');
+    if (!grid || !window.GTWorldCatalog) return;
+    grid.innerHTML = '';
+    const weathers = window.GTWorldCatalog.getWeathers?.() || window.GTWorldCatalog.WEATHERS || [];
+    const current = engine.getWeather();
+    weathers.forEach(w => {
+      const el = document.createElement('div');
+      el.className = `weather-card ${w.id === current ? 'active' : ''}`;
+
+      const thumb = document.createElement('canvas');
+      thumb.width = 120; thumb.height = 68;
+      thumb.className = 'weather-thumb';
+      const tCtx = thumb.getContext('2d');
+
+      if (w.id === 'TRANSPARENT') {
+        tCtx.fillStyle = '#0f172a';
+        tCtx.fillRect(0, 0, 120, 68);
+        tCtx.fillStyle = '#1e293b';
+        for (let y = 0; y < 68; y += 12) {
+          for (let x = 0; x < 120; x += 12) {
+            if (((x / 12) + (y / 12)) % 2 === 0) tCtx.fillRect(x, y, 12, 12);
+          }
+        }
+      } else if (w.file) {
+        const img = new Image();
+        img.src = `weather/${w.file}`;
+        img.onload = () => { tCtx.drawImage(img, 0, 0, 120, 68); };
+        img.onerror = () => {
+          const grad = tCtx.createLinearGradient(0, 0, 0, 68);
+          grad.addColorStop(0, '#1a2c42'); grad.addColorStop(1, '#0b1522');
+          tCtx.fillStyle = grad; tCtx.fillRect(0, 0, 120, 68);
+        };
+      } else {
+        tCtx.fillStyle = '#0b1522';
+        tCtx.fillRect(0, 0, 120, 68);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'weather-card-label';
+      label.textContent = w.name || w.id;
+
+      el.appendChild(thumb);
+      el.appendChild(label);
+
+      el.addEventListener('click', () => {
+        engine.setWeather(w.id);
+        document.querySelectorAll('.weather-card').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+      });
+      grid.appendChild(el);
+    });
+  }
+
+  // ── Keyboard Shortcuts ──
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const k = e.key.toLowerCase();
+    if (k === 'b') engine.setTool('pencil');
+    else if (k === 'e') engine.setTool('eraser');
+    else if (k === 'i') engine.setTool('picker');
+    else if (k === 'g') engine.setTool('bucket');
+    else if (k === 's' && !e.ctrlKey) engine.setTool('select');
+    else if (k === 'f') engine.toggleFlip();
+    else if (k === '+' || k === '=') engine.zoomIn();
+    else if (k === '-') engine.zoomOut();
+    else if (k === '0') engine.resetZoom();
+    else if (e.ctrlKey && k === 'z') { e.preventDefault(); engine.undo(); }
+    else if (e.ctrlKey && (k === 'y' || (e.shiftKey && k === 'z'))) { e.preventDefault(); engine.redo(); }
+    else if (k >= '1' && k <= '9') engine.setActiveHotbarIndex(parseInt(k) - 1);
+  });
+
+})();
+</script>
+</body>
+</html>

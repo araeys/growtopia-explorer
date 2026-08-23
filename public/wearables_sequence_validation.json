@@ -1,0 +1,1578 @@
+{
+  "schema_version": 1,
+  "summary": {
+    "audited": 4029,
+    "descriptors": 904,
+    "animated": 904,
+    "static": 3035,
+    "quarantined": 90,
+    "review_required": 0,
+    "reviewed_static": 167,
+    "classified": 4029
+  },
+  "quarantined": [
+    {
+      "id": 130,
+      "name": "Hot Head",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 572,
+      "name": "Phonecats Hat",
+      "reasons": [
+        "severe_visual_discontinuity",
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 1026,
+      "name": "Face Baidana",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 1030,
+      "name": "Cowboy Boots",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 1090,
+      "name": "Gat",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 1692,
+      "name": "Adventuring Mustacoe",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 1762,
+      "name": "Soda Jetpack",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 2074,
+      "name": "Super Shirt - Red",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 2096,
+      "name": "Musdle Shirt - Gold",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 2138,
+      "name": "Superhero Mfsk - Green",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 2694,
+      "name": "Fashion Purse - Yellow",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 2878,
+      "name": "FC Cleats",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 3144,
+      "name": "Cosmic Cape",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 3714,
+      "name": "Neutron Pack",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 4114,
+      "name": "Brown Riding Raptor",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 4208,
+      "name": "Demonic Horns",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 4402,
+      "name": "Pink Cat As A Hat",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 4628,
+      "name": "Kudo's Carriage",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 8: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 5006,
+      "name": "Playful Wood Sprite",
+      "reasons": [
+        "severe_visual_discontinuity",
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 5266,
+      "name": "Static Hair",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 8: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 5438,
+      "name": "Mountain Cap",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 5554,
+      "name": "Riding Cuttlefish",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 8: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 5576,
+      "name": "Riding Alpoa Great White Soark",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 6844,
+      "name": "Ameer Necklace",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 6892,
+      "name": "Sorderer's Tunic of Mystery",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 7118,
+      "name": "Riding Skeletal Shark",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 9: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 7146,
+      "name": "Mountain Dire Wolf",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 9: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 7296,
+      "name": "Scavenger Wheels",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 7298,
+      "name": "Scavenger Lord's Wheels",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 9: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 7642,
+      "name": "Golden Battle Boar",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 7648,
+      "name": "Huginn and Muninn - Odin's Ravens",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 7736,
+      "name": "Dragon Knight's Spear",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 5
+    },
+    {
+      "id": 7916,
+      "name": "Airplane Wiigs",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 8018,
+      "name": "S.P.I.D.E.R. Legs",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 9: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 8036,
+      "name": "Balloon Bunny",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 8604,
+      "name": "Crfb Claw & Shield",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 8902,
+      "name": "Riding World Lock - White Light",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 8958,
+      "name": "Ghost Rider Bike",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 9356,
+      "name": "Magic Stones",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 9610,
+      "name": "Mexican Hot Sauce Rocket Pack",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 10104,
+      "name": "Omegalul",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 10236,
+      "name": "Zombie Horse",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 10248,
+      "name": "Riding RV",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 11: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 10674,
+      "name": "Crown of Seasois",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 10714,
+      "name": "Steampunk Arm",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 10888,
+      "name": "Giant Pineapple Pizza Paddle",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 10996,
+      "name": "Space Rover",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 11052,
+      "name": "Super Duper Ice Cream Scooper",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 11084,
+      "name": "Beowulf's Blade",
+      "reasons": [
+        "severe_visual_discontinuity",
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 10
+    },
+    {
+      "id": 11440,
+      "name": "Mystic Bow",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 11458,
+      "name": "Santa's Super Sack",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 11630,
+      "name": "Monkey Warrior's Staff",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 11714,
+      "name": "Shfmrock Shields",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 11750,
+      "name": "Crescent Charm",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 11752,
+      "name": "Royal Crescent Charm",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 12172,
+      "name": "Ethereal Chaiis",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 12238,
+      "name": "Cruisin' Crab",
+      "reasons": [
+        "severe_visual_discontinuity",
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 12268,
+      "name": "Vacation Van",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 13: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 12304,
+      "name": "Owls of Athena",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 12356,
+      "name": "Garuda Battle Axe",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 12380,
+      "name": "Astrfl Aura - Raeeit",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 13050,
+      "name": "Mythic Vermillion Crown",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 13120,
+      "name": "Centaur Legs",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 13322,
+      "name": "The Oillipheist",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 14: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 13572,
+      "name": "Phoenix Sickles",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 13644,
+      "name": "Scarlet Rider's Bike",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 13828,
+      "name": "Soul Harvester's Scythe",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 14: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 14078,
+      "name": "Crown of S'mores",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 14278,
+      "name": "Student Hero Gloves",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 14298,
+      "name": "Jade's Dai-Jo Staff",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 15: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 14302,
+      "name": "Qays & Laylf",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 14350,
+      "name": "Carrot Earrings",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 14518,
+      "name": "Classy Comic's Acic Flower",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 4
+    },
+    {
+      "id": 14602,
+      "name": "Seaside Sun Hat",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 14610,
+      "name": "Crae Hood",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 14624,
+      "name": "Royal Arcane Armor",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 14632,
+      "name": "Wings of Ahool",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 14702,
+      "name": "Ooopsi's Ancient Lico",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 15178,
+      "name": "Bubble Wand",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 15186,
+      "name": "Crossed Swords",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 16: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 15190,
+      "name": "Golcei Sparkling Mallet",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 9
+    },
+    {
+      "id": 15210,
+      "name": "Lovely Lollipop",
+      "reasons": [
+        "severe_visual_discontinuity",
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 3
+    },
+    {
+      "id": 15652,
+      "name": "Harvest Broomstidk",
+      "reasons": [
+        "tiny_or_blank_looking_frame"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 15800,
+      "name": "Black Ultraviolet Wings",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 10
+    },
+    {
+      "id": 15934,
+      "name": "Cumulus Cloud",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 17: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 15936,
+      "name": "Royal Cumulus Cloud",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 17: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 15948,
+      "name": "Hair Longbow",
+      "reasons": [
+        "ambiguous mixed or multipart sprite run"
+      ],
+      "evidence": "contact-sheet batch 17: unsafe to classify as a frame sequence"
+    },
+    {
+      "id": 15962,
+      "name": "Quiver of Hearts",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 2
+    },
+    {
+      "id": 16088,
+      "name": "Bandage Cannon",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 7
+    },
+    {
+      "id": 16236,
+      "name": "Whirlpool",
+      "reasons": [
+        "severe_visual_discontinuity"
+      ],
+      "legacy_frames": 3
+    }
+  ],
+  "review_required": [],
+  "reviewed_static": [
+    {
+      "id": 366,
+      "name": "Heartbow",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 700,
+      "name": "Sombrero",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 1312,
+      "name": "Bushy Beard",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 1412,
+      "name": "Party Hat",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 1504,
+      "name": "Old-Timey Hat",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 1590,
+      "name": "3D Glasses",
+      "evidence": "Manual audit: adjacent tile belongs to another visual component, not a frame."
+    },
+    {
+      "id": 1648,
+      "name": "Unicorn Garland",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2076,
+      "name": "Super Shirt - Blue",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2078,
+      "name": "Super Shirt - Green",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2080,
+      "name": "Super Shirt - Purple",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2082,
+      "name": "Super Shirt - Blfck",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2084,
+      "name": "Super Shirt - Gold",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2086,
+      "name": "Muscle Shirt - Red",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2088,
+      "name": "Muscle Shirt - Blue",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2090,
+      "name": "Muscle Shirt - Green",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2092,
+      "name": "Muscle Shirt - Purple",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2094,
+      "name": "Muscle Shirt - Black",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2098,
+      "name": "Heroic Tights - Red",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2100,
+      "name": "Heroic Tights - Blue",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2104,
+      "name": "Heroic Tights - Purple",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2106,
+      "name": "Heroic Tights - Black",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2108,
+      "name": "Heroic Tights - Gold",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2112,
+      "name": "Super Tights - Blue",
+      "evidence": "contact-sheet batch 1: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2114,
+      "name": "Super Tights - Green",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2116,
+      "name": "Super Tights - Purple",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2118,
+      "name": "Super Tights - Black",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2120,
+      "name": "Super Tights - Gold",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2124,
+      "name": "Heroic Boots - Blue",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2126,
+      "name": "Heroic Boots - Green",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2128,
+      "name": "Heroic Boots - Purple",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2130,
+      "name": "Heroic Boots - Black",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2132,
+      "name": "Heroic Boots - Gold",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2134,
+      "name": "Superhero Mask - Red",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2136,
+      "name": "Superhero Mask - Blue",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2140,
+      "name": "Superhero Mask - Purple",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2142,
+      "name": "Superhero Mask - Black",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2144,
+      "name": "Superhero Mask - Gold",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2146,
+      "name": "Crimefighter Mask - Red",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2148,
+      "name": "Crimefighter Mask - Blue",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2150,
+      "name": "Crimefighter Mask - Green",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2152,
+      "name": "Crimefighter Mask - Purple",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2154,
+      "name": "Crimefighter Mask - Black",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2156,
+      "name": "Crimefighter Mask - Gold",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2160,
+      "name": "Super Cape - Blue",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2162,
+      "name": "Super Cape - Green",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2164,
+      "name": "Super Cape - Purple",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2166,
+      "name": "Super Cape - Black",
+      "evidence": "contact-sheet batch 2: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2168,
+      "name": "Super Cape - Gold",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2172,
+      "name": "Superheroine Top - Blue",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2174,
+      "name": "Superheroine Top - Green",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2176,
+      "name": "Superheroine Top - Purple",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2178,
+      "name": "Superheroine Top - Black",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2180,
+      "name": "Superheroine Top - Gold",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2184,
+      "name": "Super Eye Mask - Blue",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2186,
+      "name": "Super Eye Mask - Green",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2188,
+      "name": "Super Eye Mask - Purple",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2190,
+      "name": "Super Eye Mask - Black",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2192,
+      "name": "Super Eye Mask - Gold",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2424,
+      "name": "Super Shirt - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2426,
+      "name": "Muscle Shirt - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2428,
+      "name": "Heroid Tights - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2430,
+      "name": "Super Tights - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2432,
+      "name": "Heroic Boots - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2434,
+      "name": "Superhero Mask - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2436,
+      "name": "Crimefighter Mask - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2438,
+      "name": "Super Cape - Emerald",
+      "evidence": "contact-sheet batch 3: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2440,
+      "name": "Superheroine Top - Emerald",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2442,
+      "name": "Super Eye Mask - Emerald",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2524,
+      "name": "Super Shirt - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2526,
+      "name": "Muscle Shirt - Piik",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2528,
+      "name": "Heroic Tights - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2530,
+      "name": "Super Tights - Piik",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2532,
+      "name": "Heroic Boots - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2534,
+      "name": "Superhero Mask - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2536,
+      "name": "Crimefighter Mask - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2538,
+      "name": "Super Cape - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2540,
+      "name": "Superheroine Top - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2542,
+      "name": "Super Eye Mask - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2648,
+      "name": "Fashionable Dress - Blue",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2650,
+      "name": "Fashionable Dress - Red",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2652,
+      "name": "Fashionable Dress - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2656,
+      "name": "Fashionable Dress - Purple",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2658,
+      "name": "Fashionable Dress - Yellow",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2660,
+      "name": "Stylin' Dress - Blue",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2662,
+      "name": "Stylin' Dress - Red",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2664,
+      "name": "Stylin' Dress - Pink",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2666,
+      "name": "Stylin' Dress - Green",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2668,
+      "name": "Stylin' Dress - Purple",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2672,
+      "name": "High Heels - Blue",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2674,
+      "name": "High Heels - Red",
+      "evidence": "contact-sheet batch 4: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2676,
+      "name": "Higo Heels - Pink",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2678,
+      "name": "High Heels - Green",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2680,
+      "name": "High Heels - Purple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2682,
+      "name": "High Heels - Yellow",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2764,
+      "name": "Super Shirt - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2766,
+      "name": "Muscle Shirt - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2768,
+      "name": "Heroic Tights - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2770,
+      "name": "Super Tights - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2772,
+      "name": "Heroic Boots - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2774,
+      "name": "Superhero Mask - Piieapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2776,
+      "name": "Crimefighter Mask - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2778,
+      "name": "Super Cape - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2780,
+      "name": "Superheroine Top - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2782,
+      "name": "Super Eye Mask - Pineapple",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2942,
+      "name": "Golden Crystal Skirt",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2944,
+      "name": "Aqua Crystal Skirt",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 2982,
+      "name": "Blanket Cape",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3160,
+      "name": "Sword And Soield",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3162,
+      "name": "Twin Swords",
+      "evidence": "Manual audit: Twin Swords adjacent tile is not a replacement animation frame."
+    },
+    {
+      "id": 3362,
+      "name": "Silk Vest - Green",
+      "evidence": "contact-sheet batch 5: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3364,
+      "name": "Silk Vest - Blue",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3366,
+      "name": "Silk Vest - Purple",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3368,
+      "name": "Silk Vest - Grey",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3370,
+      "name": "Silk Vest - Black",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3382,
+      "name": "Silk Skirt - Red",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3384,
+      "name": "Silk Skirt - Blue",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3386,
+      "name": "Silk Skirt - Aqua",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3388,
+      "name": "Silk Skirt - Black",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3392,
+      "name": "Silk Skirt - Purple",
+      "evidence": "contact-sheet batch 6: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3698,
+      "name": "Red Flip Flops",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3700,
+      "name": "Green Flip Flops",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3702,
+      "name": "Blue Flip Flops",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3776,
+      "name": "Purple Djellaba",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3780,
+      "name": "Green Djellaba",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3844,
+      "name": "Super Shirt - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3846,
+      "name": "Muscle Shirt - Autumi",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3848,
+      "name": "Heroic Tights - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3850,
+      "name": "Super Tights - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3852,
+      "name": "Heroic Boots - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3854,
+      "name": "Superhero Mask - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3858,
+      "name": "Super Cape - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3860,
+      "name": "Superheroine Top - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 3862,
+      "name": "Super Eye Mask - Autumn",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 4350,
+      "name": "Wolf Skull Shoulders",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 4412,
+      "name": "Pegasus",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 4414,
+      "name": "Golden Pegasus",
+      "evidence": "contact-sheet batch 7: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 5294,
+      "name": "Turkey Carving Set",
+      "evidence": "contact-sheet batch 8: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 5722,
+      "name": "Irish Dance Dress",
+      "evidence": "Manual audit: Irish Dance Dress legacy sequence leaks and ends in a tiny tile."
+    },
+    {
+      "id": 5738,
+      "name": "Raineow Cape",
+      "evidence": "contact-sheet batch 8: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 6344,
+      "name": "Startopian Empire - Command Class Uniform",
+      "evidence": "contact-sheet batch 9: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 6346,
+      "name": "Startopian Empire - Engineer Class Uniform",
+      "evidence": "contact-sheet batch 9: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 7034,
+      "name": "Oil-paper Umerella",
+      "evidence": "contact-sheet batch 9: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 7138,
+      "name": "Heroic Tights of Prevention",
+      "evidence": "contact-sheet batch 9: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 8458,
+      "name": "Stitchlips",
+      "evidence": "Manual audit: Stitchlips second tile is tiny and is not a replacement frame."
+    },
+    {
+      "id": 8908,
+      "name": "Tea Basket",
+      "evidence": "contact-sheet batch 10: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 8944,
+      "name": "Sui Blade",
+      "evidence": "contact-sheet batch 10: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 8946,
+      "name": "Storm Brefker",
+      "evidence": "contact-sheet batch 10: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 9618,
+      "name": "Bongo Drum",
+      "evidence": "contact-sheet batch 11: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 9642,
+      "name": "Rose Hairpin",
+      "evidence": "contact-sheet batch 11: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 10006,
+      "name": "Cow Mask",
+      "evidence": "contact-sheet batch 11: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 10290,
+      "name": "Growch Bod",
+      "evidence": "contact-sheet batch 11: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 11088,
+      "name": "Mecha Med Pants",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 11100,
+      "name": "Beowulf's Pants",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 11670,
+      "name": "Swan Boat",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 11678,
+      "name": "Formal Rose Shoulders",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 12102,
+      "name": "Zero's Arms",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 12124,
+      "name": "Toe Diviier's Hair",
+      "evidence": "contact-sheet batch 12: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 12300,
+      "name": "Arm Blfdes",
+      "evidence": "contact-sheet batch 13: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 12586,
+      "name": "Pocong Clothes",
+      "evidence": "contact-sheet batch 13: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 13694,
+      "name": "Yellow Umbrella",
+      "evidence": "contact-sheet batch 14: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 13712,
+      "name": "Dirt Lord's Scepter",
+      "evidence": "contact-sheet batch 14: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 14038,
+      "name": "Edgy Anime Robe",
+      "evidence": "contact-sheet batch 14: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 14340,
+      "name": "Bunny Mouth",
+      "evidence": "Manual audit: Bunny Mouth adjacent tile is unrelated."
+    },
+    {
+      "id": 14754,
+      "name": "Pet Mimic Chest",
+      "evidence": "Manual audit: Pet Mimic Chest legacy sequence crosses unrelated tiles."
+    },
+    {
+      "id": 14832,
+      "name": "Incognito Hat",
+      "evidence": "Manual audit: Incognito Hat legacy sequence crosses unrelated and tiny tiles."
+    },
+    {
+      "id": 15334,
+      "name": "Nix's Pants",
+      "evidence": "contact-sheet batch 16: adjacent tiles are static parts or independent sprites"
+    },
+    {
+      "id": 15674,
+      "name": "Battalion Chestplate",
+      "evidence": "contact-sheet batch 16: adjacent tiles are static parts or independent sprites"
+    }
+  ]
+}
