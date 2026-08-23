@@ -188,24 +188,29 @@
         loadingTextures.add(fullPath);
 
         if (typeof Image === "undefined") {
-          const dummy = { width: 1024, height: 1024, complete: true };
+          const dummy = { width: 1024, height: 1024, complete: true, naturalWidth: 1024, naturalHeight: 1024 };
           textureCache.set(fullPath, dummy);
           loadingTextures.delete(fullPath);
           return Promise.resolve(dummy);
         }
         return new Promise(resolve => {
           const img = new Image();
-          img.src = fullPath;
-          img.onload = () => {
+          img.crossOrigin = "anonymous";
+          const onDone = () => {
             textureCache.set(fullPath, img);
             loadingTextures.delete(fullPath);
             requestRender();
             resolve(img);
           };
+          img.onload = onDone;
           img.onerror = () => {
             loadingTextures.delete(fullPath);
             resolve(null);
           };
+          img.src = fullPath;
+          if (img.complete && img.naturalWidth > 0) {
+            onDone();
+          }
         });
       }
 
@@ -221,24 +226,29 @@
         loadingWeathers.add(fullPath);
 
         if (typeof Image === "undefined") {
-          const dummy = { width: 3200, height: 1920, complete: true };
+          const dummy = { width: 3200, height: 1920, complete: true, naturalWidth: 3200, naturalHeight: 1920 };
           weatherImageCache.set(fullPath, dummy);
           loadingWeathers.delete(fullPath);
           return Promise.resolve(dummy);
         }
         return new Promise(resolve => {
           const img = new Image();
-          img.src = fullPath;
-          img.onload = () => {
+          img.crossOrigin = "anonymous";
+          const onDone = () => {
             weatherImageCache.set(fullPath, img);
             loadingWeathers.delete(fullPath);
             requestRender();
             resolve(img);
           };
+          img.onload = onDone;
           img.onerror = () => {
             loadingWeathers.delete(fullPath);
             resolve(null);
           };
+          img.src = fullPath;
+          if (img.complete && img.naturalWidth > 0) {
+            onDone();
+          }
         });
       }
 

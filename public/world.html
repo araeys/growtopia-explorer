@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌍 GT World Planner Studio</title>
@@ -814,6 +815,40 @@
 
   let allItems = [];
   let itemsLoaded = false;
+  const tileImageCache = new Map();
+
+  function drawItemPreviewToCanvas(c, item) {
+    if (!c || !item || !item.texture) return;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const fullPath = `tilesheets/${item.texture}`;
+
+    const render = (img) => {
+      if (!img || img.naturalWidth === 0) return;
+      const sx = (item.tx !== undefined ? item.tx : (item.x || 0)) * 32;
+      const sy = (item.ty !== undefined ? item.ty : (item.y || 0)) * 32;
+      ctx.clearRect(0, 0, 32, 32);
+      ctx.drawImage(img, sx, sy, 32, 32, 0, 0, 32, 32);
+    };
+
+    const cached = tileImageCache.get(fullPath);
+    if (cached && cached.complete && cached.naturalWidth > 0) {
+      render(cached);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      tileImageCache.set(fullPath, img);
+      render(img);
+    };
+    img.src = fullPath;
+    if (img.complete && img.naturalWidth > 0) {
+      tileImageCache.set(fullPath, img);
+      render(img);
+    }
+  }
 
   const canvas = document.getElementById('world-canvas');
   const worldNameDisplay = document.getElementById('world-name-display');
@@ -887,14 +922,7 @@
         const c = document.createElement('canvas');
         c.width = 32; c.height = 32;
         c.style.width = '36px'; c.style.height = '36px';
-        const ctx = c.getContext('2d');
-        const img = new Image();
-        img.src = `tilesheets/${item.texture}`;
-        img.onload = () => {
-          const sx = (item.tx !== undefined ? item.tx : (item.x || 0)) * 32;
-          const sy = (item.ty !== undefined ? item.ty : (item.y || 0)) * 32;
-          ctx.drawImage(img, sx, sy, 32, 32, 0, 0, 32, 32);
-        };
+        drawItemPreviewToCanvas(c, item);
         slot.appendChild(c);
       } else if (item) {
         slot.style.cssText = 'font-size:9px;color:var(--text-muted);text-align:center;padding:3px;';
@@ -1306,14 +1334,7 @@
       const c = document.createElement('canvas');
       c.width = 32; c.height = 32;
       c.style.width = '36px'; c.style.height = '36px';
-      const ctx = c.getContext('2d');
-      const img = new Image();
-      img.src = `tilesheets/${item.texture}`;
-      img.onload = () => {
-        const sx = (item.tx !== undefined ? item.tx : (item.x || 0)) * 32;
-        const sy = (item.ty !== undefined ? item.ty : (item.y || 0)) * 32;
-        ctx.drawImage(img, sx, sy, 32, 32, 0, 0, 32, 32);
-      };
+      drawItemPreviewToCanvas(c, item);
       el.appendChild(c);
 
       const nameLabel = document.createElement('span');
