@@ -1356,6 +1356,156 @@
         // Prevent Context Menu on canvas
         canvas.addEventListener("contextmenu", event => event.preventDefault());
 
+        // ── Touch Gestures for Mobile (1-finger Draw/Pan, 2-finger Pinch-to-Zoom) ──
+        let touchStartDist = 0;
+        let touchStartZoom = 1;
+        let touchMidX = 0;
+        let touchMidY = 0;
+        let isTouchDrawing = false;
+        let isTouchPanning = false;
+        let touchPanStartX = 0;
+        let touchPanStartY = 0;
+
+        function getTouchDistance(t1, t2) {
+          const dx = t1.clientX - t2.clientX;
+          const dy = t1.clientY - t2.clientY;
+          return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        canvas.addEventListener("touchstart", event => {
+          if (event.touches.length === 1) {
+            const t = event.touches[0];
+            const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
+
+            if (player.active) {
+              // In play mode, tapping block allows placing/erasing with active tool
+              if (activeTool === "pencil") {
+                setTile(tileX, tileY, hotbar[activeHotbarIndex]);
+                render();
+              }
+              return;
+            }
+
+            if (activeTool === "preview" || event.shiftKey) {
+              isTouchPanning = true;
+              touchPanStartX = t.clientX - viewport.x;
+              touchPanStartY = t.clientY - viewport.y;
+              return;
+            }
+
+            if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
+              if (activeTool === "pencil") {
+                isTouchDrawing = true;
+                pushUndoSnapshot("Place Tile");
+                setTile(tileX, tileY, hotbar[activeHotbarIndex]);
+                lastDrawTile = { x: tileX, y: tileY };
+                render();
+                onWorldChange(world);
+              } else if (activeTool === "eraser") {
+                isTouchDrawing = true;
+                pushUndoSnapshot("Erase");
+                eraseTile(tileX, tileY);
+                lastDrawTile = { x: tileX, y: tileY };
+                render();
+                onWorldChange(world);
+              } else if (activeTool === "picker") {
+                pickTile(tileX, tileY);
+              } else if (activeTool === "bucket") {
+                floodFill(tileX, tileY, hotbar[activeHotbarIndex]);
+              } else if (activeTool === "flip") {
+                pushUndoSnapshot("Flip Tile");
+                flipTile(tileX, tileY);
+              } else if (activeTool === "select") {
+                isSelecting = true;
+                selection.active = true;
+                selection.startX = tileX; selection.startY = tileY;
+                selection.endX = tileX; selection.endY = tileY;
+                render();
+              }
+            }
+          } else if (event.touches.length === 2) {
+            // Start Pinch-to-Zoom
+            isTouchDrawing = false;
+            isTouchPanning = false;
+            const t1 = event.touches[0];
+            const t2 = event.touches[1];
+            touchStartDist = getTouchDistance(t1, t2);
+            touchStartZoom = viewport.zoom;
+            const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+            touchMidX = ((t1.clientX + t2.clientX) / 2) - rect.left;
+            touchMidY = ((t1.clientY + t2.clientY) / 2) - rect.top;
+          }
+        }, { passive: false });
+
+        canvas.addEventListener("touchmove", event => {
+          if (event.touches.length === 1) {
+            const t = event.touches[0];
+            if (isTouchPanning) {
+              event.preventDefault();
+              viewport.x = t.clientX - touchPanStartX;
+              viewport.y = t.clientY - touchPanStartY;
+              requestRender();
+              return;
+            }
+
+            if (isTouchDrawing) {
+              event.preventDefault();
+              const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
+              if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
+                if (lastDrawTile?.x !== tileX || lastDrawTile?.y !== tileY) {
+                  if (activeTool === "pencil") {
+                    setTile(tileX, tileY, hotbar[activeHotbarIndex]);
+                  } else if (activeTool === "eraser") {
+                    eraseTile(tileX, tileY);
+                  }
+                  lastDrawTile = { x: tileX, y: tileY };
+                  requestRender();
+                }
+              }
+            } else if (isSelecting) {
+              event.preventDefault();
+              const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
+              selection.endX = Math.max(0, Math.min(world.width - 1, tileX));
+              selection.endY = Math.max(0, Math.min(world.height - 1, tileY));
+              requestRender();
+            }
+          } else if (event.touches.length === 2) {
+            // Pinch-to-Zoom & 2-finger pan
+            event.preventDefault();
+            const t1 = event.touches[0];
+            const t2 = event.touches[1];
+            const dist = getTouchDistance(t1, t2);
+            if (touchStartDist > 0) {
+              const scaleRatio = dist / touchStartDist;
+              const nextZoom = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, touchStartZoom * scaleRatio));
+              
+              viewport.x = touchMidX - (touchMidX - viewport.x) * (nextZoom / viewport.zoom);
+              viewport.y = touchMidY - (touchMidY - viewport.y) * (nextZoom / viewport.zoom);
+              viewport.zoom = nextZoom;
+              requestRender();
+            }
+          }
+        }, { passive: false });
+
+        canvas.addEventListener("touchend", () => {
+          if (isTouchDrawing) {
+            isTouchDrawing = false;
+            lastDrawTile = null;
+            onWorldChange(world);
+          }
+          isTouchPanning = false;
+          if (isSelecting) isSelecting = false;
+          touchStartDist = 0;
+        });
+
+        canvas.addEventListener("touchcancel", () => {
+          isTouchDrawing = false;
+          isTouchPanning = false;
+          isSelecting = false;
+          lastDrawTile = null;
+          touchStartDist = 0;
+        });
+
         // Smooth Mouse Wheel Zoom Interpolation
         let smoothZoomTarget = viewport.zoom;
         let smoothAnchorX = 0;
@@ -2752,6 +2902,31 @@
         isPlayMode: () => player.active,
         toggleModeratorMode,
         isModeratorMode: () => player.moderatorMode,
+        setPlayerKey: (key, isPressed) => {
+          if (player.keys[key] !== undefined) {
+            player.keys[key] = Boolean(isPressed);
+            if (key === "jump" && isPressed) {
+              if (!player.jumpConsumed) {
+                if (player.isGrounded || player.jumpCount === 0) {
+                  player.vy = -6.1;
+                  player.isGrounded = false;
+                  player.jumpCount = 1;
+                  player.jumpConsumed = true;
+                  player.state = "jump";
+                  playJumpSound(false);
+                } else if (player.jumpCount === 1) {
+                  player.vy = -5.6;
+                  player.jumpCount = 2;
+                  player.jumpConsumed = true;
+                  player.state = "jump";
+                  playJumpSound(true);
+                }
+              }
+            } else if (key === "jump" && !isPressed) {
+              player.jumpConsumed = false;
+            }
+          }
+        },
         spawnBlockPlaceEffect,
         respawnPlayer,
         toggleMusic,

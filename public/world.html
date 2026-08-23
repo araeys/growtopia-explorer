@@ -461,6 +461,263 @@
       transition: width 0.3s ease;
     }
     .loading-status { font-size: 13px; color: var(--text-muted); }
+  
+    /* ─── Mobile Touch Controller Styling ─── */
+    #mobile-touch-controller {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 70;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 18px 24px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #mobile-touch-controller.hidden { display: none; }
+
+    /* Left D-Pad */
+    .mobile-dpad {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: rgba(9, 13, 26, 0.65);
+      backdrop-filter: blur(10px);
+      padding: 10px;
+      border-radius: 28px;
+      border: 1.5px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.15);
+      touch-action: none;
+    }
+    .dpad-middle-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dpad-btn {
+      width: 52px;
+      height: 52px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1.5px solid rgba(56, 189, 248, 0.4);
+      border-radius: 14px;
+      color: #00e5ff;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.1s ease;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: rgba(0, 229, 255, 0.35);
+      border-color: #00e5ff;
+      transform: scale(0.92);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+      color: #ffffff;
+    }
+    .dpad-center {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      opacity: 0.6;
+    }
+
+    /* Right Action Cluster */
+    .mobile-actions {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      touch-action: none;
+    }
+    .mobile-action-subgroup {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .action-btn-pill {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      touch-action: none;
+      transition: all 0.1s ease;
+    }
+    .action-mod {
+      background: rgba(88, 28, 135, 0.85);
+      border: 1.5px solid #a855f7;
+      color: #e9d5ff;
+      box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+    }
+    .action-mod:active, .action-mod.active {
+      background: #a855f7;
+      color: #ffffff;
+      transform: scale(0.92);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.8);
+    }
+    .action-res {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1.5px solid rgba(248, 113, 113, 0.5);
+      color: #fca5a5;
+    }
+    .action-res:active {
+      background: #ef4444;
+      color: #ffffff;
+      transform: scale(0.92);
+    }
+    .action-exit {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+    }
+
+    /* Giant Jump Button */
+    .action-btn-jump {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(168, 85, 247, 0.35)), rgba(15, 23, 42, 0.9);
+      border: 2.5px solid #00e5ff;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.4);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .action-btn-jump span { font-size: 30px; line-height: 1; }
+    .action-btn-jump small { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #38bdf8; margin-top: 2px; }
+    .action-btn-jump:active, .action-btn-jump.active {
+      background: linear-gradient(135deg, #00e5ff, #a855f7);
+      transform: scale(0.9);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.9);
+    }
+    .action-btn-jump:active small { color: #ffffff; }
+
+    /* ─── Mobile Responsive Breakpoints (< 768px) ─── */
+    @media (max-width: 768px) {
+      #topbar {
+        height: 44px;
+        padding: 0 8px;
+        gap: 6px;
+      }
+      #topbar .logo { font-size: 13px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+      #world-coords-display { display: none; }
+      .tb-btn span.tb-btn-text { display: none; }
+      .tb-btn { padding: 5px 8px; }
+
+      /* Horizontal hotbar on mobile docked cleanly */
+      #main {
+        flex-direction: column;
+      }
+      #world-hotbar {
+        width: 100%;
+        height: 52px;
+        flex-direction: row;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding: 4px 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        order: 2;
+        background: rgba(9, 13, 26, 0.98);
+      }
+      .world-hotbar-slots {
+        flex-direction: row;
+        gap: 6px;
+      }
+      .hotbar-add-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        margin-bottom: 0;
+        margin-right: 4px;
+        flex-shrink: 0;
+      }
+      .hotbar-slot {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+      }
+
+      /* Scrollable Bottom Toolbar */
+      #world-bottom-bar {
+        height: 54px;
+        padding: 0 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        order: 3;
+      }
+      .world-tool-btn {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+      }
+
+      /* Compact top floating bars */
+      #canvas-top-bars {
+        top: 6px;
+        width: 96%;
+        gap: 4px;
+      }
+      #playmode-hud, #world-selection-bar, #music-sequencer-bar {
+        padding: 5px 10px;
+        font-size: 11px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      /* Mobile touch controller sizing */
+      #mobile-touch-controller {
+        padding: 10px 12px;
+      }
+      .dpad-btn { width: 44px; height: 44px; font-size: 18px; }
+      .dpad-center { width: 36px; height: 36px; font-size: 14px; }
+      .action-btn-jump { width: 72px; height: 72px; }
+      .action-btn-jump span { font-size: 26px; }
+
+      /* Modals */
+      .world-modal-card {
+        width: 96vw;
+        max-height: 88vh;
+        padding: 14px;
+      }
+      #picker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 6px;
+        max-height: 50vh;
+      }
+      .picker-item { height: 68px; }
+    }
+
   </style>
 </head>
 <body>
@@ -496,6 +753,33 @@
       <canvas id="world-canvas"></canvas>
 
       <!-- Top Floating HUD Container (Prevents overlapping) -->
+      <!-- Mobile On-Screen Touch Controller for Parkour Mode -->
+      <div id="mobile-touch-controller" class="hidden">
+        <!-- Left Virtual D-Pad -->
+        <div class="mobile-dpad">
+          <button class="dpad-btn dpad-up" data-key="up" aria-label="Fly Up">▲</button>
+          <div class="dpad-middle-row">
+            <button class="dpad-btn dpad-left" data-key="left" aria-label="Walk Left">◀</button>
+            <div class="dpad-center">🕹️</div>
+            <button class="dpad-btn dpad-right" data-key="right" aria-label="Walk Right">▶</button>
+          </div>
+          <button class="dpad-btn dpad-down" data-key="down" aria-label="Drop Down">▼</button>
+        </div>
+
+        <!-- Right Action Cluster -->
+        <div class="mobile-actions">
+          <div class="mobile-action-subgroup">
+            <button class="action-btn-pill action-mod" id="mobile-mod-btn" title="Toggle Moderator Mode">🛡️ MOD</button>
+            <button class="action-btn-pill action-res" id="mobile-respawn-btn" title="Respawn">🔄 RES</button>
+            <button class="action-btn-pill action-exit" id="mobile-exit-btn" title="Exit Play Mode">✕</button>
+          </div>
+          <button class="action-btn-jump" id="mobile-jump-btn" data-key="jump" aria-label="Jump / Double Jump">
+            <span>🦘</span>
+            <small>JUMP</small>
+          </button>
+        </div>
+      </div>
+
       <div id="canvas-top-bars">
         <!-- Play Mode HUD -->
         <div id="playmode-hud" class="hidden">
@@ -874,6 +1158,8 @@
         if (playmodeHud) playmodeHud.classList.toggle('hidden', !engine.isPlayMode());
         const playBtn = document.getElementById('world-playmode-btn');
         if (playBtn) playBtn.classList.toggle('active', engine.isPlayMode());
+        const mobileController = document.getElementById('mobile-touch-controller');
+        if (mobileController) mobileController.classList.toggle('hidden', !engine.isPlayMode());
       },
       onHotbarChange: (hotbar, activeIdx) => renderHotbar(hotbar, activeIdx),
       onStatusMessage: () => {}
@@ -1128,13 +1414,20 @@
   const playmodeHud = document.getElementById('playmode-hud');
   const playmodeBtn = document.getElementById('world-playmode-btn');
 
-  playmodeBtn?.addEventListener('click', () => {
-    const active = engine.togglePlayMode();
-    playmodeHud?.classList.toggle('hidden', !active);
-    playmodeBtn?.classList.toggle('active', active);
+  const mobileController = document.getElementById('mobile-touch-controller');
+
+  function updatePlayModeUI(active) {
+    if (playmodeHud) playmodeHud.classList.toggle('hidden', !active);
+    if (playmodeBtn) playmodeBtn.classList.toggle('active', active);
+    if (mobileController) mobileController.classList.toggle('hidden', !active);
     if (active) {
       document.getElementById('world-selection-bar')?.classList.add('hidden');
     }
+  }
+
+  playmodeBtn?.addEventListener('click', () => {
+    const active = engine.togglePlayMode();
+    updatePlayModeUI(active);
   });
   document.getElementById('playmode-mod-btn')?.addEventListener('click', () => {
     engine.toggleModeratorMode();
@@ -1433,6 +1726,63 @@
     else if (e.ctrlKey && k === 'z') { e.preventDefault(); engine.undo(); }
     else if (e.ctrlKey && (k === 'y' || (e.shiftKey && k === 'z'))) { e.preventDefault(); engine.redo(); }
     else if (k >= '1' && k <= '9') engine.setActiveHotbarIndex(parseInt(k) - 1);
+  });
+
+
+  // ── On-Screen Virtual Touch Controller Event Binding ──
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  function bindTouchBtn(btn, keyName) {
+    if (!btn) return;
+    const press = (e) => {
+      e.preventDefault();
+      btn.classList.add('active');
+      if (engine && typeof engine.setPlayerKey === 'function') {
+        engine.setPlayerKey(keyName, true);
+      }
+    };
+    const release = (e) => {
+      e.preventDefault();
+      btn.classList.remove('active');
+      if (engine && typeof engine.setPlayerKey === 'function') {
+        engine.setPlayerKey(keyName, false);
+      }
+    };
+
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  }
+
+  document.querySelectorAll('.dpad-btn[data-key]').forEach(btn => {
+    bindTouchBtn(btn, btn.getAttribute('data-key'));
+  });
+
+  const jumpBtn = document.getElementById('mobile-jump-btn');
+  bindTouchBtn(jumpBtn, 'jump');
+
+  document.getElementById('mobile-mod-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const isMod = engine.toggleModeratorMode();
+    const modBtn = document.getElementById('mobile-mod-btn');
+    if (modBtn) {
+      modBtn.classList.toggle('active', isMod);
+      modBtn.textContent = isMod ? "🛡️ MOD: ON" : "🛡️ MOD";
+    }
+  });
+
+  document.getElementById('mobile-respawn-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    engine.respawnPlayer("Respawned at spawn door!");
+  });
+
+  document.getElementById('mobile-exit-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    engine.togglePlayMode(false);
+    updatePlayModeUI(false);
   });
 
 })();
