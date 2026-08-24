@@ -147,6 +147,8 @@ const tabAvatarBtn = document.getElementById("tab-avatar-btn");
 const tabAudioBtn = document.getElementById("tab-audio-btn");
 const tabWorldBtn = document.getElementById("tab-world-btn");
 const tabImportBtn = document.getElementById("tab-import-btn");
+const tabChallengeBtn = document.getElementById("tab-challenge-btn");
+const tabSurgeryBtn = document.getElementById("tab-surgery-btn");
 
 const viewItems = document.getElementById("view-items");
 const viewSheets = document.getElementById("view-sheets");
@@ -154,6 +156,8 @@ const viewAvatar = document.getElementById("view-avatar");
 const viewAudio = document.getElementById("view-audio");
 const viewWorld = document.getElementById("view-world");
 const viewImport = document.getElementById("view-import");
+const viewChallenge = document.getElementById("view-challenge");
+const viewSurgery = document.getElementById("view-surgery");
 
 // DOM Elements - Items Explorer
 const searchInput = document.getElementById("search-input");
@@ -474,6 +478,8 @@ function setupEventListeners() {
   tabAudioBtn?.addEventListener("click", () => switchTab("audio"));
   tabWorldBtn?.addEventListener("click", () => switchTab("world"));
   tabImportBtn?.addEventListener("click", () => switchTab("import"));
+  tabChallengeBtn?.addEventListener("click", () => switchTab("challenge"));
+  tabSurgeryBtn?.addEventListener("click", () => switchTab("surgery"));
 
   // Batch ZIP Button
   batchZipBtn?.addEventListener("click", () => {
@@ -676,8 +682,8 @@ function setupEventListeners() {
 
 // Switch Main Tab
 function switchTab(tabName) {
-  [tabItemsBtn, tabSheetsBtn, tabAvatarBtn, tabAudioBtn, tabWorldBtn, tabImportBtn].forEach(t => t && t.classList.remove("active"));
-  [viewItems, viewSheets, viewAvatar, viewAudio, viewWorld, viewImport].forEach(v => v && v.classList.add("hidden"));
+  [tabItemsBtn, tabSheetsBtn, tabAvatarBtn, tabAudioBtn, tabWorldBtn, tabImportBtn, tabChallengeBtn, tabSurgeryBtn].forEach(t => t && t.classList.remove("active"));
+  [viewItems, viewSheets, viewAvatar, viewAudio, viewWorld, viewImport, viewChallenge, viewSurgery].forEach(v => v && v.classList.add("hidden"));
 
   if (tabName === "items") {
     tabItemsBtn?.classList.add("active");
@@ -705,6 +711,14 @@ function switchTab(tabName) {
     tabImportBtn?.classList.add("active");
     viewImport?.classList.remove("hidden");
     initImportStudio();
+  } else if (tabName === "challenge") {
+    tabChallengeBtn?.classList.add("active");
+    viewChallenge?.classList.remove("hidden");
+    if (window.GTDailyChallenge) window.GTDailyChallenge.render("daily-challenge-container");
+  } else if (tabName === "surgery") {
+    tabSurgeryBtn?.classList.add("active");
+    viewSurgery?.classList.remove("hidden");
+    if (window.GTSurgerySimulator) window.GTSurgerySimulator.render("surgery-container");
   }
 }
 function initWorldPlannerUI() {

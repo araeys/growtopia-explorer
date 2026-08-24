@@ -53,6 +53,12 @@
         <button class="nav-tab" id="tab-audio-btn" data-tab="audio">
           🎵 Audio & SFX Library (558)
         </button>
+        <button class="nav-tab" id="tab-challenge-btn" data-tab="challenge">
+          🏆 Daily Challenge & Clash
+        </button>
+        <button class="nav-tab" id="tab-surgery-btn" data-tab="surgery">
+          🩺 Surgery Simulator
+        </button>
         <button class="nav-tab" id="tab-import-btn" data-tab="import">
           📥 Import Spritesheet Studio
         </button>
@@ -859,6 +865,18 @@
       </div>
     </div>
 
+    
+
+    <!-- SECTION 6: Daily Challenge & Clash Tracker View -->
+    <div id="view-challenge" class="view-section hidden">
+      <div id="daily-challenge-container"></div>
+    </div>
+
+    <!-- SECTION 7: Surgery Simulator Mini-Game View -->
+    <div id="view-surgery" class="view-section hidden">
+      <div id="surgery-container"></div>
+    </div>
+
     <!-- MODAL: Select Block -->
     <div id="world-block-modal" class="modal-overlay hidden">
       <div class="world-modal-container block-modal-content">
@@ -988,6 +1006,8 @@
   <script src="wearable_sequence.js?v=three-pane-studio-v3"></script>
   <script src="world_catalog.js"></script>
   <script src="world_planner.js"></script>
+  <script src="daily_challenge.js"></script>
+  <script src="surgery_simulator.js"></script>
   <script src="app.js?v=three-pane-studio-v3"></script>
 </body>
 </html>
