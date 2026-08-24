@@ -3270,15 +3270,12 @@
               ...options
             });
 
-            // Populate Foreground and Background tile arrays
             for (let i = 0; i < world.width * world.height; i++) {
               if (result.fg[i] > 0) world.fg[i] = result.fg[i];
               if (result.bg[i] > 0) world.bg[i] = result.bg[i];
             }
 
-            // Remove wallpaper overlay so real editable blocks are displayed!
             world.renderOverlayImage = null;
-
             render();
             if (minimapCanvas) renderMinimap();
             playSfx("magic", 1.0, 0.7);
@@ -3286,6 +3283,38 @@
             return result;
           }
           return null;
+        },
+        importFromRender: async (worldNameOrUrl, options = {}) => {
+          if (typeof window !== "undefined" && window.GTRenderConverter) {
+            onStatusMessage("⏳ Converting world render into editable blocks...");
+            try {
+              pushHistory();
+              const result = await window.GTRenderConverter.convertFromUrl(worldNameOrUrl, {
+                width: world.width,
+                height: world.height,
+                ...options
+              });
+
+              if (!worldNameOrUrl.startsWith('http') && !worldNameOrUrl.startsWith('/')) {
+                world.name = worldNameOrUrl.toUpperCase();
+              }
+
+              for (let i = 0; i < world.width * world.height; i++) {
+                if (result.fg[i] > 0) world.fg[i] = result.fg[i];
+                if (result.bg[i] > 0) world.bg[i] = result.bg[i];
+              }
+
+              world.renderOverlayImage = null;
+              render();
+              if (minimapCanvas) renderMinimap();
+              playSfx("magic", 1.0, 0.7);
+              onStatusMessage(`✨ Successfully loaded & converted ${result.detectedCount.toLocaleString()} blocks!`);
+              return result;
+            } catch (err) {
+              console.error("importFromRender error:", err);
+              onStatusMessage("❌ Failed to convert render into blocks.");
+            }
+          }
         },
         hasBlueprintOverlay: () => Boolean(world.renderOverlayImage && world.renderOverlayImage.complete),
         getWorldState: () => world

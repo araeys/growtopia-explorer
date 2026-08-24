@@ -44,7 +44,7 @@
       layer: 'fg',
       targetRGB: [120, 65, 35],
       maxDist: 55,
-      condition: (r, g, b, varR, varG, varB) => (r > 90 && r < 160 && g > 40 && g < 95 && b > 15 && b < 65 && (varR + varG + varB) > 250)
+      condition: (r, g, b, varR, varG, varB) => (r > 90 && r < 160 && g > 40 && g < 95 && b > 15 && b < 65 && (varR + varG + varB) > 200)
     },
     {
       id: 20,
@@ -68,7 +68,7 @@
       layer: 'fg',
       targetRGB: [140, 90, 45],
       maxDist: 50,
-      condition: (r, g, b, varR, varG, varB) => (r > 110 && g > 70 && b > 30 && varR > 400)
+      condition: (r, g, b, varR, varG, varB) => (r > 110 && g > 70 && b > 30 && varR > 350)
     },
     {
       id: 2,
@@ -121,6 +121,56 @@
   ];
 
   class GTRenderConverter {
+    /**
+     * Fetches a render image securely via Blob URL to avoid canvas tainting
+     */
+    static async fetchRenderBlobUrl(worldNameOrUrl) {
+      let targetUrl = worldNameOrUrl;
+      if (!worldNameOrUrl.startsWith('http') && !worldNameOrUrl.startsWith('/') && !worldNameOrUrl.startsWith('blob:')) {
+        targetUrl = `https://s3.amazonaws.com/world.growtopiagame.com/${worldNameOrUrl.toLowerCase()}.png`;
+      }
+
+      const endpoints = [
+        `/api/render-proxy?url=${encodeURIComponent(targetUrl)}`,
+        targetUrl,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep);
+          if (res.ok) {
+            const blob = await res.blob();
+            if (blob && blob.size > 1000) {
+              return URL.createObjectURL(blob);
+            }
+          }
+        } catch (_) {}
+      }
+      return targetUrl;
+    }
+
+    /**
+     * Converts a world render image into Growtopia world.fg and world.bg arrays
+     */
+    static async convertFromUrl(worldNameOrUrl, options = {}) {
+      const blobUrl = await this.fetchRenderBlobUrl(worldNameOrUrl);
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const result = this.convertRenderToWorldBlocks(img, options);
+            if (blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl);
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = (e) => reject(new Error('Failed to load render image for conversion'));
+        img.src = blobUrl;
+      });
+    }
+
     static convertRenderToWorldBlocks(imageSource, options = {}) {
       const worldW = options.width || 100;
       const worldH = options.height || 60;
@@ -146,16 +196,22 @@
         for (let tx = 0; tx < worldW; tx++) {
           const tileIdx = ty * worldW + tx;
 
-          // 1. Filter decorative event border frames (Cinco de Mayo banners, side ribbons, bottom watermark)
+          // 1. Filter decorative event border frames
           if (ignoreBorders) {
             if (ty <= 1 && (tx < 3 || tx > worldW - 4)) continue;
             if ((tx <= 1 || tx >= worldW - 2) && ty < 55) continue;
             if (tx >= 80 && ty >= 53 && ty <= 58) continue;
           }
 
-          const imgData = ctx.getImageData(tx * 32, ty * 32, 32, 32);
-          const data = imgData.data;
+          let imgData;
+          try {
+            imgData = ctx.getImageData(tx * 32, ty * 32, 32, 32);
+          } catch (e) {
+            console.error('getImageData security/taint error:', e);
+            break;
+          }
 
+          const data = imgData.data;
           let sumR = 0, sumG = 0, sumB = 0, sumA = 0;
           const pixelCount = 32 * 32;
 

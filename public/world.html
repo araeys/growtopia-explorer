@@ -1450,27 +1450,15 @@
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const importWorld = urlParams.get('import_world') || urlParams.get('import_render');
-      const loadAndConvert = (imgUrl, wName) => {
-        engine.loadRenderOverlay(imgUrl, wName);
-        // Wait for image to load, then immediately auto-convert to editable blocks!
-        const checkAndConvert = () => {
-          if (engine.hasBlueprintOverlay()) {
-            engine.convertBlueprintToBlocks();
-          } else {
-            setTimeout(checkAndConvert, 100);
-          }
-        };
-        setTimeout(checkAndConvert, 150);
-      };
 
       if (importWorld) {
-        loadAndConvert(`https://s3.amazonaws.com/world.growtopiagame.com/${importWorld.toLowerCase()}.png`, importWorld.toUpperCase());
+        engine.importFromRender(importWorld);
       } else {
         const pendingRender = localStorage.getItem('gt_planner_import_render');
         if (pendingRender) {
           const data = JSON.parse(pendingRender);
-          if (data && data.imageUrl) {
-            loadAndConvert(data.imageUrl, data.worldName);
+          if (data && (data.worldName || data.imageUrl)) {
+            engine.importFromRender(data.worldName || data.imageUrl);
             localStorage.removeItem('gt_planner_import_render');
           }
         }
