@@ -100,7 +100,7 @@
         state: "idle",
         respawnX: 100,
         respawnY: 100,
-        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "classic",
+        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "cartoon",
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -1379,16 +1379,41 @@
             const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
 
             if (player.active) {
+              if (activeTool === "preview" || event.shiftKey) {
+                isTouchPanning = true;
+                touchPanStartX = t.clientX - viewport.x;
+                touchPanStartY = t.clientY - viewport.y;
+                return;
+              }
+
               if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
-                if (activeTool === "eraser") {
+                if (activeTool === "picker") {
+                  pickTile(tileX, tileY);
+                } else if (activeTool === "bucket") {
+                  floodFill(tileX, tileY, hotbar[activeHotbarIndex]);
+                } else if (activeTool === "flip") {
+                  pushUndoSnapshot("Flip Tile");
+                  flipTile(tileX, tileY);
+                } else if (activeTool === "select") {
+                  isSelecting = true;
+                  selection.active = true;
+                  selection.startX = tileX; selection.startY = tileY;
+                  selection.endX = tileX; selection.endY = tileY;
+                  render();
+                } else if (activeTool === "eraser") {
+                  isTouchDrawing = true;
                   pushUndoSnapshot("Erase Tile");
                   eraseTile(tileX, tileY);
                   playSfx("tile_removed", 1.0 + Math.random() * 0.2, 0.55);
+                  lastDrawTile = { x: tileX, y: tileY };
                   render();
                   onWorldChange(world);
                 } else {
+                  // Default to pencil (Place Tile)
+                  isTouchDrawing = true;
                   pushUndoSnapshot("Place Tile");
                   setTile(tileX, tileY, hotbar[activeHotbarIndex]);
+                  lastDrawTile = { x: tileX, y: tileY };
                   render();
                   onWorldChange(world);
                 }
@@ -2333,21 +2358,92 @@
         const isJumping = player.state === "jump" || !player.isGrounded;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 15) : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
-        const stepOffset = isWalking ? Math.abs(Math.sin(player.animTimer * 15)) * 1.5 : 0;
 
-        const skin = player.skinStyle || "classic";
+        const skin = player.skinStyle || "cartoon";
 
         if (skin === "classic" || skin === "builder" || skin === "guardian") {
-          // ── Pixel Art Official Growtopia Character Sprites ──
+          // ── Articulated Official Growtopia Sprite Animation ──
           ctx.imageSmoothingEnabled = false;
-          let spritePath = "character_base_assets/gt_classic_avatar.png";
-          if (skin === "builder") spritePath = "character_base_assets/gt_builder_avatar.png";
-          else if (skin === "guardian") spritePath = "character_base_assets/gt_guardian_avatar.png";
 
-          const spriteImg = getSpriteImage(spritePath);
-          if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
-            ctx.drawImage(spriteImg, -16, -16 + breatheBob - stepOffset, 32, 32);
+          const imgArmBack = getSpriteImage("character_base_assets/limbs/arm_back.png");
+          const imgArmFront = getSpriteImage("character_base_assets/limbs/arm_front.png");
+          const imgLegBack = getSpriteImage("character_base_assets/limbs/leg_back.png");
+          const imgLegFront = getSpriteImage("character_base_assets/limbs/leg_front.png");
+
+          let headSrc = "character_base_assets/limbs/head_classic.png";
+          let bodySrc = "character_base_assets/limbs/body_classic.png";
+          if (skin === "builder") {
+            headSrc = "character_base_assets/limbs/head_builder.png";
+            bodySrc = "character_base_assets/limbs/body_builder.png";
+          } else if (skin === "guardian") {
+            headSrc = "character_base_assets/limbs/head_guardian.png";
+            bodySrc = "character_base_assets/limbs/body_guardian.png";
           }
+          const imgHead = getSpriteImage(headSrc);
+          const imgBody = getSpriteImage(bodySrc);
+
+          // 1. Guardian Wings (Flapping behind back)
+          if (skin === "guardian") {
+            const imgWings = getSpriteImage("character_base_assets/limbs/wings_guardian.png");
+            if (imgWings && imgWings.complete && imgWings.naturalWidth > 0) {
+              const wingFlap = Math.sin(player.animTimer * 10) * 0.25;
+              ctx.save();
+              ctx.translate(0, -2 + breatheBob);
+              ctx.rotate(wingFlap);
+              ctx.drawImage(imgWings, -16, -16, 32, 32);
+              ctx.restore();
+            }
+          }
+
+          // 2. Back Arm (Shoulder pivot at -4, -1)
+          const backArmAngle = isJumping || player.moderatorMode ? -0.5 : (isWalking ? -Math.cos(player.animTimer * 15) * 0.45 : 0);
+          ctx.save();
+          ctx.translate(-4, -1 + breatheBob);
+          ctx.rotate(backArmAngle);
+          if (imgArmBack && imgArmBack.complete && imgArmBack.naturalWidth > 0) {
+            ctx.drawImage(imgArmBack, -12, -15, 32, 32);
+          }
+          ctx.restore();
+
+          // 3. Back Leg (Hip pivot at -3, 6)
+          const legBackAngle = isWalking ? walkCycle * 0.45 : 0;
+          ctx.save();
+          ctx.translate(-3, 6);
+          ctx.rotate(legBackAngle);
+          if (imgLegBack && imgLegBack.complete && imgLegBack.naturalWidth > 0) {
+            ctx.drawImage(imgLegBack, -13, -22, 32, 32);
+          }
+          ctx.restore();
+
+          // 4. Front Leg (Hip pivot at 3, 6)
+          const legFrontAngle = isWalking ? -walkCycle * 0.45 : (isJumping ? -0.25 : 0);
+          ctx.save();
+          ctx.translate(3, 6);
+          ctx.rotate(legFrontAngle);
+          if (imgLegFront && imgLegFront.complete && imgLegFront.naturalWidth > 0) {
+            ctx.drawImage(imgLegFront, -19, -22, 32, 32);
+          }
+          ctx.restore();
+
+          // 5. Torso / Body (Bobbing with breath)
+          if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+            ctx.drawImage(imgBody, -16, -16 + breatheBob, 32, 32);
+          }
+
+          // 6. Head (Head + Hair / Hard Hat / Visor)
+          if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
+            ctx.drawImage(imgHead, -16, -16 + breatheBob, 32, 32);
+          }
+
+          // 7. Front Arm (Shoulder pivot at 4, -1)
+          const frontArmAngle = isJumping || player.moderatorMode ? -0.6 : (isWalking ? Math.cos(player.animTimer * 15) * 0.45 : 0);
+          ctx.save();
+          ctx.translate(4, -1 + breatheBob);
+          ctx.rotate(frontArmAngle);
+          if (imgArmFront && imgArmFront.complete && imgArmFront.naturalWidth > 0) {
+            ctx.drawImage(imgArmFront, -20, -15, 32, 32);
+          }
+          ctx.restore();
         } else {
           // ── Cartoon Chibi (Stylized HD Growtopian) ──
           const skinColor = "#f6b484";
@@ -2992,7 +3088,7 @@
           }
           render();
         },
-        getPlayerSkin: () => player.skinStyle || "classic",
+        getPlayerSkin: () => player.skinStyle || "cartoon",
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);

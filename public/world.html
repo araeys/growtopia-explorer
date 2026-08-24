@@ -1131,7 +1131,7 @@
     
     <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:18px;" id="skin-grid">
       <!-- Option 1: Classic Pixel Growtopian -->
-      <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.15);border:2px solid #00e5ff;border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+      <div class="skin-card" data-skin="classic" style="background:rgba(0,229,255,0.15);border:2px solid #00e5ff;border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
         <img src="character_base_assets/gt_classic_avatar.png" width="36" height="36" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Classic">
         <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Classic Pixel</div>
         <div style="font-size:9px;color:#38bdf8;">Official GT</div>
@@ -1152,7 +1152,7 @@
       </div>
 
       <!-- Option 4: Cartoon Chibi -->
-      <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+      <div class="skin-card active" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 4px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
         <div style="font-size:28px;line-height:1.2;margin-bottom:4px;">🎨</div>
         <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cartoon</div>
         <div style="font-size:9px;color:#94a3b8;">Illustrated HD</div>
@@ -2096,7 +2096,7 @@
   const charModal = document.getElementById('character-modal');
   const skinBtn = document.getElementById('world-skin-btn');
   const mobileSkinBtn = document.getElementById('mobile-skin-btn');
-  let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
+  let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
 
   function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
