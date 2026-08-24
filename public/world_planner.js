@@ -1712,8 +1712,6 @@
               setTool("picker");
             } else if (event.key.toLowerCase() === "g") {
               setTool("bucket");
-            } else if (event.key.toLowerCase() === "s" && !event.ctrlKey) {
-              setTool("select");
             } else if (event.key.toLowerCase() === "f") {
               isFlipped = !isFlipped;
               onStatusMessage(`Flipped items: ${isFlipped ? "ON (Flipped)" : "OFF (Normal)"}`);
