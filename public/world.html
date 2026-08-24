@@ -966,7 +966,8 @@
       <button class="zoom-btn" id="world-zoom-in-btn" title="Zoom In">+</button>
     </div>
     <div class="spacer"></div>
-    <button class="tb-btn" onclick="window.close()">← Back to Explorer</button>
+    <button class="tb-btn" id="world-skin-btn" title="Choose Character Style">👤 <span class="tb-btn-text">Skin</span></button>
+    <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
 
   <!-- Main -->
@@ -2040,6 +2041,47 @@
     if (mc) mc.classList.add('hidden');
     const uiBtn = document.getElementById('mobile-ui-toggle-btn');
     if (uiBtn) uiBtn.classList.add('hidden');
+  });
+
+
+  // ── Character Skin Selector Modal Handlers ──
+  const charModal = document.getElementById('character-modal');
+  const skinBtn = document.getElementById('world-skin-btn');
+  let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
+
+  function updateSkinCards(activeSkin) {
+    document.querySelectorAll('.skin-card').forEach(card => {
+      const isSel = card.getAttribute('data-skin') === activeSkin;
+      card.style.borderColor = isSel ? 'var(--accent)' : 'rgba(255,255,255,0.15)';
+      card.style.background = isSel ? 'rgba(0, 229, 255, 0.15)' : 'rgba(15,23,42,0.85)';
+    });
+  }
+
+  skinBtn?.addEventListener('click', () => {
+    selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
+    updateSkinCards(selectedSkinTemp);
+    charModal?.classList.add('open');
+  });
+
+  document.querySelectorAll('.skin-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedSkinTemp = card.getAttribute('data-skin');
+      updateSkinCards(selectedSkinTemp);
+    });
+  });
+
+  document.getElementById('character-modal-save')?.addEventListener('click', () => {
+    if (engine && typeof engine.setPlayerSkin === 'function') {
+      engine.setPlayerSkin(selectedSkinTemp);
+    }
+    charModal?.classList.remove('open');
+  });
+
+  document.getElementById('character-modal-close')?.addEventListener('click', () => {
+    charModal?.classList.remove('open');
+  });
+  charModal?.addEventListener('click', (e) => {
+    if (e.target === charModal) charModal.classList.remove('open');
   });
 
 })();

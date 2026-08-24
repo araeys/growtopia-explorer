@@ -100,6 +100,7 @@
         state: "idle",
         respawnX: 100,
         respawnY: 100,
+        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "cartoon",
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -1382,6 +1383,7 @@
                 if (activeTool === "eraser") {
                   pushUndoSnapshot("Erase Tile");
                   eraseTile(tileX, tileY);
+                  playSfx("tile_removed", 1.0 + Math.random() * 0.2, 0.55);
                   render();
                   onWorldChange(world);
                 } else {
@@ -2016,8 +2018,10 @@
         if (player.moderatorMode) {
           player.vx = 0;
           player.vy = 0;
+          if (player.active) playSfx("magic", 1.0, 0.6);
           onStatusMessage("🛡️ Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
         } else {
+          if (player.active) playSfx("switch", 1.1, 0.5);
           onStatusMessage("🛡️ Moderator Mode Disabled. Solid block collisions restored.");
         }
 
@@ -2305,34 +2309,27 @@
           ctx.restore();
         }
 
-        // Draw Player Sprite (100% Authentic Growtopia Pixel Art Layering)
         ctx.save();
-        ctx.imageSmoothingEnabled = false;
         ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
         if (player.facing < 0) ctx.scale(-1, 1);
         if (player.moderatorMode) ctx.globalAlpha = 0.92;
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || !player.isGrounded;
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 15) : 0;
+        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
 
-        // Fallback: If sprite parts still loading, use pre-rendered composite
-        const imgTanganKanan = avatarTextureCache.get("Base Set GT/Tangan Kanan.png");
-        const imgKakiKanan = avatarTextureCache.get("Base Set GT/Kaki Kanan.png");
-        const imgKakiKiri = avatarTextureCache.get("Base Set GT/Kaki Kiri.png");
-        const imgBody = avatarTextureCache.get("Base Set GT/Body.png");
-        const imgHead = avatarTextureCache.get("Base Set GT/Head utuh.png");
-        const imgBolaMata = avatarTextureCache.get("Base Set GT/Bola Mata.png");
-        const imgPupil = avatarTextureCache.get("Base Set GT/Pupil.png");
-        const imgMulut = avatarTextureCache.get("Base Set GT/Mulut.png");
-        const imgTanganKiri = avatarTextureCache.get("Base Set GT/Tangan Kiri.png");
+        const skin = player.skinStyle || "cartoon";
 
-        if (!imgBody) {
-          // Pre-rendered composite fallback
+        if (skin === "classic") {
+          // ── 1. Classic Pixel-Perfect Growtopia Sprite ──
+          ctx.imageSmoothingEnabled = false;
+          const imgBody = avatarTextureCache.get("Base Set GT/Body.png");
           const comp = avatarTextureCache.get("character_base_assets/gt_avatar_preview.png");
-          if (comp) {
-            ctx.drawImage(comp, -16, -16 + breatheBob, 32, 32);
+
+          if (comp || imgBody) {
+            const img = comp || imgBody;
+            ctx.drawImage(img, -16, -16 + breatheBob, 32, 32);
           } else if (typeof Image !== "undefined") {
             const fallbackImg = new Image();
             fallbackImg.src = "character_base_assets/gt_avatar_preview.png";
@@ -2341,56 +2338,140 @@
               requestRender();
             };
           }
+        } else if (skin === "guardian") {
+          // ── 2. Cyber Guardian / Mod (Glowing Visor, Trenchcoat & Energy Wings) ──
+          // Wings behind
+          const wingAngle = Math.sin(player.animTimer * 8) * 0.25;
+          ctx.save();
+          ctx.translate(0, -6 + breatheBob);
+          ctx.rotate(wingAngle);
+          ctx.fillStyle = "rgba(168, 85, 247, 0.75)";
+          ctx.beginPath();
+          ctx.moveTo(-4, 0); ctx.lineTo(-18, -12); ctx.lineTo(-14, 4); ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#00e5ff";
+          ctx.beginPath();
+          ctx.moveTo(4, 0); ctx.lineTo(18, -12); ctx.lineTo(14, 4); ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+
+          // Legs & Boots
+          ctx.fillStyle = "#1e1b4b";
+          ctx.fillRect(-6, 3 - walkCycle * 3, 5, 9 + walkCycle * 3);
+          ctx.fillRect(1, 3 + walkCycle * 3, 5, 9 - walkCycle * 3);
+          ctx.fillStyle = "#c084fc";
+          ctx.fillRect(-7, 12, 6, 2.5);
+          ctx.fillRect(1, 12, 6, 2.5);
+
+          // Torso (Cyber Trenchcoat)
+          ctx.fillStyle = "#312e81";
+          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
+          ctx.fillStyle = "#a855f7";
+          ctx.fillRect(-8, 1 + breatheBob, 16, 3);
+          ctx.fillStyle = "#00e5ff";
+          ctx.fillRect(-2, -5 + breatheBob, 4, 6);
+
+          // Head & Visor
+          ctx.fillStyle = "#fcd34d"; // Blonde Hair
+          ctx.beginPath();
+          ctx.arc(0, -12 + breatheBob, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#1e1b4b";
+          ctx.fillRect(-8, -16 + breatheBob, 16, 4);
+          // Neon Cyan Visor
+          ctx.fillStyle = "#00e5ff";
+          ctx.fillRect(1, -14 + breatheBob, 7, 3);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(2, -14 + breatheBob, 2, 1);
+
+          // Hand
+          const gArmAngle = isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.5 : 0);
+          ctx.save();
+          ctx.translate(-2, -3 + breatheBob);
+          ctx.rotate(gArmAngle);
+          ctx.fillStyle = "#312e81";
+          ctx.fillRect(-2, 0, 5, 4);
+          ctx.fillStyle = "#a855f7";
+          ctx.fillRect(-2, 4, 4.5, 6);
+          ctx.restore();
         } else {
-          // 1. Tangan Kanan (Back Arm with swing animation)
-          const backArmAngle = isJumping || player.moderatorMode ? -0.4 : (isWalking ? -Math.cos(player.animTimer * 15) * 0.4 : 0);
+          // ── 3. Stylized Cartoon Growtopian (Clean Illustrated Style) ──
+          const skinColor = "#f6b484";
+          const darkSkin = "#d88b56";
+          const legOffset = walkCycle * 3.5;
+
+          // 1. Back Leg (Jeans + Sneaker)
+          ctx.fillStyle = "#1e3a8a";
+          ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(-7, 12, 6, 2.5);
+          ctx.fillStyle = "#1d4ed8";
+          ctx.fillRect(-7, 13, 6, 1);
+
+          // 2. Front Leg (Jeans + Sneaker)
+          ctx.fillStyle = "#2563eb";
+          ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(1, 12, 6, 2.5);
+          ctx.fillStyle = "#2563eb";
+          ctx.fillRect(1, 13, 6, 1);
+
+          // 3. Torso (Cyan shirt, collar & belt buckle)
+          ctx.fillStyle = "#0284c7";
+          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
+          ctx.fillStyle = "#38bdf8";
+          ctx.fillRect(-6, -6 + breatheBob, 12, 2);
+          ctx.fillStyle = "#0f172a"; // Belt
+          ctx.fillRect(-8, 2 + breatheBob, 16, 2);
+          ctx.fillStyle = "#e2e8f0"; // Belt silver buckle
+          ctx.fillRect(-2, 2 + breatheBob, 4, 2);
+
+          // 4. Head (Clean GT Shape + Shaded Hair Tuft)
+          ctx.fillStyle = skinColor;
+          ctx.beginPath();
+          ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Shaded Hair Tuft
+          ctx.fillStyle = "#452817";
+          ctx.beginPath();
+          ctx.arc(0, -14 + breatheBob, 8, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(-8, -14 + breatheBob, 5, 3.5);
+          ctx.fillStyle = "#784c2f";
+          ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
+
+          // 5. Expressive GT Eye & Smile
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
+          ctx.fillStyle = "#0f172a";
+          ctx.fillRect(3, -14 + breatheBob, 3, 2.5);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(4, -15 + breatheBob, 1.5, 1.5);
+          ctx.fillStyle = "#452817";
+          ctx.fillRect(1, -16.5 + breatheBob, 5, 1.2);
+          ctx.fillStyle = "#833a1e";
+          ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
+          ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
+          ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
+
+          // 6. Arm with hand
+          const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
           ctx.save();
           ctx.translate(-2, -3 + breatheBob);
-          ctx.rotate(backArmAngle);
-          if (imgTanganKanan) ctx.drawImage(imgTanganKanan, -14, -13, 32, 32);
-          ctx.restore();
-
-          // 2. Kaki Kanan (Back Leg with walk cycle)
-          const legBackOffset = isWalking ? walkCycle * 2.5 : 0;
-          ctx.save();
-          if (imgKakiKanan) ctx.drawImage(imgKakiKanan, -16, -16 + legBackOffset, 32, 32);
-          ctx.restore();
-
-          // 3. Kaki Kiri (Front Leg with walk cycle)
-          const legFrontOffset = isWalking ? -walkCycle * 2.5 : (isJumping ? -1 : 0);
-          ctx.save();
-          if (imgKakiKiri) ctx.drawImage(imgKakiKiri, -16, -16 + legFrontOffset, 32, 32);
-          ctx.restore();
-
-          // 4. Body (Torso with breathing bob)
-          ctx.save();
-          if (imgBody) ctx.drawImage(imgBody, -16, -16 + breatheBob, 32, 32);
-          ctx.restore();
-
-          // 5. Head (Authentic GT Head with breathing bob)
-          ctx.save();
-          if (imgHead) ctx.drawImage(imgHead, -16, -16 + breatheBob, 32, 32);
-          ctx.restore();
-
-          // 6. Eyes & Face Details (Bola Mata, Pupil, Mulut)
-          ctx.save();
-          if (imgBolaMata) ctx.drawImage(imgBolaMata, -16, -16 + breatheBob, 32, 32);
-          if (imgPupil) ctx.drawImage(imgPupil, -16, -16 + breatheBob, 32, 32);
-          if (imgMulut) ctx.drawImage(imgMulut, -16, -16 + breatheBob, 32, 32);
-          ctx.restore();
-
-          // 7. Tangan Kiri (Front Left Hand with swing animation)
-          const frontArmAngle = isJumping || player.moderatorMode ? -0.5 : (isWalking ? Math.cos(player.animTimer * 15) * 0.4 : 0);
-          ctx.save();
-          ctx.translate(-2, -3 + breatheBob);
-          ctx.rotate(frontArmAngle);
-          if (imgTanganKiri) ctx.drawImage(imgTanganKiri, -14, -13, 32, 32);
+          ctx.rotate(armAngle);
+          ctx.fillStyle = "#0284c7";
+          ctx.fillRect(-2, 0, 5, 3.5);
+          ctx.fillStyle = skinColor;
+          ctx.fillRect(-2, 3.5, 4.5, 6);
+          ctx.fillStyle = darkSkin;
+          ctx.fillRect(1, 7.5, 2, 2);
           ctx.restore();
         }
 
         ctx.restore(); // Restore sprite transform
 
-        // 8. Growtopia Nametag ("Raey" with Flag Logo)
+        // Growtopia Nametag ("Raey" with Flag Logo)
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
 
         ctx.restore();
@@ -2950,6 +3031,14 @@
         isPlayMode: () => player.active,
         toggleModeratorMode,
         isModeratorMode: () => player.moderatorMode,
+        setPlayerSkin: (skinName) => {
+          player.skinStyle = skinName;
+          if (typeof localStorage !== "undefined") {
+            try { localStorage.setItem("gt_world_player_skin", skinName); } catch(e) {}
+          }
+          render();
+        },
+        getPlayerSkin: () => player.skinStyle || "cartoon",
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);
