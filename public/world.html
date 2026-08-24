@@ -631,18 +631,6 @@
       overflow: hidden;
     }
 
-    /* In Play / Parkour Mode: Auto-hide Builder Sidebars & Bars */
-    body.in-playmode #world-hotbar,
-    body.in-playmode #world-bottom-bar,
-    body.in-playmode #world-selection-bar {
-      display: none !important;
-    }
-
-    body.in-playmode #main {
-      height: calc(100dvh - 44px) !important;
-      flex: 1;
-    }
-
     /* Floating UI visibility toggle for screenshots */
     body.ui-hidden #mobile-touch-controller,
     body.ui-hidden #canvas-top-bars,
@@ -651,14 +639,14 @@
       pointer-events: none !important;
     }
 
-    /* Floating UI Quick Toggle Button */
+    /* Floating UI Quick Toggle Button in Play Mode */
     #mobile-ui-toggle-btn {
       position: absolute;
       top: 10px;
       right: 12px;
       z-index: 80;
       background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(56, 189, 248, 0.35);
+      border: 1px solid rgba(56, 189, 248, 0.4);
       color: #38bdf8;
       border-radius: 20px;
       padding: 4px 10px;
@@ -675,77 +663,250 @@
     #mobile-ui-toggle-btn.hidden { display: none; }
     #mobile-ui-toggle-btn:active { transform: scale(0.92); background: rgba(0, 229, 255, 0.2); }
 
+    /* Mobile Touch Controller - Fixed in Canvas Space Above Bottom Bar */
+    #mobile-touch-controller {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 12px 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #mobile-touch-controller.hidden { display: none !important; }
+
+    /* Left D-Pad */
+    .mobile-dpad {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: rgba(9, 13, 26, 0.72);
+      backdrop-filter: blur(10px);
+      padding: 6px;
+      border-radius: 22px;
+      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 229, 255, 0.15);
+      touch-action: none;
+    }
+    .dpad-middle-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dpad-btn {
+      width: 46px;
+      height: 46px;
+      background: rgba(30, 41, 59, 0.88);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      border-radius: 12px;
+      color: #00e5ff;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.1s ease;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: rgba(0, 229, 255, 0.35);
+      border-color: #00e5ff;
+      transform: scale(0.92);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+      color: #ffffff;
+    }
+    .dpad-center {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    /* Right Action Cluster */
+    .mobile-actions {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      touch-action: none;
+    }
+    .mobile-action-subgroup {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .action-btn-pill {
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      touch-action: none;
+      transition: all 0.1s ease;
+    }
+    .action-mod {
+      background: rgba(88, 28, 135, 0.85);
+      border: 1.5px solid #a855f7;
+      color: #e9d5ff;
+      box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+    }
+    .action-mod:active, .action-mod.active {
+      background: #a855f7;
+      color: #ffffff;
+      transform: scale(0.92);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.8);
+    }
+    .action-res {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1.5px solid rgba(248, 113, 113, 0.5);
+      color: #fca5a5;
+    }
+    .action-res:active {
+      background: #ef4444;
+      color: #ffffff;
+      transform: scale(0.92);
+    }
+    .action-exit {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+    }
+
+    /* Jump Button */
+    .action-btn-jump {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(168, 85, 247, 0.4)), rgba(15, 23, 42, 0.95);
+      border: 2px solid #00e5ff;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 229, 255, 0.4);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .action-btn-jump span { font-size: 24px; line-height: 1; }
+    .action-btn-jump small { font-size: 9px; font-weight: 800; letter-spacing: 0.5px; color: #38bdf8; margin-top: 2px; }
+    .action-btn-jump:active, .action-btn-jump.active {
+      background: linear-gradient(135deg, #00e5ff, #a855f7);
+      transform: scale(0.9);
+      box-shadow: 0 0 24px rgba(0, 229, 255, 0.9);
+    }
+    .action-btn-jump:active small { color: #ffffff; }
+
     /* ─── Mobile Responsive Breakpoints (< 768px) ─── */
     @media (max-width: 768px) {
-      #topbar {
-        height: 42px;
-        padding: 0 8px;
-        gap: 4px;
+      #app {
+        height: 100dvh;
+        overflow: hidden;
       }
-      #topbar .logo { font-size: 12px; font-weight: 700; }
+      #topbar {
+        height: 40px;
+        padding: 0 6px;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      #topbar .logo { font-size: 11px; font-weight: 700; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
       #world-coords-display { display: none; }
-      .tb-btn { padding: 4px 7px; font-size: 11px; }
+      .tb-btn { padding: 3px 6px; font-size: 10px; }
 
       #main {
         flex-direction: column;
-        height: calc(100dvh - 42px - 44px - 44px);
+        flex: 1;
         min-height: 0;
+        position: relative;
+        overflow: hidden;
       }
 
-      /* Compact horizontal builder hotbar */
+      /* Canvas fills available area cleanly */
+      #canvas-wrapper {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        position: relative;
+      }
+
+      /* Compact horizontal builder hotbar docked cleanly at bottom */
       #world-hotbar {
         width: 100%;
-        height: 46px;
+        height: 42px;
         flex-direction: row;
         border-left: none;
         border-top: 1px solid var(--border);
-        padding: 3px 8px;
+        padding: 2px 6px;
         overflow-x: auto;
         overflow-y: hidden;
-        order: 2;
         background: rgba(9, 13, 26, 0.98);
         gap: 4px;
         flex-shrink: 0;
-        z-index: 25;
+        z-index: 30;
       }
       .world-hotbar-slots {
         flex-direction: row;
         gap: 4px;
       }
       .hotbar-add-btn {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         font-size: 16px;
         margin-bottom: 0;
         margin-right: 2px;
         flex-shrink: 0;
       }
       .hotbar-slot {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         flex-shrink: 0;
       }
 
       /* Compact scrollable bottom toolbar */
       #world-bottom-bar {
-        height: 46px;
+        width: 100%;
+        height: 42px;
         padding: 0 6px;
         padding-bottom: max(2px, env(safe-area-inset-bottom, 2px));
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
-        order: 3;
         flex-shrink: 0;
-        z-index: 25;
+        z-index: 30;
         gap: 3px;
         background: rgba(9, 13, 26, 0.98);
       }
       .world-tool-btn {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
         flex-shrink: 0;
       }
-      .tool-separator { height: 24px; margin: 0 2px; }
+      .tool-separator { height: 22px; margin: 0 2px; }
 
       /* Hide bulky desktop tutorial card in Parkour Mode on mobile! */
       #playmode-hud {
@@ -754,7 +915,7 @@
 
       /* Compact top floating bars for select & music */
       #canvas-top-bars {
-        top: 6px;
+        top: 4px;
         width: 96%;
         gap: 4px;
       }
@@ -765,39 +926,6 @@
         justify-content: center;
         gap: 4px;
       }
-
-      /* Clean floating Mobile Touch Controller Layout */
-      #mobile-touch-controller {
-        padding: 8px 12px;
-        padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
-      }
-      .mobile-dpad {
-        padding: 6px;
-        gap: 4px;
-        border-radius: 20px;
-      }
-      .dpad-middle-row { gap: 4px; }
-      .dpad-btn { width: 44px; height: 44px; font-size: 16px; border-radius: 10px; }
-      .dpad-center { width: 32px; height: 32px; font-size: 12px; }
-
-      .mobile-actions {
-        gap: 10px;
-      }
-      .mobile-action-subgroup {
-        gap: 6px;
-      }
-      .action-btn-pill {
-        height: 34px;
-        padding: 0 10px;
-        font-size: 10px;
-        border-radius: 10px;
-      }
-      .action-btn-jump {
-        width: 70px;
-        height: 70px;
-      }
-      .action-btn-jump span { font-size: 24px; }
-      .action-btn-jump small { font-size: 9px; }
 
       /* Modals */
       .world-modal-card {
@@ -1248,16 +1376,20 @@
         if (worldSelectionBar) worldSelectionBar.classList.toggle('hidden', !engine.getSelection().active);
       },
       onToolChange: (toolName) => {
+        const isPlay = engine.isPlayMode();
+        document.body.classList.toggle('in-playmode', isPlay);
         document.querySelectorAll('.world-tool-btn[data-tool]').forEach(btn => {
           btn.classList.toggle('active', btn.getAttribute('data-tool') === toolName);
         });
         if (worldSelectionBar) worldSelectionBar.classList.toggle('hidden', !engine.getSelection().active);
         const playmodeHud = document.getElementById('playmode-hud');
-        if (playmodeHud) playmodeHud.classList.toggle('hidden', !engine.isPlayMode());
+        if (playmodeHud) playmodeHud.classList.toggle('hidden', !isPlay);
         const playBtn = document.getElementById('world-playmode-btn');
-        if (playBtn) playBtn.classList.toggle('active', engine.isPlayMode());
+        if (playBtn) playBtn.classList.toggle('active', isPlay);
         const mobileController = document.getElementById('mobile-touch-controller');
-        if (mobileController) mobileController.classList.toggle('hidden', !engine.isPlayMode());
+        if (mobileController) mobileController.classList.toggle('hidden', !isPlay);
+        const uiToggleBtn = document.getElementById('mobile-ui-toggle-btn');
+        if (uiToggleBtn) uiToggleBtn.classList.toggle('hidden', !isPlay);
       },
       onHotbarChange: (hotbar, activeIdx) => renderHotbar(hotbar, activeIdx),
       onStatusMessage: () => {}
@@ -1551,8 +1683,12 @@
   document.getElementById('playmode-respawn-btn')?.addEventListener('click', () => engine.respawnPlayer("Respawned at spawn door!"));
   document.getElementById('playmode-exit-btn')?.addEventListener('click', () => {
     engine.togglePlayMode(false);
-    playmodeHud?.classList.add('hidden');
-    playmodeBtn?.classList.remove('active');
+    if (playmodeHud) playmodeHud.classList.add('hidden');
+    if (playmodeBtn) playmodeBtn.classList.remove('active');
+    const mc = document.getElementById('mobile-touch-controller');
+    if (mc) mc.classList.add('hidden');
+    const uiBtn = document.getElementById('mobile-ui-toggle-btn');
+    if (uiBtn) uiBtn.classList.add('hidden');
   });
 
   // ── Music Sequencer Bar Handlers ──
@@ -1898,7 +2034,12 @@
   document.getElementById('mobile-exit-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
     engine.togglePlayMode(false);
-    updatePlayModeUI(false);
+    if (playmodeHud) playmodeHud.classList.add('hidden');
+    if (playmodeBtn) playmodeBtn.classList.remove('active');
+    const mc = document.getElementById('mobile-touch-controller');
+    if (mc) mc.classList.add('hidden');
+    const uiBtn = document.getElementById('mobile-ui-toggle-btn');
+    if (uiBtn) uiBtn.classList.add('hidden');
   });
 
 })();

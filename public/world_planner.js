@@ -1378,10 +1378,18 @@
             const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
 
             if (player.active) {
-              // In play mode, tapping block allows placing/erasing with active tool
-              if (activeTool === "pencil") {
-                setTile(tileX, tileY, hotbar[activeHotbarIndex]);
-                render();
+              if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
+                if (activeTool === "eraser") {
+                  pushUndoSnapshot("Erase Tile");
+                  eraseTile(tileX, tileY);
+                  render();
+                  onWorldChange(world);
+                } else {
+                  pushUndoSnapshot("Place Tile");
+                  setTile(tileX, tileY, hotbar[activeHotbarIndex]);
+                  render();
+                  onWorldChange(world);
+                }
               }
               return;
             }
@@ -1993,6 +2001,8 @@
           onToolChange("preview");
           onStatusMessage("🎮 Play Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
         } else {
+          activeTool = "pencil";
+          onToolChange("pencil");
           onStatusMessage("🛠️ Returned to Builder Mode.");
         }
         render();
