@@ -621,101 +621,196 @@
     }
     .action-btn-jump:active small { color: #ffffff; }
 
+    /* ─── Dynamic Viewport for Modern Mobile Browsers ─── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* In Play / Parkour Mode: Auto-hide Builder Sidebars & Bars */
+    body.in-playmode #world-hotbar,
+    body.in-playmode #world-bottom-bar,
+    body.in-playmode #world-selection-bar {
+      display: none !important;
+    }
+
+    body.in-playmode #main {
+      height: calc(100dvh - 44px) !important;
+      flex: 1;
+    }
+
+    /* Floating UI visibility toggle for screenshots */
+    body.ui-hidden #mobile-touch-controller,
+    body.ui-hidden #canvas-top-bars,
+    body.ui-hidden #world-minimap-box {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Floating UI Quick Toggle Button */
+    #mobile-ui-toggle-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      z-index: 80;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: all 0.15s ease;
+    }
+    #mobile-ui-toggle-btn.hidden { display: none; }
+    #mobile-ui-toggle-btn:active { transform: scale(0.92); background: rgba(0, 229, 255, 0.2); }
+
     /* ─── Mobile Responsive Breakpoints (< 768px) ─── */
     @media (max-width: 768px) {
       #topbar {
-        height: 44px;
+        height: 42px;
         padding: 0 8px;
-        gap: 6px;
+        gap: 4px;
       }
-      #topbar .logo { font-size: 13px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+      #topbar .logo { font-size: 12px; font-weight: 700; }
       #world-coords-display { display: none; }
-      .tb-btn span.tb-btn-text { display: none; }
-      .tb-btn { padding: 5px 8px; }
+      .tb-btn { padding: 4px 7px; font-size: 11px; }
 
-      /* Horizontal hotbar on mobile docked cleanly */
       #main {
         flex-direction: column;
+        height: calc(100dvh - 42px - 44px - 44px);
+        min-height: 0;
       }
+
+      /* Compact horizontal builder hotbar */
       #world-hotbar {
         width: 100%;
-        height: 52px;
+        height: 46px;
         flex-direction: row;
         border-left: none;
         border-top: 1px solid var(--border);
-        padding: 4px 8px;
+        padding: 3px 8px;
         overflow-x: auto;
         overflow-y: hidden;
         order: 2;
         background: rgba(9, 13, 26, 0.98);
+        gap: 4px;
+        flex-shrink: 0;
+        z-index: 25;
       }
       .world-hotbar-slots {
         flex-direction: row;
-        gap: 6px;
+        gap: 4px;
       }
       .hotbar-add-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
         margin-bottom: 0;
-        margin-right: 4px;
+        margin-right: 2px;
         flex-shrink: 0;
       }
       .hotbar-slot {
-        width: 40px;
-        height: 40px;
+        width: 38px;
+        height: 38px;
         flex-shrink: 0;
       }
 
-      /* Scrollable Bottom Toolbar */
+      /* Compact scrollable bottom toolbar */
       #world-bottom-bar {
-        height: 54px;
+        height: 46px;
         padding: 0 6px;
+        padding-bottom: max(2px, env(safe-area-inset-bottom, 2px));
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         order: 3;
+        flex-shrink: 0;
+        z-index: 25;
+        gap: 3px;
+        background: rgba(9, 13, 26, 0.98);
       }
       .world-tool-btn {
-        width: 42px;
-        height: 42px;
+        width: 38px;
+        height: 38px;
         flex-shrink: 0;
       }
+      .tool-separator { height: 24px; margin: 0 2px; }
 
-      /* Compact top floating bars */
+      /* Hide bulky desktop tutorial card in Parkour Mode on mobile! */
+      #playmode-hud {
+        display: none !important;
+      }
+
+      /* Compact top floating bars for select & music */
       #canvas-top-bars {
         top: 6px;
         width: 96%;
         gap: 4px;
       }
-      #playmode-hud, #world-selection-bar, #music-sequencer-bar {
-        padding: 5px 10px;
-        font-size: 11px;
+      #world-selection-bar, #music-sequencer-bar {
+        padding: 4px 8px;
+        font-size: 10px;
         flex-wrap: wrap;
         justify-content: center;
+        gap: 4px;
       }
 
-      /* Mobile touch controller sizing */
+      /* Clean floating Mobile Touch Controller Layout */
       #mobile-touch-controller {
-        padding: 10px 12px;
+        padding: 8px 12px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
       }
-      .dpad-btn { width: 44px; height: 44px; font-size: 18px; }
-      .dpad-center { width: 36px; height: 36px; font-size: 14px; }
-      .action-btn-jump { width: 72px; height: 72px; }
-      .action-btn-jump span { font-size: 26px; }
+      .mobile-dpad {
+        padding: 6px;
+        gap: 4px;
+        border-radius: 20px;
+      }
+      .dpad-middle-row { gap: 4px; }
+      .dpad-btn { width: 44px; height: 44px; font-size: 16px; border-radius: 10px; }
+      .dpad-center { width: 32px; height: 32px; font-size: 12px; }
+
+      .mobile-actions {
+        gap: 10px;
+      }
+      .mobile-action-subgroup {
+        gap: 6px;
+      }
+      .action-btn-pill {
+        height: 34px;
+        padding: 0 10px;
+        font-size: 10px;
+        border-radius: 10px;
+      }
+      .action-btn-jump {
+        width: 70px;
+        height: 70px;
+      }
+      .action-btn-jump span { font-size: 24px; }
+      .action-btn-jump small { font-size: 9px; }
 
       /* Modals */
       .world-modal-card {
         width: 96vw;
         max-height: 88vh;
-        padding: 14px;
+        padding: 12px;
       }
       #picker-grid {
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 6px;
-        max-height: 50vh;
+        grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+        gap: 5px;
+        max-height: 52vh;
       }
-      .picker-item { height: 68px; }
+      .picker-item { height: 64px; }
     }
 
   </style>
@@ -753,6 +848,9 @@
       <canvas id="world-canvas"></canvas>
 
       <!-- Top Floating HUD Container (Prevents overlapping) -->
+      <!-- Floating UI Hide/Show Toggle Button for Screenshots & Clean View -->
+      <button id="mobile-ui-toggle-btn" class="hidden" title="Toggle Clean Screen / Hide Buttons">👁️ <span id="ui-toggle-label">UI</span></button>
+
       <!-- Mobile On-Screen Touch Controller for Parkour Mode -->
       <div id="mobile-touch-controller" class="hidden">
         <!-- Left Virtual D-Pad -->
@@ -1416,14 +1514,32 @@
 
   const mobileController = document.getElementById('mobile-touch-controller');
 
+  const uiToggleBtn = document.getElementById('mobile-ui-toggle-btn');
+  let isUiVisible = true;
+
   function updatePlayModeUI(active) {
+    document.body.classList.toggle('in-playmode', Boolean(active));
     if (playmodeHud) playmodeHud.classList.toggle('hidden', !active);
     if (playmodeBtn) playmodeBtn.classList.toggle('active', active);
     if (mobileController) mobileController.classList.toggle('hidden', !active);
+    if (uiToggleBtn) uiToggleBtn.classList.toggle('hidden', !active);
+
     if (active) {
       document.getElementById('world-selection-bar')?.classList.add('hidden');
     }
+    // Resize canvas to fill full screen in playmode
+    setTimeout(() => {
+      if (engine && typeof engine.resize === 'function') engine.resize();
+    }, 50);
   }
+
+  uiToggleBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    isUiVisible = !isUiVisible;
+    document.body.classList.toggle('ui-hidden', !isUiVisible);
+    const label = document.getElementById('ui-toggle-label');
+    if (label) label.textContent = isUiVisible ? 'UI' : 'Show';
+  });
 
   playmodeBtn?.addEventListener('click', () => {
     const active = engine.togglePlayMode();
