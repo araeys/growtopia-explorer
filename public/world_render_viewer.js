@@ -214,11 +214,8 @@
         }));
       } catch (_) {}
 
-      if (window.switchTab) {
-        window.switchTab('world');
-      } else {
-        window.open(`world.html?import_world=${encodeURIComponent(worldName)}`, '_blank');
-      }
+      // Always open the dedicated, full-screen World Planner Studio (world.html) in a new tab!
+      window.open(`world.html?import_world=${encodeURIComponent(worldName)}`, '_blank');
     }
   }
 

@@ -535,16 +535,7 @@
           }
         }
 
-        // 2b. Imported Live World Render Blueprint Overlay (from /renderworld)
-        if (world.renderOverlayImage && world.renderOverlayImage.complete && world.renderOverlayImage.naturalWidth > 0) {
-          ctx.save();
-          ctx.beginPath();
-          if (typeof ctx.rect === "function") ctx.rect(wsX, wsY, wsW, wsH);
-          if (typeof ctx.clip === "function") ctx.clip();
-          ctx.globalAlpha = 0.85;
-          ctx.drawImage(world.renderOverlayImage, wsX, wsY, wsW, wsH);
-          ctx.restore();
-        }
+
 
         // 2. Apply Viewport Matrix (pan + zoom) for World Tiles & Grid
         ctx.save();
@@ -556,6 +547,15 @@
         ctx.beginPath();
         if (typeof ctx.rect === "function") ctx.rect(0, 0, worldW, worldH);
         if (typeof ctx.clip === "function") ctx.clip();
+
+        // 2b. Imported Live World Render Blueprint Overlay (from /renderworld)
+        if (world.renderOverlayImage && world.renderOverlayImage.complete && world.renderOverlayImage.naturalWidth > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.90;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(world.renderOverlayImage, 0, 0, worldW, worldH);
+          ctx.restore();
+        }
 
         // Viewport Culling Bounds (in tiles)
         const visibleMinX = Math.max(0, Math.floor(-viewport.x / (viewport.zoom * TILE_SIZE)) - 1);
