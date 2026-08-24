@@ -1,6 +1,6 @@
 /**
  * Growtopia Live World Render Viewer & GT World Planner Importer
- * Fetches high-res official renders from https://s3.amazonaws.com/world.growtopiagame.com/{world}.png
+ * Real-time render snapshots from https://s3.amazonaws.com/world.growtopiagame.com/{world}.png
  */
 (function(window) {
   'use strict';
@@ -10,15 +10,15 @@
   class GTWorldRenderViewer {
     constructor() {
       this.currentWorld = 'START';
-      this.imageUrl = '';
+      this.imageUrl = 'https://s3.amazonaws.com/world.growtopiagame.com/start.png';
       this.zoom = 1.0;
       this.loading = false;
       this.error = null;
       this.renderDate = null;
-      this.imageSize = { width: 0, height: 0, bytes: 0 };
+      this.imageSize = { width: 0, height: 0 };
     }
 
-    async loadWorld(worldName) {
+    loadWorld(worldName) {
       const cleanName = (worldName || '').trim().toLowerCase();
       if (!cleanName) return;
 
@@ -30,12 +30,13 @@
 
       this.render();
 
+      // Pre-load image without CORS blocking
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-
+      // DO NOT set crossOrigin = 'anonymous' because S3 bucket doesn't send CORS headers for world renders
       img.onload = () => {
         this.loading = false;
-        this.imageSize = { width: img.naturalWidth, height: img.naturalHeight };
+        this.error = null;
+        this.imageSize = { width: img.naturalWidth || 3200, height: img.naturalHeight || 1920 };
         this.renderDate = new Date();
         this.render();
       };
@@ -202,11 +203,9 @@
     }
 
     importToWorldPlanner() {
-      // 1. If inside index.html, switch to World Planner Tab or open world.html
       const worldName = this.currentWorld;
       const renderUrl = this.imageUrl;
 
-      // Save render reference in localStorage so World Planner can automatically load it
       try {
         localStorage.setItem('gt_planner_import_render', JSON.stringify({
           worldName: worldName,
@@ -215,13 +214,8 @@
         }));
       } catch (_) {}
 
-      // Switch to world tab or redirect to world.html
       if (window.switchTab) {
         window.switchTab('world');
-        const statusMsg = `📥 Loaded "${worldName}" render into World Planner reference engine!`;
-        if (window.GTWorldPlanner && window.GTWorldPlanner.onStatusMessage) {
-          window.GTWorldPlanner.onStatusMessage(statusMsg);
-        }
       } else {
         window.open(`world.html?import_world=${encodeURIComponent(worldName)}`, '_blank');
       }
