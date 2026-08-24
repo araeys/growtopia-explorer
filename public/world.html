@@ -996,6 +996,7 @@
         <!-- Right Action Cluster -->
         <div class="mobile-actions">
           <div class="mobile-action-subgroup">
+            <button class="action-btn-pill action-skin" id="mobile-skin-btn" title="Change Character Skin" style="background:rgba(2,132,199,0.85);border:1.5px solid #38bdf8;color:#e0f2fe;">👤 SKIN</button>
             <button class="action-btn-pill action-mod" id="mobile-mod-btn" title="Toggle Moderator Mode">🛡️ MOD</button>
             <button class="action-btn-pill action-res" id="mobile-respawn-btn" title="Respawn">🔄 RES</button>
             <button class="action-btn-pill action-exit" id="mobile-exit-btn" title="Exit Play Mode">✕</button>
@@ -1119,6 +1120,45 @@
   <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
 </div>
 
+<!-- Character / Skin Selection Modal -->
+<div id="character-modal" class="hidden">
+  <div class="custom-size-modal-inner" style="max-width: 480px; width: 92%;">
+    <div class="picker-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h3 style="margin:0;font-size:16px;color:#f8fafc;display:flex;align-items:center;gap:6px;">👤 Choose Character Skin</h3>
+      <button class="picker-close" id="character-modal-close" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select your preferred character appearance for Parkour Test Mode:</div>
+    
+    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:18px;" id="skin-grid">
+      <!-- Option 1: Cartoon Chibi -->
+      <div class="skin-card active" data-skin="cartoon" style="background:rgba(0,229,255,0.15);border:2px solid #00e5ff;border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <div style="font-size:30px;margin-bottom:6px;">🎨</div>
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cartoon Chibi</div>
+        <div style="font-size:10px;color:#38bdf8;">Stylized Illustrated</div>
+      </div>
+
+      <!-- Option 2: Classic Pixel -->
+      <div class="skin-card" data-skin="classic" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <div style="font-size:30px;margin-bottom:6px;">🧍</div>
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Classic Pixel</div>
+        <div style="font-size:10px;color:#94a3b8;">Original Growtopian</div>
+      </div>
+
+      <!-- Option 3: Cyber Guardian -->
+      <div class="skin-card" data-skin="guardian" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <div style="font-size:30px;margin-bottom:6px;">🛡️</div>
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cyber Guardian</div>
+        <div style="font-size:10px;color:#c084fc;">Winged Moderator</div>
+      </div>
+    </div>
+
+    <div class="modal-actions-row" style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn-cancel" id="character-modal-cancel" style="padding:7px 16px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;cursor:pointer;">Cancel</button>
+      <button class="btn-create" id="character-modal-save" style="padding:7px 20px;border-radius:8px;background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#ffffff;font-weight:700;cursor:pointer;">✨ Apply Skin</button>
+    </div>
+  </div>
+</div>
+
 <!-- Custom World Size Modal -->
 <div id="world-size-modal" class="hidden">
   <div class="custom-size-modal-inner">
@@ -1235,7 +1275,8 @@
 <!-- Styles for Weather Cards & Modal -->
 <style>
   .hidden { display: none !important; }
-  #world-size-modal, #render-export-modal { position: fixed; inset: 0; background: rgba(5, 8, 17, 0.82); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  #character-modal, #world-size-modal, #render-export-modal { position: fixed; inset: 0; background: rgba(5, 8, 17, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; }
+  #character-modal.hidden, #world-size-modal.hidden, #render-export-modal.hidden { display: none !important; }
   .custom-size-modal-inner { background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; width: 90%; max-width: 480px; padding: 20px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
   .size-presets-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
   .size-preset-btn { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #e2e8f0; padding: 8px 12px; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s ease; }
@@ -2047,20 +2088,35 @@
   // ── Character Skin Selector Modal Handlers ──
   const charModal = document.getElementById('character-modal');
   const skinBtn = document.getElementById('world-skin-btn');
+  const mobileSkinBtn = document.getElementById('mobile-skin-btn');
   let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
 
   function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
       const isSel = card.getAttribute('data-skin') === activeSkin;
-      card.style.borderColor = isSel ? 'var(--accent)' : 'rgba(255,255,255,0.15)';
-      card.style.background = isSel ? 'rgba(0, 229, 255, 0.15)' : 'rgba(15,23,42,0.85)';
+      card.style.borderColor = isSel ? '#00e5ff' : 'rgba(255,255,255,0.15)';
+      card.style.background = isSel ? 'rgba(0, 229, 255, 0.2)' : 'rgba(15,23,42,0.85)';
     });
   }
 
-  skinBtn?.addEventListener('click', () => {
+  function openSkinModal() {
     selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
     updateSkinCards(selectedSkinTemp);
-    charModal?.classList.add('open');
+    if (charModal) charModal.classList.remove('hidden');
+  }
+
+  function closeSkinModal() {
+    if (charModal) charModal.classList.add('hidden');
+  }
+
+  skinBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openSkinModal();
+  });
+
+  mobileSkinBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openSkinModal();
   });
 
   document.querySelectorAll('.skin-card').forEach(card => {
@@ -2074,17 +2130,13 @@
     if (engine && typeof engine.setPlayerSkin === 'function') {
       engine.setPlayerSkin(selectedSkinTemp);
     }
-    charModal?.classList.remove('open');
+    closeSkinModal();
   });
 
-  document.getElementById('character-modal-close')?.addEventListener('click', () => {
-    charModal?.classList.remove('open');
-  });
+  document.getElementById('character-modal-cancel')?.addEventListener('click', closeSkinModal);
+  document.getElementById('character-modal-close')?.addEventListener('click', closeSkinModal);
   charModal?.addEventListener('click', (e) => {
-    if (e.target === charModal) charModal.classList.remove('open');
+    if (e.target === charModal) closeSkinModal();
   });
-
 })();
 </script>
-</body>
-</html>
