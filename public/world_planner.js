@@ -3250,7 +3250,6 @@
           }
           if (worldName) world.name = worldName;
           const img = new Image();
-          img.crossOrigin = "anonymous";
           img.onload = () => {
             world.renderOverlayImage = img;
             render();
@@ -3258,6 +3257,33 @@
           };
           img.src = imageUrl;
         },
+        convertBlueprintToBlocks: (options = {}) => {
+          if (!world.renderOverlayImage || !world.renderOverlayImage.complete) {
+            onStatusMessage("⚠️ No active blueprint render image found to convert!");
+            return null;
+          }
+          if (typeof window !== "undefined" && window.GTRenderConverter) {
+            pushHistory();
+            const result = window.GTRenderConverter.convertRenderToWorldBlocks(world.renderOverlayImage, {
+              width: world.width,
+              height: world.height,
+              ...options
+            });
+
+            for (let i = 0; i < world.width * world.height; i++) {
+              if (result.fg[i] > 0) world.fg[i] = result.fg[i];
+              if (result.bg[i] > 0) world.bg[i] = result.bg[i];
+            }
+
+            render();
+            if (minimapCanvas) renderMinimap();
+            playSfx("magic", 1.0, 0.7);
+            onStatusMessage(`✨ Converted ${result.detectedCount.toLocaleString()} blocks into editable tiles!`);
+            return result;
+          }
+          return null;
+        },
+        hasBlueprintOverlay: () => Boolean(world.renderOverlayImage && world.renderOverlayImage.complete),
         getWorldState: () => world
       };
     }

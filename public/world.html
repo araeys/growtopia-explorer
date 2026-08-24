@@ -974,6 +974,7 @@
       <button class="zoom-btn" id="world-zoom-in-btn" title="Zoom In">+</button>
     </div>
     <div class="spacer"></div>
+    <button class="tb-btn" id="tb-convert-blueprint-btn" title="Convert imported render image into editable blocks" style="background:linear-gradient(135deg,rgba(0,229,255,0.2),rgba(168,85,247,0.2));border:1.5px solid #00e5ff;color:#00e5ff;font-weight:700;">✨ Convert to Blocks</button>
     <button class="tb-btn" id="world-skin-btn" title="Choose Character Style">👤 <span class="tb-btn-text">Skin</span></button>
     <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
@@ -1125,6 +1126,7 @@
   <button class="world-menu-item" id="world-menu-save-dat">💾 Save World (.DAT)</button>
   <button class="world-menu-item" id="world-menu-save-json">📦 Export .gtworld JSON</button>
   <div class="world-menu-divider"></div>
+  <button class="world-menu-item" id="world-menu-convert-blueprint" style="color:#00e5ff;font-weight:700;">✨ Auto-Convert Blueprint to Blocks</button>
   <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
 </div>
 
@@ -1365,48 +1367,10 @@
   .weather-thumb { width: 100%; height: 54px; border-radius: 4px; display: block; margin-bottom: 6px; object-fit: cover; background: #090f1b; }
   .weather-card-label { font-size: 11px; color: #e2e8f0; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
-<script src="lz-string.min.js">
-  // ── Welcome Feature Guide Modal Logic ──
-  const welcomeModal = document.getElementById('world-welcome-modal');
-  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
-  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
-
-  function closeWelcomeModal() {
-    if (welcomeModal) welcomeModal.style.display = 'none';
-  }
-
-  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
-  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
-
-</script>
-<script src="world_catalog.js">
-  // ── Welcome Feature Guide Modal Logic ──
-  const welcomeModal = document.getElementById('world-welcome-modal');
-  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
-  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
-
-  function closeWelcomeModal() {
-    if (welcomeModal) welcomeModal.style.display = 'none';
-  }
-
-  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
-  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
-
-</script>
-<script src="world_planner.js">
-  // ── Welcome Feature Guide Modal Logic ──
-  const welcomeModal = document.getElementById('world-welcome-modal');
-  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
-  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
-
-  function closeWelcomeModal() {
-    if (welcomeModal) welcomeModal.style.display = 'none';
-  }
-
-  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
-  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
-
-</script>
+<script src="lz-string.min.js"></script>
+<script src="world_catalog.js"></script>
+<script src="render_converter.js"></script>
+<script src="world_planner.js"></script>
 <script>
 (function initWorldPage() {
   const loadingOverlay = document.getElementById('loading-overlay');
@@ -1588,6 +1552,18 @@
   document.getElementById('world-menu-new-blank')?.addEventListener('click', () => { engine.loadPreset('blank'); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-save-dat')?.addEventListener('click', () => { engine.exportToDAT(); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-save-json')?.addEventListener('click', () => { engine.exportToJSON(); menuDropdown?.classList.add('hidden'); });
+
+  // ── Auto-Convert Blueprint to Blocks ──
+  const triggerConvertBlueprint = () => {
+    if (engine && typeof engine.convertBlueprintToBlocks === 'function') {
+      engine.convertBlueprintToBlocks();
+    }
+  };
+  document.getElementById('tb-convert-blueprint-btn')?.addEventListener('click', triggerConvertBlueprint);
+  document.getElementById('world-menu-convert-blueprint')?.addEventListener('click', () => {
+    menuDropdown?.classList.add('hidden');
+    triggerConvertBlueprint();
+  });
 
   // ── Custom World Size Modal Handlers ──
   const sizeModal = document.getElementById('world-size-modal');
