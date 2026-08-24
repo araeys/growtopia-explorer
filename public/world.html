@@ -961,7 +961,7 @@
   <!-- Top Bar -->
   <div id="topbar">
     <div class="logo">
-      <img src="favicon.ico" width="20" height="20" style="image-rendering:pixelated;vertical-align:middle;" alt="GT">
+      <img src="logo.png" width="24" height="24" style="image-rendering:pixelated;vertical-align:middle;object-fit:contain;" alt="GT">
       <span><span class="logo-highlight">Growtopia</span> World Planner</span>
     </div>
     <div class="sep"></div>
@@ -1365,9 +1365,48 @@
   .weather-thumb { width: 100%; height: 54px; border-radius: 4px; display: block; margin-bottom: 6px; object-fit: cover; background: #090f1b; }
   .weather-card-label { font-size: 11px; color: #e2e8f0; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
-<script src="lz-string.min.js"></script>
-<script src="world_catalog.js"></script>
-<script src="world_planner.js"></script>
+<script src="lz-string.min.js">
+  // ── Welcome Feature Guide Modal Logic ──
+  const welcomeModal = document.getElementById('world-welcome-modal');
+  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
+  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
+
+  function closeWelcomeModal() {
+    if (welcomeModal) welcomeModal.style.display = 'none';
+  }
+
+  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
+  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
+
+</script>
+<script src="world_catalog.js">
+  // ── Welcome Feature Guide Modal Logic ──
+  const welcomeModal = document.getElementById('world-welcome-modal');
+  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
+  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
+
+  function closeWelcomeModal() {
+    if (welcomeModal) welcomeModal.style.display = 'none';
+  }
+
+  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
+  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
+
+</script>
+<script src="world_planner.js">
+  // ── Welcome Feature Guide Modal Logic ──
+  const welcomeModal = document.getElementById('world-welcome-modal');
+  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
+  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
+
+  function closeWelcomeModal() {
+    if (welcomeModal) welcomeModal.style.display = 'none';
+  }
+
+  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
+  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
+
+</script>
 <script>
 (function initWorldPage() {
   const loadingOverlay = document.getElementById('loading-overlay');
@@ -2156,4 +2195,17 @@
     }
   });
 })();
+
+  // ── Welcome Feature Guide Modal Logic ──
+  const welcomeModal = document.getElementById('world-welcome-modal');
+  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
+  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
+
+  function closeWelcomeModal() {
+    if (welcomeModal) welcomeModal.style.display = 'none';
+  }
+
+  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
+  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
+
 </script>

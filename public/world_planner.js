@@ -2033,10 +2033,23 @@
           activeTool = "preview";
           selection.active = false;
           onToolChange("preview");
+
+          // Play Game Mode Enter Sound Effect & Zoom in to Player
+          playSfx("already_used", 1.0, 0.75);
+          viewport.zoom = 2.2;
+          if (canvas) {
+            viewport.targetX = spawn.x + player.width / 2;
+            viewport.targetY = spawn.y + player.height / 2;
+            viewport.x = viewport.targetX - (canvas.width / 2) / viewport.zoom;
+            viewport.y = viewport.targetY - (canvas.height / 2) / viewport.zoom;
+          }
+
           onStatusMessage("🎮 Game Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
         } else {
           activeTool = "pencil";
           onToolChange("pencil");
+          // Play Game Mode Exit Sound Effect
+          playSfx("door_shut", 1.0, 0.8);
           onStatusMessage("🛠️ Returned to Builder Mode.");
         }
         render();
@@ -2050,7 +2063,10 @@
         if (player.moderatorMode) {
           player.vx = 0;
           player.vy = 0;
-          if (player.active) playSfx("boo_ghost_be_gone", 1.0, 0.65);
+          if (player.active) {
+            playSfx("magic", 1.0, 0.6);
+            playSfx("boo_ghost_be_gone", 1.0, 0.65);
+          }
           onStatusMessage("🛡️ Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
         } else {
           if (player.active) playSfx("switch", 1.1, 0.5);
@@ -2336,17 +2352,19 @@
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Moderator Mode Rotating Sunburst Aura & Cosmic Sparkles
+        // Moderator Mode Rotating Sunburst Aura with Pulsing Opacity & Cosmic Sparkles
         if (player.moderatorMode) {
           ctx.save();
           const auraImg = getSpriteImage("character_base_assets/mod_sunburst_aura.png");
           if (auraImg && auraImg.complete && auraImg.naturalWidth > 0) {
             ctx.save();
             ctx.translate(px + pw / 2, py + ph / 2);
-            ctx.globalAlpha = 0.5;
+            // Smoothly pulsing opacity between 0.35 and 0.65!
+            const auraPulse = 0.35 + 0.3 * Math.sin(player.animTimer * 4);
+            ctx.globalAlpha = auraPulse;
             ctx.globalCompositeOperation = "screen";
             ctx.rotate(player.animTimer * 0.8);
-            ctx.drawImage(auraImg, -36, -36, 72, 72);
+            ctx.drawImage(auraImg, -38, -38, 76, 76);
             ctx.restore();
           }
 
@@ -2391,6 +2409,10 @@
         const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
+        // Dynamic walking leg step lift (alternating up & down naturally during walking!)
+        const legRLift = isWalking ? Math.max(0, Math.sin(player.animTimer * 14)) * 1.8 : 0;
+        const legLLift = isWalking ? Math.max(0, -Math.sin(player.animTimer * 14)) * 1.8 : 0;
+
         // Subtle gentle idle breathing arm sway/wiggle (Low frequency, 0.08 rad)
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(player.animTimer * 2.5) * 0.08 : 0;
 
@@ -2433,31 +2455,31 @@
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Hip at 8, 10 - moved down 2px so not swallowed by shorts)
-          // Reference Flight Pose: Opposite rotation from front leg!
+          // 2. Back Leg (Kaki Kanan - Standard y: 8 during idle/walk, lowered to y: 10 ONLY during floating!)
           let legRAngle = 0;
           if (isFloating) legRAngle = 0.35 + Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
+          const legRY = isFloating ? (10 + floatBob) : (8 - legRLift);
           ctx.save();
-          ctx.translate(8, 10 + (isFloating ? floatBob : 0));
+          ctx.translate(8, legRY);
           ctx.rotate(legRAngle);
           if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
             ctx.drawImage(imgLegR, -24, -24, 32, 32);
           }
           ctx.restore();
 
-          // 3. Front Leg (Kaki Kiri - Hip at -4, 10 - moved down 2px so not swallowed by shorts)
-          // Reference Flight Pose: Opposite rotation from back leg!
+          // 3. Front Leg (Kaki Kiri - Standard y: 8 during idle/walk, lowered to y: 10 ONLY during floating!)
           let legLAngle = 0;
           if (isFloating) legLAngle = -0.35 - Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legLAngle = -0.3;
           else if (isJumping) legLAngle = -0.25;
           else if (isWalking) legLAngle = -walkCycle * 0.4;
 
+          const legLY = isFloating ? (10 + floatBob) : (8 - legLLift);
           ctx.save();
-          ctx.translate(-4, 10 + (isFloating ? floatBob : 0));
+          ctx.translate(-4, legLY);
           ctx.rotate(legLAngle);
           if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
             ctx.drawImage(imgLegL, -12, -24, 32, 32);
@@ -2511,7 +2533,7 @@
           // 1. Back Leg
           const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
           ctx.save();
-          ctx.translate(0, (isFloating ? floatBob : 0) + 2);
+          ctx.translate(0, isFloating ? (floatBob + 2) : 0);
           ctx.rotate(cLegRAngle);
           ctx.fillStyle = "#1e3a8a";
           ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
@@ -2524,7 +2546,7 @@
           // 2. Front Leg
           const cLegLAngle = isFloating ? -0.35 : (isFalling ? -0.3 : 0);
           ctx.save();
-          ctx.translate(0, (isFloating ? floatBob : 0) + 2);
+          ctx.translate(0, isFloating ? (floatBob + 2) : 0);
           ctx.rotate(cLegLAngle);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
@@ -2581,7 +2603,7 @@
           ctx.fillRect(-2, -9.5, 3, 1.5);
           ctx.restore();
 
-          // 6. Arm with Spin Throw Punch & Idle Wiggle
+          // 6. Arm with Spin Throw Punch & Idle Wiggle & Walking Swing
           let cArmAngle = 0;
           if (isPunching) cArmAngle = punchSpinAngle;
           else if (isFloating) cArmAngle = 0.45;
