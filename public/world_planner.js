@@ -1961,7 +1961,7 @@
         return true;
       }
 
-      // ── Playable Avatar & Parkour Tester (Live Physics) ──
+      // ── Playable Avatar & Game Mode Tester (Live Physics) ──
       function isSolidBlock(item) {
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
@@ -2026,7 +2026,7 @@
           activeTool = "preview";
           selection.active = false;
           onToolChange("preview");
-          onStatusMessage("🎮 Play Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
+          onStatusMessage("🎮 Game Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
         } else {
           activeTool = "pencil";
           onToolChange("pencil");
@@ -2105,7 +2105,7 @@
           player.isGrounded = false;
           // Bypass solid and hazard collisions in Mod mode
         } else {
-          // Normal Parkour Physics
+          // Normal Game Mode Physics
 
           // Horizontal Movement (Gentle, controlled walk speed: max 2.7)
           if (player.keys.left) {
@@ -2356,117 +2356,70 @@
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || !player.isGrounded;
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 15) : 0;
+        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
 
         const skin = player.skinStyle || "cartoon";
+        const skinColor = "#f6b484";
+        const darkSkin = "#d88b56";
+        const legOffset = walkCycle * 3.5;
 
-        if (skin === "classic" || skin === "builder" || skin === "guardian") {
-          // ── Articulated Official Growtopia Sprite Animation ──
-          ctx.imageSmoothingEnabled = false;
-
-          const imgArmBack = getSpriteImage("character_base_assets/limbs/arm_back.png");
-          const imgArmFront = getSpriteImage("character_base_assets/limbs/arm_front.png");
-          const imgLegBack = getSpriteImage("character_base_assets/limbs/leg_back.png");
-          const imgLegFront = getSpriteImage("character_base_assets/limbs/leg_front.png");
-
-          let headSrc = "character_base_assets/limbs/head_classic.png";
-          let bodySrc = "character_base_assets/limbs/body_classic.png";
-          if (skin === "builder") {
-            headSrc = "character_base_assets/limbs/head_builder.png";
-            bodySrc = "character_base_assets/limbs/body_builder.png";
-          } else if (skin === "guardian") {
-            headSrc = "character_base_assets/limbs/head_guardian.png";
-            bodySrc = "character_base_assets/limbs/body_guardian.png";
-          }
-          const imgHead = getSpriteImage(headSrc);
-          const imgBody = getSpriteImage(bodySrc);
-
-          // 1. Guardian Wings (Flapping behind back)
-          if (skin === "guardian") {
-            const imgWings = getSpriteImage("character_base_assets/limbs/wings_guardian.png");
-            if (imgWings && imgWings.complete && imgWings.naturalWidth > 0) {
-              const wingFlap = Math.sin(player.animTimer * 10) * 0.25;
-              ctx.save();
-              ctx.translate(0, -2 + breatheBob);
-              ctx.rotate(wingFlap);
-              ctx.drawImage(imgWings, -16, -16, 32, 32);
-              ctx.restore();
-            }
-          }
-
-          // 2. Back Arm (Shoulder pivot at -4, -1)
-          const backArmAngle = isJumping || player.moderatorMode ? -0.5 : (isWalking ? -Math.cos(player.animTimer * 15) * 0.45 : 0);
+        // 1. Wings (Guardian Skin)
+        if (skin === "guardian") {
+          const wingFlap = Math.sin(player.animTimer * 10) * 0.25;
           ctx.save();
-          ctx.translate(-4, -1 + breatheBob);
-          ctx.rotate(backArmAngle);
-          if (imgArmBack && imgArmBack.complete && imgArmBack.naturalWidth > 0) {
-            ctx.drawImage(imgArmBack, -12, -15, 32, 32);
-          }
+          ctx.translate(0, -6 + breatheBob);
+          ctx.rotate(wingFlap);
+          // Left Wing
+          ctx.fillStyle = "rgba(168, 85, 247, 0.85)";
+          ctx.beginPath();
+          ctx.moveTo(-4, 0); ctx.lineTo(-18, -14); ctx.lineTo(-12, 4); ctx.closePath();
+          ctx.fill();
+          // Right Wing
+          ctx.fillStyle = "#00e5ff";
+          ctx.beginPath();
+          ctx.moveTo(4, 0); ctx.lineTo(18, -14); ctx.lineTo(12, 4); ctx.closePath();
+          ctx.fill();
           ctx.restore();
+        }
 
-          // 3. Back Leg (Hip pivot at -3, 6)
-          const legBackAngle = isWalking ? walkCycle * 0.45 : 0;
-          ctx.save();
-          ctx.translate(-3, 6);
-          ctx.rotate(legBackAngle);
-          if (imgLegBack && imgLegBack.complete && imgLegBack.naturalWidth > 0) {
-            ctx.drawImage(imgLegBack, -13, -22, 32, 32);
-          }
-          ctx.restore();
+        // 2. Back Leg (Jeans + Sneaker)
+        ctx.fillStyle = skin === "guardian" ? "#1e1b4b" : "#1e3a8a";
+        ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(-7, 12, 6, 2.5);
+        ctx.fillStyle = skin === "guardian" ? "#a855f7" : "#1d4ed8";
+        ctx.fillRect(-7, 13, 6, 1);
 
-          // 4. Front Leg (Hip pivot at 3, 6)
-          const legFrontAngle = isWalking ? -walkCycle * 0.45 : (isJumping ? -0.25 : 0);
-          ctx.save();
-          ctx.translate(3, 6);
-          ctx.rotate(legFrontAngle);
-          if (imgLegFront && imgLegFront.complete && imgLegFront.naturalWidth > 0) {
-            ctx.drawImage(imgLegFront, -19, -22, 32, 32);
-          }
-          ctx.restore();
+        // 3. Front Leg (Jeans + Sneaker)
+        ctx.fillStyle = skin === "guardian" ? "#312e81" : "#2563eb";
+        ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(1, 12, 6, 2.5);
+        ctx.fillStyle = skin === "guardian" ? "#a855f7" : "#2563eb";
+        ctx.fillRect(1, 13, 6, 1);
 
-          // 5. Torso / Body (Bobbing with breath)
-          if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
-            ctx.drawImage(imgBody, -16, -16 + breatheBob, 32, 32);
-          }
-
-          // 6. Head (Head + Hair / Hard Hat / Visor)
-          if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
-            ctx.drawImage(imgHead, -16, -16 + breatheBob, 32, 32);
-          }
-
-          // 7. Front Arm (Shoulder pivot at 4, -1)
-          const frontArmAngle = isJumping || player.moderatorMode ? -0.6 : (isWalking ? Math.cos(player.animTimer * 15) * 0.45 : 0);
-          ctx.save();
-          ctx.translate(4, -1 + breatheBob);
-          ctx.rotate(frontArmAngle);
-          if (imgArmFront && imgArmFront.complete && imgArmFront.naturalWidth > 0) {
-            ctx.drawImage(imgArmFront, -20, -15, 32, 32);
-          }
-          ctx.restore();
+        // 4. Torso
+        if (skin === "builder") {
+          // Yellow safety vest
+          ctx.fillStyle = "#f59e0b";
+          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
+          ctx.fillStyle = "#fef08a"; // reflective stripe
+          ctx.fillRect(-8, -3 + breatheBob, 16, 2.5);
+          ctx.fillStyle = "#0f172a"; // Belt
+          ctx.fillRect(-8, 2 + breatheBob, 16, 2);
+          ctx.fillStyle = "#e2e8f0";
+          ctx.fillRect(-2, 2 + breatheBob, 4, 2);
+        } else if (skin === "guardian") {
+          // Deep purple cyber robe
+          ctx.fillStyle = "#312e81";
+          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
+          ctx.fillStyle = "#a855f7";
+          ctx.fillRect(-8, 1 + breatheBob, 16, 3);
+          ctx.fillStyle = "#00e5ff";
+          ctx.fillRect(-2, -5 + breatheBob, 4, 6);
         } else {
-          // ── Cartoon Chibi (Stylized HD Growtopian) ──
-          const skinColor = "#f6b484";
-          const darkSkin = "#d88b56";
-          const legOffset = walkCycle * 3.5;
-
-          // 1. Back Leg (Jeans + Sneaker)
-          ctx.fillStyle = "#1e3a8a";
-          ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(-7, 12, 6, 2.5);
-          ctx.fillStyle = "#1d4ed8";
-          ctx.fillRect(-7, 13, 6, 1);
-
-          // 2. Front Leg (Jeans + Sneaker)
-          ctx.fillStyle = "#2563eb";
-          ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(1, 12, 6, 2.5);
-          ctx.fillStyle = "#2563eb";
-          ctx.fillRect(1, 13, 6, 1);
-
-          // 3. Torso (Cyan shirt, collar & belt buckle)
+          // Classic / Cartoon Cyan Shirt
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-8, -6 + breatheBob, 16, 10);
           ctx.fillStyle = "#38bdf8";
@@ -2475,14 +2428,26 @@
           ctx.fillRect(-8, 2 + breatheBob, 16, 2);
           ctx.fillStyle = "#e2e8f0"; // Belt silver buckle
           ctx.fillRect(-2, 2 + breatheBob, 4, 2);
+        }
 
-          // 4. Head (Clean GT Shape + Shaded Hair Tuft)
-          ctx.fillStyle = skinColor;
+        // 5. Head (Clean GT Shape)
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 6. Hair & Hats (Properly Positioned on Top of Head)
+        if (skin === "builder") {
+          // Yellow Hard Hat
+          ctx.fillStyle = "#fbbf24";
           ctx.beginPath();
-          ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
+          ctx.arc(0, -14.5 + breatheBob, 9, Math.PI, Math.PI * 2);
           ctx.fill();
-
-          // Shaded Hair Tuft
+          ctx.fillRect(-9, -15 + breatheBob, 18, 3); // Brim
+          ctx.fillStyle = "#d97706";
+          ctx.fillRect(-3, -20 + breatheBob, 6, 4); // Top ridge
+        } else {
+          // Shaded Brown Hair on Top of Head
           ctx.fillStyle = "#452817";
           ctx.beginPath();
           ctx.arc(0, -14 + breatheBob, 8, Math.PI, Math.PI * 2);
@@ -2490,8 +2455,19 @@
           ctx.fillRect(-8, -14 + breatheBob, 5, 3.5);
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
+        }
 
-          // 5. Expressive GT Eye & Smile
+        // 7. Eyes, Visor & Facial Features
+        if (skin === "guardian") {
+          // Neon Cyan Cyber Visor
+          ctx.fillStyle = "#00e5ff";
+          ctx.fillRect(1, -14.5 + breatheBob, 7, 4);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(2, -14.5 + breatheBob, 2, 1.5);
+          ctx.fillStyle = "#833a1e";
+          ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
+        } else {
+          // Expressive Eyes & Smile
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
           ctx.fillStyle = "#0f172a";
@@ -2504,24 +2480,24 @@
           ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
           ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
           ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
-
-          // 6. Arm with hand
-          const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
-          ctx.save();
-          ctx.translate(-2, -3 + breatheBob);
-          ctx.rotate(armAngle);
-          ctx.fillStyle = "#0284c7";
-          ctx.fillRect(-2, 0, 5, 3.5);
-          ctx.fillStyle = skinColor;
-          ctx.fillRect(-2, 3.5, 4.5, 6);
-          ctx.fillStyle = darkSkin;
-          ctx.fillRect(1, 7.5, 2, 2);
-          ctx.restore();
         }
+
+        // 8. Arms with swing animation
+        const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
+        ctx.save();
+        ctx.translate(-2, -3 + breatheBob);
+        ctx.rotate(armAngle);
+        ctx.fillStyle = skin === "builder" ? "#f59e0b" : (skin === "guardian" ? "#312e81" : "#0284c7");
+        ctx.fillRect(-2, 0, 5, 3.5);
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(-2, 3.5, 4.5, 6);
+        ctx.fillStyle = darkSkin;
+        ctx.fillRect(1, 7.5, 2, 2);
+        ctx.restore();
 
         ctx.restore(); // Restore sprite transform
 
-        // Growtopia Nametag ("Raey" with Flag Logo)
+        // 9. Growtopia Nametag ("Raey" with Flag Logo)
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
 
         ctx.restore();
@@ -2818,13 +2794,11 @@
         if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
 
         if (sequencer.isPlaying) {
-          startBgm();
           if (sequencer.timer) clearInterval(sequencer.timer);
           const intervalMs = Math.round(60000 / (sequencer.bpm * 2));
           sequencer.timer = setInterval(stepSequencer, intervalMs);
-          onStatusMessage(`🎵 Music Playing at ${sequencer.bpm} BPM...`);
+          onStatusMessage(`🎵 Music Sequencer Playing at ${sequencer.bpm} BPM...`);
         } else {
-          stopBgm();
           if (sequencer.timer) {
             clearInterval(sequencer.timer);
             sequencer.timer = null;
