@@ -33,6 +33,9 @@
             <span class="stat-value" id="active-count-badge">16,304</span>
             <span class="stat-label">Ditampilkan</span>
           </div>
+          <div class="gt-live-stat-badge" id="gt-live-online-badge">
+            <span class="pulse-dot-green"></span> <strong>Connecting...</strong>
+          </div>
         </div>
       </div>
 
@@ -58,6 +61,12 @@
         </button>
         <button class="nav-tab" id="tab-surgery-btn" data-tab="surgery">
           🩺 Surgery Simulator
+        </button>
+        <button class="nav-tab" id="tab-renderworld-btn" data-tab="renderworld">
+          🌍 Render World Viewer
+        </button>
+        <button class="nav-tab" id="tab-news-btn" data-tab="news">
+          📰 Live News & Status
         </button>
         <button class="nav-tab" id="tab-import-btn" data-tab="import">
           📥 Import Spritesheet Studio
@@ -877,6 +886,16 @@
       <div id="surgery-container"></div>
     </div>
 
+    <!-- SECTION 8: Live World Render Viewer View -->
+    <div id="view-renderworld" class="view-section hidden">
+      <div id="renderworld-container"></div>
+    </div>
+
+    <!-- SECTION 9: Growtopia Live News & Server Status View -->
+    <div id="view-news" class="view-section hidden">
+      <div id="gt-news-container"></div>
+    </div>
+
     <!-- MODAL: Select Block -->
     <div id="world-block-modal" class="modal-overlay hidden">
       <div class="world-modal-container block-modal-content">
@@ -1006,6 +1025,8 @@
   <script src="wearable_sequence.js?v=three-pane-studio-v3"></script>
   <script src="world_catalog.js"></script>
   <script src="world_planner.js"></script>
+  <script src="gt_news_status.js"></script>
+  <script src="world_render_viewer.js"></script>
   <script src="daily_challenge.js"></script>
   <script src="surgery_simulator.js"></script>
   <script src="app.js?v=three-pane-studio-v3"></script>

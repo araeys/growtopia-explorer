@@ -535,6 +535,17 @@
           }
         }
 
+        // 2b. Imported Live World Render Blueprint Overlay (from /renderworld)
+        if (world.renderOverlayImage && world.renderOverlayImage.complete && world.renderOverlayImage.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          if (typeof ctx.rect === "function") ctx.rect(wsX, wsY, wsW, wsH);
+          if (typeof ctx.clip === "function") ctx.clip();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(world.renderOverlayImage, wsX, wsY, wsW, wsH);
+          ctx.restore();
+        }
+
         // 2. Apply Viewport Matrix (pan + zoom) for World Tiles & Grid
         ctx.save();
         ctx.translate(viewport.x, viewport.y);
@@ -3231,6 +3242,22 @@
         exportToJSON,
         importFromJSON,
         exportToPNG,
+        loadRenderOverlay: (imageUrl, worldName) => {
+          if (!imageUrl) {
+            world.renderOverlayImage = null;
+            render();
+            return;
+          }
+          if (worldName) world.name = worldName;
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            world.renderOverlayImage = img;
+            render();
+            onStatusMessage(`📥 Loaded "${worldName || 'World'}" render blueprint overlay!`);
+          };
+          img.src = imageUrl;
+        },
         getWorldState: () => world
       };
     }

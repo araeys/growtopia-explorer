@@ -149,6 +149,8 @@ const tabWorldBtn = document.getElementById("tab-world-btn");
 const tabImportBtn = document.getElementById("tab-import-btn");
 const tabChallengeBtn = document.getElementById("tab-challenge-btn");
 const tabSurgeryBtn = document.getElementById("tab-surgery-btn");
+const tabRenderWorldBtn = document.getElementById("tab-renderworld-btn");
+const tabNewsBtn = document.getElementById("tab-news-btn");
 
 const viewItems = document.getElementById("view-items");
 const viewSheets = document.getElementById("view-sheets");
@@ -158,6 +160,8 @@ const viewWorld = document.getElementById("view-world");
 const viewImport = document.getElementById("view-import");
 const viewChallenge = document.getElementById("view-challenge");
 const viewSurgery = document.getElementById("view-surgery");
+const viewRenderWorld = document.getElementById("view-renderworld");
+const viewNews = document.getElementById("view-news");
 
 // DOM Elements - Items Explorer
 const searchInput = document.getElementById("search-input");
@@ -480,6 +484,8 @@ function setupEventListeners() {
   tabImportBtn?.addEventListener("click", () => switchTab("import"));
   tabChallengeBtn?.addEventListener("click", () => switchTab("challenge"));
   tabSurgeryBtn?.addEventListener("click", () => switchTab("surgery"));
+  tabRenderWorldBtn?.addEventListener("click", () => switchTab("renderworld"));
+  tabNewsBtn?.addEventListener("click", () => switchTab("news"));
 
   // Batch ZIP Button
   batchZipBtn?.addEventListener("click", () => {
@@ -682,8 +688,8 @@ function setupEventListeners() {
 
 // Switch Main Tab
 function switchTab(tabName) {
-  [tabItemsBtn, tabSheetsBtn, tabAvatarBtn, tabAudioBtn, tabWorldBtn, tabImportBtn, tabChallengeBtn, tabSurgeryBtn].forEach(t => t && t.classList.remove("active"));
-  [viewItems, viewSheets, viewAvatar, viewAudio, viewWorld, viewImport, viewChallenge, viewSurgery].forEach(v => v && v.classList.add("hidden"));
+  [tabItemsBtn, tabSheetsBtn, tabAvatarBtn, tabAudioBtn, tabWorldBtn, tabImportBtn, tabChallengeBtn, tabSurgeryBtn, tabRenderWorldBtn, tabNewsBtn].forEach(t => t && t.classList.remove("active"));
+  [viewItems, viewSheets, viewAvatar, viewAudio, viewWorld, viewImport, viewChallenge, viewSurgery, viewRenderWorld, viewNews].forEach(v => v && v.classList.add("hidden"));
 
   if (tabName === "items") {
     tabItemsBtn?.classList.add("active");
@@ -705,6 +711,16 @@ function switchTab(tabName) {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         initWorldPlannerUI();
+        try {
+          const pendingRender = localStorage.getItem('gt_planner_import_render');
+          if (pendingRender && worldPlannerEngine) {
+            const data = JSON.parse(pendingRender);
+            if (data && data.imageUrl) {
+              worldPlannerEngine.loadRenderOverlay(data.imageUrl, data.worldName);
+              localStorage.removeItem('gt_planner_import_render');
+            }
+          }
+        } catch(_) {}
       });
     });
   } else if (tabName === "import") {
@@ -719,6 +735,14 @@ function switchTab(tabName) {
     tabSurgeryBtn?.classList.add("active");
     viewSurgery?.classList.remove("hidden");
     if (window.GTSurgerySimulator) window.GTSurgerySimulator.render("surgery-container");
+  } else if (tabName === "renderworld") {
+    tabRenderWorldBtn?.classList.add("active");
+    viewRenderWorld?.classList.remove("hidden");
+    if (window.GTWorldRenderViewer) window.GTWorldRenderViewer.render("renderworld-container");
+  } else if (tabName === "news") {
+    tabNewsBtn?.classList.add("active");
+    viewNews?.classList.remove("hidden");
+    if (window.GTNewsStatus) window.GTNewsStatus.render("gt-news-container");
   }
 }
 function initWorldPlannerUI() {

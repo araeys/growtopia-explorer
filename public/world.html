@@ -1483,6 +1483,22 @@
       onStatusMessage: () => {}
     });
     engine.init();
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const importWorld = urlParams.get('import_world') || urlParams.get('import_render');
+      if (importWorld) {
+        engine.loadRenderOverlay(`https://s3.amazonaws.com/world.growtopiagame.com/${importWorld.toLowerCase()}.png`, importWorld.toUpperCase());
+      } else {
+        const pendingRender = localStorage.getItem('gt_planner_import_render');
+        if (pendingRender) {
+          const data = JSON.parse(pendingRender);
+          if (data && data.imageUrl) {
+            engine.loadRenderOverlay(data.imageUrl, data.worldName);
+            localStorage.removeItem('gt_planner_import_render');
+          }
+        }
+      }
+    } catch(_) {}
   } catch(err) {
     console.error('Engine init error:', err);
     loadingOverlay.innerHTML = `<div style="color:#f87171;font-size:16px;padding:20px;text-align:center">
