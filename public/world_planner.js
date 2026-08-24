@@ -3270,10 +3270,14 @@
               ...options
             });
 
+            // Populate Foreground and Background tile arrays
             for (let i = 0; i < world.width * world.height; i++) {
               if (result.fg[i] > 0) world.fg[i] = result.fg[i];
               if (result.bg[i] > 0) world.bg[i] = result.bg[i];
             }
+
+            // Remove wallpaper overlay so real editable blocks are displayed!
+            world.renderOverlayImage = null;
 
             render();
             if (minimapCanvas) renderMinimap();
