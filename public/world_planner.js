@@ -3286,7 +3286,7 @@
         },
         importFromRender: async (worldNameOrUrl, options = {}) => {
           if (typeof window !== "undefined" && window.GTRenderConverter) {
-            onStatusMessage("⏳ Converting world render into editable blocks...");
+            onStatusMessage("⏳ Scanning & converting world render into blocks...");
             try {
               pushHistory();
               const result = await window.GTRenderConverter.convertFromUrl(worldNameOrUrl, {
@@ -3299,16 +3299,23 @@
                 world.name = worldNameOrUrl.toUpperCase();
               }
 
+              // Reset current grid to clear previous cache
+              world.fg.fill(0);
+              world.bg.fill(0);
+
+              // Populate detected real blocks
               for (let i = 0; i < world.width * world.height; i++) {
-                if (result.fg[i] > 0) world.fg[i] = result.fg[i];
-                if (result.bg[i] > 0) world.bg[i] = result.bg[i];
+                world.fg[i] = result.fg[i] || 0;
+                world.bg[i] = result.bg[i] || 0;
               }
 
               world.renderOverlayImage = null;
+              saveToLocalStorage();
               render();
               if (minimapCanvas) renderMinimap();
+              onWorldChange(world);
               playSfx("magic", 1.0, 0.7);
-              onStatusMessage(`✨ Successfully loaded & converted ${result.detectedCount.toLocaleString()} blocks!`);
+              onStatusMessage(`✨ Converted ${result.detectedCount.toLocaleString()} blocks into editable world!`);
               return result;
             } catch (err) {
               console.error("importFromRender error:", err);

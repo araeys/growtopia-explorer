@@ -1,6 +1,6 @@
 /**
  * Growtopia Render Blueprint to Editable Blocks Converter
- * AI Pixel Pattern & Color Signature Matcher for 3200x1920 /renderworld PNG images
+ * AI Pixel Pattern & Color Signature Matcher for /renderworld PNG images
  */
 (function(window) {
   'use strict';
@@ -12,7 +12,7 @@
       layer: 'fg',
       targetRGB: [22, 22, 26],
       maxDist: 40,
-      condition: (r, g, b) => (r < 45 && g < 45 && b < 50)
+      condition: (r, g, b) => (r < 55 && g < 55 && b < 60)
     },
     {
       id: 4,
@@ -28,7 +28,7 @@
       layer: 'fg',
       targetRGB: [155, 155, 160],
       maxDist: 45,
-      condition: (r, g, b) => (r > 125 && r < 195 && g > 125 && g < 195 && b > 130 && b < 200 && Math.abs(r - g) < 22)
+      condition: (r, g, b) => (r > 120 && r < 195 && g > 120 && g < 195 && b > 125 && b < 200 && Math.abs(r - g) < 24)
     },
     {
       id: 279,
@@ -44,7 +44,7 @@
       layer: 'fg',
       targetRGB: [120, 65, 35],
       maxDist: 55,
-      condition: (r, g, b, varR, varG, varB) => (r > 90 && r < 160 && g > 40 && g < 95 && b > 15 && b < 65 && (varR + varG + varB) > 200)
+      condition: (r, g, b, varR, varG, varB) => (r > 85 && r < 165 && g > 40 && g < 105 && b > 15 && b < 65 && (varR + varG + varB) > 180)
     },
     {
       id: 20,
@@ -52,7 +52,7 @@
       layer: 'fg',
       targetRGB: [135, 78, 36],
       maxDist: 48,
-      condition: (r, g, b) => (r > 100 && r < 170 && g > 50 && g < 105 && b > 15 && b < 60)
+      condition: (r, g, b) => (r > 95 && r < 170 && g > 45 && g < 105 && b > 15 && b < 60)
     },
     {
       id: 18,
@@ -68,7 +68,7 @@
       layer: 'fg',
       targetRGB: [140, 90, 45],
       maxDist: 50,
-      condition: (r, g, b, varR, varG, varB) => (r > 110 && g > 70 && b > 30 && varR > 350)
+      condition: (r, g, b, varR, varG, varB) => (r > 105 && g > 65 && b > 25 && varR > 300)
     },
     {
       id: 2,
@@ -76,7 +76,7 @@
       layer: 'fg',
       targetRGB: [92, 56, 32],
       maxDist: 45,
-      condition: (r, g, b) => (r > 65 && r < 122 && g > 38 && g < 80 && b > 15 && b < 52)
+      condition: (r, g, b) => (r > 60 && r < 125 && g > 35 && g < 85 && b > 15 && b < 55)
     },
     {
       id: 14,
@@ -92,7 +92,7 @@
       layer: 'fg',
       targetRGB: [112, 108, 102],
       maxDist: 42,
-      condition: (r, g, b) => (r > 85 && r < 135 && g > 80 && g < 130 && b > 75 && b < 125 && Math.abs(r - g) < 16)
+      condition: (r, g, b) => (r > 80 && r < 140 && g > 80 && g < 140 && b > 75 && b < 135 && Math.abs(r - g) < 18)
     },
     {
       id: 16,
@@ -100,7 +100,7 @@
       layer: 'fg',
       targetRGB: [52, 165, 42],
       maxDist: 65,
-      condition: (r, g, b) => (g > 105 && g > r * 1.25 && g > b * 1.25)
+      condition: (r, g, b) => (g > 100 && g > r * 1.2 && g > b * 1.2)
     },
     {
       id: 226,
@@ -166,7 +166,7 @@
             reject(err);
           }
         };
-        img.onerror = (e) => reject(new Error('Failed to load render image for conversion'));
+        img.onerror = () => reject(new Error('Failed to load render image for conversion'));
         img.src = blobUrl;
       });
     }
@@ -174,20 +174,38 @@
     static convertRenderToWorldBlocks(imageSource, options = {}) {
       const worldW = options.width || 100;
       const worldH = options.height || 60;
-      const sensitivity = options.sensitivity || 1.1;
-      const ignoreBorders = options.ignoreBorders !== false;
+      const sensitivity = options.sensitivity || 1.15;
 
       const totalTiles = worldW * worldH;
       const fg = new Uint16Array(totalTiles);
       const bg = new Uint16Array(totalTiles);
 
+      const srcW = imageSource.naturalWidth || imageSource.width;
+      const srcH = imageSource.naturalHeight || imageSource.height;
+
+      // Draw original image into an offscreen canvas
       const canvas = document.createElement('canvas');
-      canvas.width = worldW * 32;
-      canvas.height = worldH * 32;
+      canvas.width = srcW;
+      canvas.height = srcH;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return { fg, bg, detectedCount: 0, stats: {} };
 
-      ctx.drawImage(imageSource, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(imageSource, 0, 0, srcW, srcH);
+
+      // Detect border margins (official GT renders have ~50px border on 1700x1060 base)
+      let marginLeft = 0, marginTop = 0, innerW = srcW, innerH = srcH;
+      const aspectRatio = srcW / srcH;
+
+      // If aspect ratio is around 1.603 (1700 / 1060)
+      if (aspectRatio >= 1.50 && aspectRatio <= 1.70) {
+        marginLeft = 50 * (srcW / 1700);
+        marginTop = 50 * (srcH / 1060);
+        innerW = 1600 * (srcW / 1700);
+        innerH = 960 * (srcH / 1060);
+      }
+
+      const tileW = innerW / worldW;
+      const tileH = innerH / worldH;
 
       let detectedCount = 0;
       const stats = { bedrock: 0, castle: 0, dirt: 0, wood: 0, bookshelf: 0, lava: 0, background: 0, other: 0 };
@@ -196,24 +214,22 @@
         for (let tx = 0; tx < worldW; tx++) {
           const tileIdx = ty * worldW + tx;
 
-          // 1. Filter decorative event border frames
-          if (ignoreBorders) {
-            if (ty <= 1 && (tx < 3 || tx > worldW - 4)) continue;
-            if ((tx <= 1 || tx >= worldW - 2) && ty < 55) continue;
-            if (tx >= 80 && ty >= 53 && ty <= 58) continue;
-          }
+          const sampleX = Math.floor(marginLeft + tx * tileW);
+          const sampleY = Math.floor(marginTop + ty * tileH);
+          const sampleW = Math.max(1, Math.floor(tileW));
+          const sampleH = Math.max(1, Math.floor(tileH));
 
           let imgData;
           try {
-            imgData = ctx.getImageData(tx * 32, ty * 32, 32, 32);
+            imgData = ctx.getImageData(sampleX, sampleY, sampleW, sampleH);
           } catch (e) {
-            console.error('getImageData security/taint error:', e);
+            console.error('getImageData error:', e);
             break;
           }
 
           const data = imgData.data;
           let sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-          const pixelCount = 32 * 32;
+          const pixelCount = sampleW * sampleH;
 
           for (let i = 0; i < data.length; i += 4) {
             sumR += data[i];
@@ -239,7 +255,7 @@
           varG /= pixelCount;
           varB /= pixelCount;
 
-          // 2. Sky & Mountain Backdrop Filter
+          // Sky & Mountain Backdrop Filter
           if (avgB > 170 && avgG > 140 && avgR > 80 && (varR + varG + varB) < 160 && ty < 40) {
             continue;
           }
@@ -247,7 +263,7 @@
             continue;
           }
 
-          // 3. Match against Block Signatures
+          // Match against Block Signatures
           let bestMatch = null;
           let minDistance = Infinity;
 
@@ -266,12 +282,12 @@
             }
           }
 
-          // 4. Game Rules: Bottom row is always Bedrock
-          if (ty >= worldH - 2 && avgR < 55 && avgG < 55 && avgB < 60) {
+          // Game Rules: Bottom 2 rows are Bedrock
+          if (ty >= worldH - 2 && avgR < 65 && avgG < 65 && avgB < 70) {
             bestMatch = { id: 10, layer: 'fg', name: 'Bedrock' };
           }
 
-          // 5. Assign to FG or BG layer
+          // Assign to FG or BG layer
           if (bestMatch) {
             if (bestMatch.layer === 'bg') {
               bg[tileIdx] = bestMatch.id;
