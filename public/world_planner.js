@@ -100,7 +100,10 @@
         state: "idle",
         respawnX: 100,
         respawnY: 100,
-        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "cartoon",
+        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "classic",
+        punchTimer: 0,
+        punchTargetX: 0,
+        punchTargetY: 0,
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -1403,6 +1406,7 @@
                 } else if (activeTool === "eraser") {
                   isTouchDrawing = true;
                   pushUndoSnapshot("Erase Tile");
+                  triggerPlayerPunch(tileX, tileY);
                   eraseTile(tileX, tileY);
                   playSfx("tile_removed", 1.0 + Math.random() * 0.2, 0.55);
                   lastDrawTile = { x: tileX, y: tileY };
@@ -1412,6 +1416,7 @@
                   // Default to pencil (Place Tile)
                   isTouchDrawing = true;
                   pushUndoSnapshot("Place Tile");
+                  triggerPlayerPunch(tileX, tileY);
                   setTile(tileX, tileY, hotbar[activeHotbarIndex]);
                   lastDrawTile = { x: tileX, y: tileY };
                   render();
@@ -2068,6 +2073,15 @@
         return player.moderatorMode;
       }
 
+            function triggerPlayerPunch(targetTileX, targetTileY) {
+        if (!player.active) return;
+        const targetWorldX = targetTileX * TILE_SIZE + TILE_SIZE / 2;
+        const targetWorldY = targetTileY * TILE_SIZE + TILE_SIZE / 2;
+        player.punchTargetX = targetWorldX - (player.x + player.width / 2);
+        player.punchTargetY = targetWorldY - (player.y + player.height / 2);
+        player.punchTimer = 0.25;
+      }
+
       function updatePlayerPhysics(dt) {
         if (!player.active) return;
         player.animTimer += dt;
@@ -2353,17 +2367,40 @@
         if (player.moderatorMode) ctx.globalAlpha = 0.94;
 
         const isWalking = player.state === "walk";
-        const isJumping = player.state === "jump" || !player.isGrounded;
+        const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < 0);
+        const isFalling = !player.isGrounded && player.vy > 0.5;
+        const isFloating = player.moderatorMode;
 
-        // Feet stay grounded; ONLY upper torso + head bob with breathing!
-        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : 0);
+        // Eye Blink Animation (Every 3.5 seconds, blink for 0.15s)
+        const isBlinking = (player.animTimer % 3.5) < 0.15;
+
+        // Float & Breathing Dynamics
+        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.5 : 0;
+        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
         const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
+        // Arm Stretch / Placing Punch Animation
+        let punchProgress = 0;
+        let punchArmOffsetX = 0;
+        let punchArmOffsetY = 0;
+        let punchStretch = 1.0;
+        let punchAngle = 0;
+
+        if (player.punchTimer > 0) {
+          punchProgress = Math.sin((player.punchTimer / 0.25) * Math.PI);
+          const rawAngle = Math.atan2(player.punchTargetY, player.punchTargetX * (player.facing < 0 ? -1 : 1));
+          punchAngle = rawAngle;
+          const dist = Math.min(28, Math.hypot(player.punchTargetX, player.punchTargetY));
+          punchArmOffsetX = Math.cos(rawAngle) * dist * punchProgress;
+          punchArmOffsetY = Math.sin(rawAngle) * dist * punchProgress;
+          punchStretch = 1.0 + punchProgress * 0.6;
+        }
+
         const skin = player.skinStyle || "classic";
 
-        if (skin === "classic" || skin === "builder" || skin === "guardian") {
-          // ── Fully Articulated Growtopia Base Set Character Engine ──
+        if (skin === "classic" || skin === "growtopia" || skin === "builder") {
+          // ── 1. Official Growtopia Set Character Engine ──
           ctx.imageSmoothingEnabled = false;
 
           const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
@@ -2372,25 +2409,18 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          let headSrc = "character_base_assets/gt_parts/head.png";
-          if (skin === "builder") headSrc = "character_base_assets/gt_parts/head_builder.png";
+          const headSrc = isBlinking
+            ? "character_base_assets/gt_parts/head_blink.png"
+            : "character_base_assets/gt_parts/head_open.png";
           const imgHead = getSpriteImage(headSrc);
 
-          // 1. Guardian Wings (Behind Body)
-          if (skin === "guardian") {
-            const imgWings = getSpriteImage("character_base_assets/gt_parts/wings.png");
-            if (imgWings && imgWings.complete && imgWings.naturalWidth > 0) {
-              const wingFlap = Math.sin(player.animTimer * 10) * 0.2;
-              ctx.save();
-              ctx.translate(0, breatheBob - stepBob);
-              ctx.rotate(wingFlap);
-              ctx.drawImage(imgWings, -16, -16, 32, 32);
-              ctx.restore();
-            }
-          }
+          // 1. Back Arm (Tangan Kanan - Shoulder at 8, 4)
+          let backArmAngle = 0;
+          if (isFloating) backArmAngle = -0.5 + Math.sin(player.animTimer * 5) * 0.15;
+          else if (isFalling) backArmAngle = -1.1; // Raising arms in fall
+          else if (isJumping) backArmAngle = -0.7;
+          else if (isWalking) backArmAngle = -Math.cos(player.animTimer * 14) * 0.5;
 
-          // 2. Back Arm (Tangan Kanan - Rotates around shoulder pivot at 8, 4)
-          const backArmAngle = isJumping || player.moderatorMode ? -0.7 : (isWalking ? -Math.cos(player.animTimer * 14) * 0.5 : 0);
           ctx.save();
           ctx.translate(8, 4 + breatheBob - stepBob);
           ctx.rotate(backArmAngle);
@@ -2399,69 +2429,101 @@
           }
           ctx.restore();
 
-          // 3. Back Leg (Kaki Kanan - Hip joint at 8, 8, Feet stay on ground)
-          const legRAngle = isWalking ? walkCycle * 0.4 : 0;
+          // 2. Back Leg (Kaki Kanan - Hip at 8, 8, Feet stay on ground)
+          let legRAngle = 0;
+          if (isFloating) legRAngle = 0.2 + Math.sin(player.animTimer * 5) * 0.1;
+          else if (isFalling) legRAngle = 0.35; // Legs trailing behind in fall
+          else if (isWalking) legRAngle = walkCycle * 0.4;
+
           ctx.save();
-          ctx.translate(8, 8);
+          ctx.translate(8, 8 + (isFloating ? floatBob : 0));
           ctx.rotate(legRAngle);
           if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
             ctx.drawImage(imgLegR, -24, -24, 32, 32);
           }
           ctx.restore();
 
-          // 4. Front Leg (Kaki Kiri - Hip joint at -4, 8, Feet stay on ground)
-          const legLAngle = isWalking ? -walkCycle * 0.4 : (isJumping ? -0.2 : 0);
+          // 3. Front Leg (Kaki Kiri - Hip at -4, 8)
+          let legLAngle = 0;
+          if (isFloating) legLAngle = -0.2 - Math.sin(player.animTimer * 5) * 0.1;
+          else if (isFalling) legLAngle = -0.3;
+          else if (isJumping) legLAngle = -0.25;
+          else if (isWalking) legLAngle = -walkCycle * 0.4;
+
           ctx.save();
-          ctx.translate(-4, 8);
+          ctx.translate(-4, 8 + (isFloating ? floatBob : 0));
           ctx.rotate(legLAngle);
           if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
             ctx.drawImage(imgLegL, -12, -24, 32, 32);
           }
           ctx.restore();
 
-          // 5. Torso / Body (Bobbing with breathing & step bounce)
+          // 4. Torso & Body (Bobbing with breathing & step bounce)
           ctx.save();
           ctx.translate(0, breatheBob - stepBob);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 6. Head with Face & Clean Hair / Hard Hat (On top of body)
+          // 5. Head with Eyes & Dark Smile Line (Clean head with zero forehead artifacts)
           if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
             ctx.drawImage(imgHead, -16, -16, 32, 32);
           }
           ctx.restore();
 
-          // 7. Front Arm (Tangan Kiri - Shoulder pivot at -7, 4, DRAWN ON TOP of shirt!)
-          const frontArmAngle = isJumping || player.moderatorMode ? -0.6 : (isWalking ? Math.cos(player.animTimer * 14) * 0.5 : 0);
+          // 6. Front Arm (Tangan Kiri - Shoulder at -7, 4, DRAWN ON TOP of shirt!)
+          let frontArmAngle = 0;
+          if (punchProgress > 0) {
+            frontArmAngle = punchAngle;
+          } else if (isFloating) {
+            frontArmAngle = -0.6 + Math.sin(player.animTimer * 5) * 0.15;
+          } else if (isFalling) {
+            frontArmAngle = -1.1; // Raising arms in fall
+          } else if (isJumping) {
+            frontArmAngle = -0.6;
+          } else if (isWalking) {
+            frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
+          }
+
           ctx.save();
-          ctx.translate(-7, 4 + breatheBob - stepBob);
+          ctx.translate(-7 + punchArmOffsetX, 4 + breatheBob - stepBob + punchArmOffsetY);
           ctx.rotate(frontArmAngle);
+          ctx.scale(punchStretch, 1.0);
           if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
             ctx.drawImage(imgArmL, -9, -20, 32, 32);
           }
           ctx.restore();
         } else {
-          // ── Cartoon Chibi (Stylized HD Growtopian) ──
+          // ── 2. Cartoon Chibi (Stylized HD Growtopian) ──
           const skinColor = "#f6b484";
           const darkSkin = "#d88b56";
           const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
 
           // 1. Back Leg
+          const cLegRAngle = isFloating ? 0.2 : (isFalling ? 0.35 : 0);
+          ctx.save();
+          ctx.translate(0, isFloating ? floatBob : 0);
+          ctx.rotate(cLegRAngle);
           ctx.fillStyle = "#1e3a8a";
           ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(-7, 12, 6, 2.5);
           ctx.fillStyle = "#1d4ed8";
           ctx.fillRect(-7, 13, 6, 1);
+          ctx.restore();
 
           // 2. Front Leg
+          const cLegLAngle = isFloating ? -0.2 : (isFalling ? -0.3 : 0);
+          ctx.save();
+          ctx.translate(0, isFloating ? floatBob : 0);
+          ctx.rotate(cLegLAngle);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(1, 12, 6, 2.5);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 13, 6, 1);
+          ctx.restore();
 
           // 3. Torso
           ctx.fillStyle = "#0284c7";
@@ -2487,13 +2549,18 @@
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
 
-          // 5. Expressive GT Eye & Smile
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
-          ctx.fillStyle = "#0f172a";
-          ctx.fillRect(3, -14 + breatheBob, 3, 2.5);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(4, -15 + breatheBob, 1.5, 1.5);
+          // 5. Expressive GT Eye & Smile (Blinks smoothly)
+          if (isBlinking) {
+            ctx.fillStyle = "#452817";
+            ctx.fillRect(1, -13 + breatheBob, 5, 1.5);
+          } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(3, -14 + breatheBob, 3, 2.5);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(4, -15 + breatheBob, 1.5, 1.5);
+          }
           ctx.fillStyle = "#452817";
           ctx.fillRect(1, -16.5 + breatheBob, 5, 1.2);
           ctx.fillStyle = "#833a1e";
@@ -2501,11 +2568,14 @@
           ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
           ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
 
-          // 6. Arm
-          const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
+          // 6. Arm with Stretched Placing Punch
+          let cArmAngle = isFloating ? -0.6 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
+          if (punchProgress > 0) cArmAngle = punchAngle;
+
           ctx.save();
-          ctx.translate(-2, -3 + breatheBob);
-          ctx.rotate(armAngle);
+          ctx.translate(-2 + punchArmOffsetX, -3 + breatheBob + punchArmOffsetY);
+          ctx.rotate(cArmAngle);
+          ctx.scale(punchStretch, 1.0);
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-2, 0, 5, 3.5);
           ctx.fillStyle = skinColor;
