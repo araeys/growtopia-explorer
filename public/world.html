@@ -2136,13 +2136,13 @@
   charModal?.addEventListener('click', (e) => {
     if (e.target === charModal) closeSkinModal();
   });
-  // Global Button Click Sound Effect (Authentic Growtopia UI clicks)
+  // Global Button Click Sound Effect (Authentic Growtopia UI click.wav)
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button, .picker-item, .world-menu-item, .world-tool-btn, .hotbar-slot, .skin-card, .size-preset-btn, .action-btn-jump, .action-btn-pill');
     if (btn) {
       try {
-        const audio = new Audio('audio/switch.wav');
-        audio.volume = 0.35;
+        const audio = new Audio('audio/click.wav');
+        audio.volume = 0.4;
         audio.play().catch(() => {});
       } catch (_) {}
     }

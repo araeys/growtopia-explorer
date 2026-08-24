@@ -2050,7 +2050,7 @@
         if (player.moderatorMode) {
           player.vx = 0;
           player.vy = 0;
-          if (player.active) playSfx("magic", 1.0, 0.6);
+          if (player.active) playSfx("boo_ghost_be_gone", 1.0, 0.65);
           onStatusMessage("🛡️ Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
         } else {
           if (player.active) playSfx("switch", 1.1, 0.5);
@@ -2079,11 +2079,7 @@
 
             function triggerPlayerPunch(targetTileX, targetTileY) {
         if (!player.active) return;
-        const targetWorldX = targetTileX * TILE_SIZE + TILE_SIZE / 2;
-        const targetWorldY = targetTileY * TILE_SIZE + TILE_SIZE / 2;
-        player.punchTargetX = targetWorldX - (player.x + player.width / 2);
-        player.punchTargetY = targetWorldY - (player.y + player.height / 2);
-        player.punchTimer = 0.25;
+        player.punchTimer = 0.22;
       }
 
       function updatePlayerPhysics(dt) {
@@ -2379,26 +2375,15 @@
         const isBlinking = (player.animTimer % 3.8) < 0.14;
 
         // Mod Flying Hover Float Wave
-        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.8 : 0;
+        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.2 : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
         const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
-        // Arm Stretch / Placing Punch Dynamics
-        let punchProgress = 0;
-        let punchArmOffsetX = 0;
-        let punchArmOffsetY = 0;
-        let punchAngle = 0;
-        let punchDist = 0;
-
-        if (player.punchTimer > 0) {
-          punchProgress = Math.sin((player.punchTimer / 0.25) * Math.PI);
-          const rawAngle = Math.atan2(player.punchTargetY, player.punchTargetX * (player.facing < 0 ? -1 : 1));
-          punchAngle = rawAngle;
-          punchDist = Math.min(34, Math.hypot(player.punchTargetX, player.punchTargetY)) * punchProgress;
-          punchArmOffsetX = Math.cos(rawAngle) * punchDist;
-          punchArmOffsetY = Math.sin(rawAngle) * punchDist;
-        }
+        // Placing / Punch Spin Throw Animation
+        const isPunching = player.punchTimer > 0;
+        const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
+        const punchSpinAngle = isPunching ? -punchProgress * Math.PI * 2 : 0;
 
         const skin = player.skinStyle || "classic";
 
@@ -2412,18 +2397,16 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          // Pick dynamic expression head
-          let headSrc = "character_base_assets/gt_parts/head_idle.png";
+          // Pick dynamic expression head (Idle, Jump/Float, Fall, Blink)
+          let headSrc = "character_base_assets/gt_parts/head_open.png";
           if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
-          else if (isJumping || isFloating) headSrc = "character_base_assets/gt_parts/head_happy.png";
-          else if (isFalling) headSrc = "character_base_assets/gt_parts/head_surprised.png";
           const imgHead = getSpriteImage(headSrc);
 
           // 1. Back Arm (Tangan Kanan - Shoulder at 8, 4)
-          // Inverted V pose in Mod flight: angle backwards/downwards (0.6 rad)
+          // Reference Flight Pose: Back arm raised backwards/upwards (-0.75 rad)
           let backArmAngle = 0;
-          if (isFloating) backArmAngle = 0.65 + Math.sin(player.animTimer * 5) * 0.08;
-          else if (isFalling) backArmAngle = -1.1; // Raising arms up in freefall
+          if (isFloating) backArmAngle = -0.75 + Math.sin(player.animTimer * 5) * 0.1;
+          else if (isFalling) backArmAngle = -1.1;
           else if (isJumping) backArmAngle = -0.7;
           else if (isWalking) backArmAngle = -Math.cos(player.animTimer * 14) * 0.5;
 
@@ -2435,9 +2418,10 @@
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Hip at 8, 8, Feet stay on ground when walking)
+          // 2. Back Leg (Kaki Kanan - Hip at 8, 8)
+          // Reference Flight Pose: Back leg stepped back, knee bent (0.35 rad)
           let legRAngle = 0;
-          if (isFloating) legRAngle = -0.55 + Math.sin(player.animTimer * 5) * 0.08; // Streamlined back in flight
+          if (isFloating) legRAngle = 0.35 + Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
@@ -2450,8 +2434,9 @@
           ctx.restore();
 
           // 3. Front Leg (Kaki Kiri - Hip at -4, 8)
+          // Reference Flight Pose: Front leg stepped slightly forward/down (-0.35 rad)
           let legLAngle = 0;
-          if (isFloating) legLAngle = -0.55 - Math.sin(player.animTimer * 5) * 0.08; // Streamlined back in flight
+          if (isFloating) legLAngle = -0.35 - Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legLAngle = -0.3;
           else if (isJumping) legLAngle = -0.25;
           else if (isWalking) legLAngle = -walkCycle * 0.4;
@@ -2467,40 +2452,38 @@
           // 4. Torso & Body (Bobbing with breathing & step bounce)
           ctx.save();
           ctx.translate(0, breatheBob - stepBob);
+          if (isFloating) ctx.rotate(0.08); // Heroic slight forward torso tilt
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 5. Head with Dynamic Eyes (Relaxed, Happy, Surprised, Blink)
+          // 5. Head with Face & Permanent Dark Smile Line
           if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
             ctx.drawImage(imgHead, -16, -16, 32, 32);
           }
           ctx.restore();
 
           // 6. Front Arm (Tangan Kiri - Shoulder at -7, 4, DRAWN ON TOP of shirt!)
-          // Inverted V pose in Mod flight: angle backwards/downwards (0.6 rad)
+          // Reference Flight Pose: Front arm angled backwards/downwards (0.45 rad)
+          // Placing/Punch: Rapid 360-degree spin throw!
           let frontArmAngle = 0;
-          if (isFloating) frontArmAngle = 0.65 - Math.sin(player.animTimer * 5) * 0.08;
-          else if (isFalling) frontArmAngle = -1.1; // Raising arms up in freefall
-          else if (isJumping) frontArmAngle = -0.6;
-          else if (isWalking) frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
+          if (isPunching) {
+            frontArmAngle = punchSpinAngle;
+          } else if (isFloating) {
+            frontArmAngle = 0.45 - Math.sin(player.animTimer * 5) * 0.1;
+          } else if (isFalling) {
+            frontArmAngle = -1.1;
+          } else if (isJumping) {
+            frontArmAngle = -0.6;
+          } else if (isWalking) {
+            frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
+          }
 
           ctx.save();
-          if (punchProgress > 0) {
-            // Draw connecting stretched arm beam
-            ctx.translate(-7, 4 + breatheBob - stepBob);
-            ctx.rotate(punchAngle);
-            ctx.fillStyle = "#ffe9c8";
-            ctx.fillRect(0, -2.5, punchDist, 5);
-            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
-              ctx.drawImage(imgArmL, punchDist - 9, -20, 32, 32);
-            }
-          } else {
-            ctx.translate(-7, 4 + breatheBob - stepBob);
-            ctx.rotate(frontArmAngle);
-            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
-              ctx.drawImage(imgArmL, -9, -20, 32, 32);
-            }
+          ctx.translate(-7, 4 + breatheBob - stepBob);
+          ctx.rotate(frontArmAngle);
+          if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+            ctx.drawImage(imgArmL, -9, -20, 32, 32);
           }
           ctx.restore();
         } else {
@@ -2510,7 +2493,7 @@
           const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
 
           // 1. Back Leg
-          const cLegRAngle = isFloating ? -0.4 : (isFalling ? 0.35 : 0);
+          const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
           ctx.save();
           ctx.translate(0, isFloating ? floatBob : 0);
           ctx.rotate(cLegRAngle);
@@ -2523,7 +2506,7 @@
           ctx.restore();
 
           // 2. Front Leg
-          const cLegLAngle = isFloating ? -0.4 : (isFalling ? -0.3 : 0);
+          const cLegLAngle = isFloating ? -0.35 : (isFalling ? -0.3 : 0);
           ctx.save();
           ctx.translate(0, isFloating ? floatBob : 0);
           ctx.rotate(cLegLAngle);
@@ -2536,85 +2519,65 @@
           ctx.restore();
 
           // 3. Torso
+          ctx.save();
+          ctx.translate(0, breatheBob - stepBob);
+          if (isFloating) ctx.rotate(0.08);
           ctx.fillStyle = "#0284c7";
-          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
+          ctx.fillRect(-8, -6, 16, 10);
           ctx.fillStyle = "#38bdf8";
-          ctx.fillRect(-6, -6 + breatheBob, 12, 2);
+          ctx.fillRect(-6, -6, 12, 2);
           ctx.fillStyle = "#0f172a";
-          ctx.fillRect(-8, 2 + breatheBob, 16, 2);
+          ctx.fillRect(-8, 2, 16, 2);
           ctx.fillStyle = "#e2e8f0";
-          ctx.fillRect(-2, 2 + breatheBob, 4, 2);
+          ctx.fillRect(-2, 2, 4, 2);
 
           // 4. Head & Shaded Hair
           ctx.fillStyle = skinColor;
           ctx.beginPath();
-          ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
+          ctx.arc(0, -12, 8.5, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = "#452817";
           ctx.beginPath();
-          ctx.arc(0, -14 + breatheBob, 8, Math.PI, Math.PI * 2);
+          ctx.arc(0, -14, 8, Math.PI, Math.PI * 2);
           ctx.fill();
-          ctx.fillRect(-8, -14 + breatheBob, 5, 3.5);
+          ctx.fillRect(-8, -14, 5, 3.5);
           ctx.fillStyle = "#784c2f";
-          ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
+          ctx.fillRect(-4, -17.5, 5, 2);
 
           // 5. Dynamic Eye Expression
           if (isBlinking) {
             ctx.fillStyle = "#452817";
-            ctx.fillRect(1, -13 + breatheBob, 5, 1.5);
-          } else if (isJumping || isFloating) {
-            // Smiling Happy ^ ^ Eyes
-            ctx.fillStyle = "#452817";
-            ctx.fillRect(1, -15 + breatheBob, 2, 1.5);
-            ctx.fillRect(3, -16 + breatheBob, 2, 1.5);
-            ctx.fillRect(5, -15 + breatheBob, 2, 1.5);
-          } else if (isFalling) {
-            // Surprised Wide Eyes
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, -16 + breatheBob, 7, 6);
-            ctx.fillStyle = "#0f172a";
-            ctx.fillRect(3, -14 + breatheBob, 3, 3);
+            ctx.fillRect(1, -13, 5, 1.5);
           } else {
-            // Idle Relaxed Eyes
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(1, -14 + breatheBob, 5, 3.5);
+            ctx.fillRect(1, -14, 5, 3.5);
             ctx.fillStyle = "#0f172a";
-            ctx.fillRect(3, -13.5 + breatheBob, 2.5, 2.5);
+            ctx.fillRect(3, -13.5, 2.5, 2.5);
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(4, -14 + breatheBob, 1, 1);
+            ctx.fillRect(4, -14, 1, 1);
           }
           ctx.fillStyle = "#452817";
-          ctx.fillRect(1, -16.5 + breatheBob, 5, 1.2);
+          ctx.fillRect(1, -16.5, 5, 1.2);
           ctx.fillStyle = "#833a1e";
-          ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
+          ctx.fillRect(2, -8.5, 4, 1.2);
           ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
-          ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
+          ctx.fillRect(-2, -9.5, 3, 1.5);
+          ctx.restore();
 
-          // 6. Arm with Stretched Placing Punch
-          let cArmAngle = isFloating ? 0.65 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
+          // 6. Arm with Spin Throw Punch
+          let cArmAngle = isFloating ? 0.45 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
+          if (isPunching) cArmAngle = punchSpinAngle;
 
           ctx.save();
-          if (punchProgress > 0) {
-            ctx.translate(-2, -3 + breatheBob);
-            ctx.rotate(punchAngle);
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(0, -2, punchDist, 4);
-            ctx.translate(punchDist, 0);
-            ctx.fillStyle = "#0284c7";
-            ctx.fillRect(-2, 0, 5, 3.5);
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(-2, 3.5, 4.5, 6);
-          } else {
-            ctx.translate(-2, -3 + breatheBob);
-            ctx.rotate(cArmAngle);
-            ctx.fillStyle = "#0284c7";
-            ctx.fillRect(-2, 0, 5, 3.5);
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(-2, 3.5, 4.5, 6);
-            ctx.fillStyle = darkSkin;
-            ctx.fillRect(1, 7.5, 2, 2);
-          }
+          ctx.translate(-2, -3 + breatheBob);
+          ctx.rotate(cArmAngle);
+          ctx.fillStyle = "#0284c7";
+          ctx.fillRect(-2, 0, 5, 3.5);
+          ctx.fillStyle = skinColor;
+          ctx.fillRect(-2, 3.5, 4.5, 6);
+          ctx.fillStyle = darkSkin;
+          ctx.fillRect(1, 7.5, 2, 2);
           ctx.restore();
         }
 
