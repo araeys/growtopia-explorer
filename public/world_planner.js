@@ -1580,7 +1580,7 @@
           }
 
           const currentZoom = viewport.zoom;
-          const nextZoom = currentZoom + diff * 0.25;
+          const nextZoom = currentZoom + diff * 0.65;
           viewport.x = smoothAnchorX - (smoothAnchorX - viewport.x) * (nextZoom / currentZoom);
           viewport.y = smoothAnchorY - (smoothAnchorY - viewport.y) * (nextZoom / currentZoom);
           viewport.zoom = nextZoom;
@@ -1597,7 +1597,7 @@
           smoothAnchorX = event.clientX - rect.left;
           smoothAnchorY = event.clientY - rect.top;
 
-          const zoomFactor = event.deltaY < 0 ? 1.16 : 0.84;
+          const zoomFactor = event.deltaY < 0 ? 1.25 : 0.78;
           smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
 
           if (!isZoomAnimating) {
@@ -2113,9 +2113,9 @@
         if (!player.active) return;
         player.animTimer += dt;
 
-        // Moderator Mode: Free 8-Way Flight & Noclip
+        // Moderator Mode: Fast & Responsive Free 8-Way Flight & Noclip
         if (player.moderatorMode) {
-          const modSpeed = 4.6;
+          const modSpeed = 7.5;
           if (player.keys.left) {
             player.vx = -modSpeed;
             player.facing = -1;
@@ -2125,8 +2125,8 @@
             player.facing = 1;
             player.state = "walk";
           } else {
-            player.vx *= 0.82;
-            if (Math.abs(player.vx) < 0.08) player.vx = 0;
+            player.vx *= 0.75;
+            if (Math.abs(player.vx) < 0.1) player.vx = 0;
             player.state = "idle";
           }
 
@@ -2135,47 +2135,46 @@
           } else if (player.keys.down) {
             player.vy = modSpeed;
           } else {
-            player.vy *= 0.82;
-            if (Math.abs(player.vy) < 0.08) player.vy = 0;
+            player.vy *= 0.75;
+            if (Math.abs(player.vy) < 0.1) player.vy = 0;
           }
 
           player.x += player.vx;
           player.y += player.vy;
           player.isGrounded = false;
-          // Bypass solid and hazard collisions in Mod mode
         } else {
-          // Normal Game Mode Physics
+          // Normal Game Mode Physics: Snappy, Responsive, Authentic Growtopia Speed
 
-          // Horizontal Movement (Gentle, controlled walk speed: max 2.7)
+          // Horizontal Movement
           if (player.keys.left) {
-            player.vx -= 0.60;
+            player.vx -= 1.25;
             player.facing = -1;
             if (player.isGrounded) player.state = "walk";
           } else if (player.keys.right) {
-            player.vx += 0.60;
+            player.vx += 1.25;
             player.facing = 1;
             if (player.isGrounded) player.state = "walk";
           } else {
-            player.vx *= 0.80;
-            if (Math.abs(player.vx) < 0.08) player.vx = 0;
+            player.vx *= 0.72;
+            if (Math.abs(player.vx) < 0.1) player.vx = 0;
             if (player.isGrounded) player.state = "idle";
           }
 
-          // Max walk speed: 2.7 (-30% from 3.84)
-          player.vx = Math.max(-2.7, Math.min(2.7, player.vx));
+          // Max walk speed: 4.8 (Fast, authentic Growtopia speed)
+          player.vx = Math.max(-4.8, Math.min(4.8, player.vx));
 
-          // Jump & Double Jump (-40% jump speed & height: -6.1 and -5.6)
+          // Jump & Double Jump
           const wantsJump = player.keys.jump || player.keys.up;
           if (wantsJump && !player.jumpConsumed) {
             if (player.isGrounded || player.jumpCount === 0) {
-              player.vy = -6.1;
+              player.vy = -8.8;
               player.isGrounded = false;
               player.jumpCount = 1;
               player.jumpConsumed = true;
               player.state = "jump";
               playJumpSound(false);
             } else if (player.jumpCount === 1) {
-              player.vy = -5.6;
+              player.vy = -7.8;
               player.jumpCount = 2;
               player.jumpConsumed = true;
               player.state = "jump";
@@ -2183,9 +2182,9 @@
             }
           }
 
-          // Floaty, Slow Gravity (-30% slower fall: 0.15, terminal velocity: 4.2)
-          player.vy += 0.15;
-          if (player.vy > 4.2) player.vy = 4.2;
+          // Snappy, Natural Gravity (0.38, terminal velocity: 8.5)
+          player.vy += 0.38;
+          if (player.vy > 8.5) player.vy = 8.5;
 
           // Apply X movement and check collision
           player.x += player.vx;
@@ -2213,8 +2212,8 @@
           const viewH = canvas.height / dpr;
           const targetX = viewW / 2 - (player.x + player.width / 2) * viewport.zoom;
           const targetY = viewH / 2 - (player.y + player.height / 2) * viewport.zoom;
-          viewport.x += (targetX - viewport.x) * 0.14;
-          viewport.y += (targetY - viewport.y) * 0.14;
+          viewport.x += (targetX - viewport.x) * 0.35;
+          viewport.y += (targetY - viewport.y) * 0.35;
         }
       }
 
