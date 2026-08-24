@@ -2231,36 +2231,72 @@
         }
       }
 
+      // ── Authentic Growtopia Avatar Sprite Engine ──
+      const avatarSpriteParts = [
+        "Base Set GT/Tangan Kanan.png",
+        "Base Set GT/Kaki Kanan.png",
+        "Base Set GT/Kaki Kiri.png",
+        "Base Set GT/Body.png",
+        "Base Set GT/Head utuh.png",
+        "Base Set GT/Bola Mata.png",
+        "Base Set GT/Pupil.png",
+        "Base Set GT/Mulut.png",
+        "Base Set GT/Tangan Kiri.png"
+      ];
+
+      const avatarTextureCache = new Map();
+      let isAvatarTexturesLoading = false;
+
+      function ensureAvatarSprites() {
+        if (typeof Image === "undefined") return;
+        if (avatarTextureCache.size >= avatarSpriteParts.length || isAvatarTexturesLoading) return;
+        isAvatarTexturesLoading = true;
+        avatarSpriteParts.forEach(path => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            avatarTextureCache.set(path, img);
+            requestRender();
+          };
+          img.src = path;
+          if (img.complete && img.naturalWidth > 0) {
+            avatarTextureCache.set(path, img);
+          }
+        });
+      }
+
       function drawPlayerAvatar(ctx) {
         ctx.save();
+        ensureAvatarSprites();
+
         const px = player.x;
         const py = player.y;
         const pw = player.width;
         const ph = player.height;
 
         // Shadow beneath player
-        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
         ctx.beginPath();
-        ctx.ellipse(px + pw / 2, py + ph, pw * 0.55, 3.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Moderator Mode Glowing Aura & Orbiting Sparkles
         if (player.moderatorMode) {
           ctx.save();
-          const pulse = 0.5 + 0.3 * Math.sin(player.animTimer * 6);
+          const pulse = 0.6 + 0.3 * Math.sin(player.animTimer * 6);
           ctx.shadowColor = "#c084fc";
           ctx.shadowBlur = 14 * pulse;
           ctx.strokeStyle = "rgba(168, 85, 247, " + pulse + ")";
           ctx.lineWidth = 2.5 / viewport.zoom;
           ctx.beginPath();
-          ctx.ellipse(px + pw / 2, py + ph / 2, pw * 0.8, ph * 0.65, 0, 0, Math.PI * 2);
+          ctx.ellipse(px + pw / 2, py + ph / 2, pw * 0.85, ph * 0.7, 0, 0, Math.PI * 2);
           ctx.stroke();
 
           const sparkleCount = 4;
           for (let s = 0; s < sparkleCount; s++) {
             const sAngle = player.animTimer * 3 + (s * Math.PI * 2) / sparkleCount;
-            const sx = px + pw / 2 + Math.cos(sAngle) * (pw * 0.85);
-            const sy = py + ph / 2 + Math.sin(sAngle) * (ph * 0.6);
+            const sx = px + pw / 2 + Math.cos(sAngle) * (pw * 0.9);
+            const sy = py + ph / 2 + Math.sin(sAngle) * (ph * 0.65);
             ctx.fillStyle = s % 2 === 0 ? "#fde047" : "#00e5ff";
             ctx.beginPath();
             ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
@@ -2269,90 +2305,92 @@
           ctx.restore();
         }
 
-        // Draw Player Sprite (Detailed Growtopia Avatar)
+        // Draw Player Sprite (100% Authentic Growtopia Pixel Art Layering)
         ctx.save();
-        ctx.translate(px + pw / 2, py + ph / 2);
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
         if (player.facing < 0) ctx.scale(-1, 1);
-        if (player.moderatorMode) ctx.globalAlpha = 0.88;
+        if (player.moderatorMode) ctx.globalAlpha = 0.92;
 
-        const skinColor = "#f6b484";
-        const darkSkin = "#d88b56";
         const isWalking = player.state === "walk";
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
-        const legOffset = walkCycle * 4;
-        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : 0;
+        const isJumping = player.state === "jump" || !player.isGrounded;
+        const walkCycle = isWalking ? Math.sin(player.animTimer * 15) : 0;
+        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
 
-        // 1. Back Leg (Jeans + Sneaker)
-        ctx.fillStyle = "#1e3a8a";
-        ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(-7, 12, 6, 3);
-        ctx.fillStyle = "#1d4ed8";
-        ctx.fillRect(-7, 13, 6, 1);
+        // Fallback: If sprite parts still loading, use pre-rendered composite
+        const imgTanganKanan = avatarTextureCache.get("Base Set GT/Tangan Kanan.png");
+        const imgKakiKanan = avatarTextureCache.get("Base Set GT/Kaki Kanan.png");
+        const imgKakiKiri = avatarTextureCache.get("Base Set GT/Kaki Kiri.png");
+        const imgBody = avatarTextureCache.get("Base Set GT/Body.png");
+        const imgHead = avatarTextureCache.get("Base Set GT/Head utuh.png");
+        const imgBolaMata = avatarTextureCache.get("Base Set GT/Bola Mata.png");
+        const imgPupil = avatarTextureCache.get("Base Set GT/Pupil.png");
+        const imgMulut = avatarTextureCache.get("Base Set GT/Mulut.png");
+        const imgTanganKiri = avatarTextureCache.get("Base Set GT/Tangan Kiri.png");
 
-        // 2. Front Leg (Jeans + Sneaker)
-        ctx.fillStyle = "#2563eb";
-        ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(1, 12, 6, 3);
-        ctx.fillStyle = "#2563eb";
-        ctx.fillRect(1, 13, 6, 1);
+        if (!imgBody) {
+          // Pre-rendered composite fallback
+          const comp = avatarTextureCache.get("character_base_assets/gt_avatar_preview.png");
+          if (comp) {
+            ctx.drawImage(comp, -16, -16 + breatheBob, 32, 32);
+          } else if (typeof Image !== "undefined") {
+            const fallbackImg = new Image();
+            fallbackImg.src = "character_base_assets/gt_avatar_preview.png";
+            fallbackImg.onload = () => {
+              avatarTextureCache.set("character_base_assets/gt_avatar_preview.png", fallbackImg);
+              requestRender();
+            };
+          }
+        } else {
+          // 1. Tangan Kanan (Back Arm with swing animation)
+          const backArmAngle = isJumping || player.moderatorMode ? -0.4 : (isWalking ? -Math.cos(player.animTimer * 15) * 0.4 : 0);
+          ctx.save();
+          ctx.translate(-2, -3 + breatheBob);
+          ctx.rotate(backArmAngle);
+          if (imgTanganKanan) ctx.drawImage(imgTanganKanan, -14, -13, 32, 32);
+          ctx.restore();
 
-        // 3. Torso (Cyan/Denim shirt, collar & belt buckle)
-        ctx.fillStyle = "#0284c7";
-        ctx.fillRect(-8, -6 + breatheBob, 16, 10);
-        ctx.fillStyle = "#38bdf8";
-        ctx.fillRect(-6, -6 + breatheBob, 12, 2);
-        ctx.fillStyle = "#0f172a"; // Belt
-        ctx.fillRect(-8, 2 + breatheBob, 16, 2);
-        ctx.fillStyle = "#e2e8f0"; // Belt silver buckle
-        ctx.fillRect(-2, 2 + breatheBob, 4, 2);
+          // 2. Kaki Kanan (Back Leg with walk cycle)
+          const legBackOffset = isWalking ? walkCycle * 2.5 : 0;
+          ctx.save();
+          if (imgKakiKanan) ctx.drawImage(imgKakiKanan, -16, -16 + legBackOffset, 32, 32);
+          ctx.restore();
 
-        // 4. Head (Authentic GT Shape + Shaded Hair Tuft)
-        ctx.fillStyle = skinColor;
-        ctx.beginPath();
-        ctx.arc(0, -12 + breatheBob, 9, 0, Math.PI * 2);
-        ctx.fill();
+          // 3. Kaki Kiri (Front Leg with walk cycle)
+          const legFrontOffset = isWalking ? -walkCycle * 2.5 : (isJumping ? -1 : 0);
+          ctx.save();
+          if (imgKakiKiri) ctx.drawImage(imgKakiKiri, -16, -16 + legFrontOffset, 32, 32);
+          ctx.restore();
 
-        // Shaded Hair Tuft
-        ctx.fillStyle = "#452817";
-        ctx.beginPath();
-        ctx.arc(0, -14 + breatheBob, 8.5, Math.PI, Math.PI * 2);
-        ctx.fill();
-        ctx.fillRect(-8, -14 + breatheBob, 6, 4);
-        ctx.fillStyle = "#784c2f";
-        ctx.fillRect(-4, -18 + breatheBob, 5, 2);
+          // 4. Body (Torso with breathing bob)
+          ctx.save();
+          if (imgBody) ctx.drawImage(imgBody, -16, -16 + breatheBob, 32, 32);
+          ctx.restore();
 
-        // 5. Expressive GT Eye & Smile
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(1, -15 + breatheBob, 5, 5);
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(3, -14 + breatheBob, 3, 3);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(4, -15 + breatheBob, 1.5, 1.5);
-        ctx.fillStyle = "#452817";
-        ctx.fillRect(1, -17 + breatheBob, 5, 1.5);
-        ctx.fillStyle = "#833a1e";
-        ctx.fillRect(2, -8 + breatheBob, 4, 1.5);
-        ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
-        ctx.fillRect(-2, -9 + breatheBob, 3, 2);
+          // 5. Head (Authentic GT Head with breathing bob)
+          ctx.save();
+          if (imgHead) ctx.drawImage(imgHead, -16, -16 + breatheBob, 32, 32);
+          ctx.restore();
 
-        // 6. Arm with hand
-        const armAngle = player.state === "jump" || player.moderatorMode ? -0.9 : (isWalking ? Math.cos(player.animTimer * 14) * 0.7 : 0);
-        ctx.save();
-        ctx.translate(-2, -3 + breatheBob);
-        ctx.rotate(armAngle);
-        ctx.fillStyle = "#0284c7";
-        ctx.fillRect(-2, 0, 5, 4);
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(-2, 4, 4.5, 7);
-        ctx.fillStyle = darkSkin;
-        ctx.fillRect(1, 8, 2, 2.5);
-        ctx.restore();
+          // 6. Eyes & Face Details (Bola Mata, Pupil, Mulut)
+          ctx.save();
+          if (imgBolaMata) ctx.drawImage(imgBolaMata, -16, -16 + breatheBob, 32, 32);
+          if (imgPupil) ctx.drawImage(imgPupil, -16, -16 + breatheBob, 32, 32);
+          if (imgMulut) ctx.drawImage(imgMulut, -16, -16 + breatheBob, 32, 32);
+          ctx.restore();
+
+          // 7. Tangan Kiri (Front Left Hand with swing animation)
+          const frontArmAngle = isJumping || player.moderatorMode ? -0.5 : (isWalking ? Math.cos(player.animTimer * 15) * 0.4 : 0);
+          ctx.save();
+          ctx.translate(-2, -3 + breatheBob);
+          ctx.rotate(frontArmAngle);
+          if (imgTanganKiri) ctx.drawImage(imgTanganKiri, -14, -13, 32, 32);
+          ctx.restore();
+        }
 
         ctx.restore(); // Restore sprite transform
 
-        // 7. Growtopia Nametag ("Raey" with Flag Logo)
+        // 8. Growtopia Nametag ("Raey" with Flag Logo)
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
 
         ctx.restore();
