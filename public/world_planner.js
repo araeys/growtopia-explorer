@@ -2318,7 +2318,7 @@
         const pw = player.width;
         const ph = player.height;
 
-        // Shadow beneath player
+        // Shadow beneath player (Ground contact shadow)
         ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.beginPath();
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
@@ -2356,24 +2356,91 @@
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || !player.isGrounded;
-        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
-        const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 15)) * 1.5 : 0;
-        const walkTilt = isWalking ? Math.sin(player.animTimer * 15) * 0.08 : 0;
+
+        // Feet stay grounded; ONLY upper torso + head bob with breathing!
+        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : 0);
+        const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
+        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
         const skin = player.skinStyle || "classic";
 
         if (skin === "classic" || skin === "builder" || skin === "guardian") {
-          // ── Authentic Official Growtopia Pixel Art Character Engine ──
+          // ── Fully Articulated Growtopia Base Set Character Engine ──
           ctx.imageSmoothingEnabled = false;
-          let spritePath = "character_base_assets/gt_classic_avatar.png";
-          if (skin === "builder") spritePath = "character_base_assets/gt_builder_avatar.png";
-          else if (skin === "guardian") spritePath = "character_base_assets/gt_guardian_avatar.png";
 
-          const spriteImg = getSpriteImage(spritePath);
+          const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
+          const imgArmL = getSpriteImage("character_base_assets/gt_parts/arm_l.png");
+          const imgLegR = getSpriteImage("character_base_assets/gt_parts/leg_r.png");
+          const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
+          const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
+
+          let headSrc = "character_base_assets/gt_parts/head.png";
+          if (skin === "builder") headSrc = "character_base_assets/gt_parts/head_builder.png";
+          const imgHead = getSpriteImage(headSrc);
+
+          // 1. Guardian Wings (Behind Body)
+          if (skin === "guardian") {
+            const imgWings = getSpriteImage("character_base_assets/gt_parts/wings.png");
+            if (imgWings && imgWings.complete && imgWings.naturalWidth > 0) {
+              const wingFlap = Math.sin(player.animTimer * 10) * 0.2;
+              ctx.save();
+              ctx.translate(0, breatheBob - stepBob);
+              ctx.rotate(wingFlap);
+              ctx.drawImage(imgWings, -16, -16, 32, 32);
+              ctx.restore();
+            }
+          }
+
+          // 2. Back Arm (Tangan Kanan - Rotates around shoulder pivot at 8, 4)
+          const backArmAngle = isJumping || player.moderatorMode ? -0.7 : (isWalking ? -Math.cos(player.animTimer * 14) * 0.5 : 0);
           ctx.save();
-          ctx.rotate(walkTilt);
-          if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
-            ctx.drawImage(spriteImg, -16, -16 + breatheBob - stepBob, 32, 32);
+          ctx.translate(8, 4 + breatheBob - stepBob);
+          ctx.rotate(backArmAngle);
+          if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
+            ctx.drawImage(imgArmR, -24, -20, 32, 32);
+          }
+          ctx.restore();
+
+          // 3. Back Leg (Kaki Kanan - Hip joint at 8, 8, Feet stay on ground)
+          const legRAngle = isWalking ? walkCycle * 0.4 : 0;
+          ctx.save();
+          ctx.translate(8, 8);
+          ctx.rotate(legRAngle);
+          if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
+            ctx.drawImage(imgLegR, -24, -24, 32, 32);
+          }
+          ctx.restore();
+
+          // 4. Front Leg (Kaki Kiri - Hip joint at -4, 8, Feet stay on ground)
+          const legLAngle = isWalking ? -walkCycle * 0.4 : (isJumping ? -0.2 : 0);
+          ctx.save();
+          ctx.translate(-4, 8);
+          ctx.rotate(legLAngle);
+          if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
+            ctx.drawImage(imgLegL, -12, -24, 32, 32);
+          }
+          ctx.restore();
+
+          // 5. Torso / Body (Bobbing with breathing & step bounce)
+          ctx.save();
+          ctx.translate(0, breatheBob - stepBob);
+          if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+            ctx.drawImage(imgBody, -16, -16, 32, 32);
+          }
+
+          // 6. Head with Face & Clean Hair / Hard Hat (On top of body)
+          if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
+            ctx.drawImage(imgHead, -16, -16, 32, 32);
+          }
+          ctx.restore();
+
+          // 7. Front Arm (Tangan Kiri - Shoulder pivot at -7, 4, DRAWN ON TOP of shirt!)
+          const frontArmAngle = isJumping || player.moderatorMode ? -0.6 : (isWalking ? Math.cos(player.animTimer * 14) * 0.5 : 0);
+          ctx.save();
+          ctx.translate(-7, 4 + breatheBob - stepBob);
+          ctx.rotate(frontArmAngle);
+          if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+            ctx.drawImage(imgArmL, -9, -20, 32, 32);
           }
           ctx.restore();
         } else {
