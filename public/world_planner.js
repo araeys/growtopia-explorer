@@ -551,8 +551,8 @@
         // 2b. Imported Live World Render Blueprint Overlay (from /renderworld)
         if (world.renderOverlayImage && world.renderOverlayImage.complete && world.renderOverlayImage.naturalWidth > 0) {
           ctx.save();
-          ctx.globalAlpha = 0.90;
-          ctx.imageSmoothingEnabled = false;
+          ctx.globalAlpha = 0.95;
+          ctx.imageSmoothingEnabled = true;
           ctx.drawImage(world.renderOverlayImage, 0, 0, worldW, worldH);
           ctx.restore();
         }
@@ -3248,12 +3248,17 @@
             render();
             return;
           }
-          if (worldName) world.name = worldName;
+          if (worldName) {
+            world.name = worldName.toUpperCase();
+            if (typeof onWorldChange === 'function') onWorldChange(world);
+          }
           const img = new Image();
           img.onload = () => {
             world.renderOverlayImage = img;
             render();
-            onStatusMessage(`📥 Loaded "${worldName || 'World'}" render blueprint overlay!`);
+            if (minimapCanvas) renderMinimap();
+            playSfx("magic", 1.0, 0.6);
+            onStatusMessage(`📥 Loaded "${worldName || 'World'}" as background blueprint!`);
           };
           img.src = imageUrl;
         },

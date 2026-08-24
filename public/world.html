@@ -974,7 +974,7 @@
       <button class="zoom-btn" id="world-zoom-in-btn" title="Zoom In">+</button>
     </div>
     <div class="spacer"></div>
-    <button class="tb-btn" id="tb-convert-blueprint-btn" title="Convert imported render image into editable blocks" style="background:linear-gradient(135deg,rgba(0,229,255,0.2),rgba(168,85,247,0.2));border:1.5px solid #00e5ff;color:#00e5ff;font-weight:700;">✨ Convert to Blocks</button>
+    
     <button class="tb-btn" id="world-skin-btn" title="Choose Character Style">👤 <span class="tb-btn-text">Skin</span></button>
     <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
@@ -1126,7 +1126,7 @@
   <button class="world-menu-item" id="world-menu-save-dat">💾 Save World (.DAT)</button>
   <button class="world-menu-item" id="world-menu-save-json">📦 Export .gtworld JSON</button>
   <div class="world-menu-divider"></div>
-  <button class="world-menu-item" id="world-menu-convert-blueprint" style="color:#00e5ff;font-weight:700;">✨ Auto-Convert Blueprint to Blocks</button>
+  
   <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
 </div>
 
@@ -1452,13 +1452,13 @@
       const importWorld = urlParams.get('import_world') || urlParams.get('import_render');
 
       if (importWorld) {
-        engine.importFromRender(importWorld);
+        engine.loadRenderOverlay(`https://s3.amazonaws.com/world.growtopiagame.com/${importWorld.toLowerCase()}.png`, importWorld.toUpperCase());
       } else {
         const pendingRender = localStorage.getItem('gt_planner_import_render');
         if (pendingRender) {
           const data = JSON.parse(pendingRender);
-          if (data && (data.worldName || data.imageUrl)) {
-            engine.importFromRender(data.worldName || data.imageUrl);
+          if (data && (data.imageUrl || data.worldName)) {
+            engine.loadRenderOverlay(data.imageUrl || `https://s3.amazonaws.com/world.growtopiagame.com/${data.worldName.toLowerCase()}.png`, data.worldName);
             localStorage.removeItem('gt_planner_import_render');
           }
         }
