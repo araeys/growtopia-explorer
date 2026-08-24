@@ -49,7 +49,7 @@
         y: 0,
         zoom: 0.5, // 0.5 default gives great initial overview
         minZoom: 0.15,
-        maxZoom: 2.5
+        maxZoom: 8.0
       };
 
       // Selection State
@@ -2336,14 +2336,25 @@
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Moderator Mode Glowing Aura & Orbiting Sparkles
+        // Moderator Mode Rotating Sunburst Aura & Cosmic Sparkles
         if (player.moderatorMode) {
           ctx.save();
+          const auraImg = getSpriteImage("character_base_assets/mod_sunburst_aura.png");
+          if (auraImg && auraImg.complete && auraImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.translate(px + pw / 2, py + ph / 2);
+            ctx.globalAlpha = 0.5;
+            ctx.globalCompositeOperation = "screen";
+            ctx.rotate(player.animTimer * 0.8);
+            ctx.drawImage(auraImg, -36, -36, 72, 72);
+            ctx.restore();
+          }
+
           const pulse = 0.6 + 0.3 * Math.sin(player.animTimer * 6);
           ctx.shadowColor = "#c084fc";
-          ctx.shadowBlur = 14 * pulse;
+          ctx.shadowBlur = 12 * pulse;
           ctx.strokeStyle = "rgba(168, 85, 247, " + pulse + ")";
-          ctx.lineWidth = 2.5 / viewport.zoom;
+          ctx.lineWidth = 2.0 / viewport.zoom;
           ctx.beginPath();
           ctx.ellipse(px + pw / 2, py + ph / 2, pw * 0.85, ph * 0.7, 0, 0, Math.PI * 2);
           ctx.stroke();
@@ -2371,7 +2382,7 @@
         const isFalling = !player.isGrounded && player.vy > 0.8;
         const isFloating = player.moderatorMode;
 
-        // Dynamic Facial Expression State (Idle relaxed, Jump happy, Fall surprised, Blink soft)
+        // Dynamic Facial Expression State (Idle relaxed, Jump happy, Fall surprised, Blink soft with space in middle)
         const isBlinking = (player.animTimer % 3.8) < 0.14;
 
         // Mod Flying Hover Float Wave
@@ -2379,6 +2390,9 @@
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
         const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
+
+        // Subtle gentle idle breathing arm sway/wiggle (Low frequency, 0.08 rad)
+        const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(player.animTimer * 2.5) * 0.08 : 0;
 
         // Placing / Punch Spin Throw Animation
         const isPunching = player.punchTimer > 0;
@@ -2397,7 +2411,7 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          // Pick dynamic expression head (Idle, Jump/Float, Fall, Blink)
+          // Pick dynamic expression head (Idle relaxed, Jump, Fall, 2-slit Blink)
           let headSrc = "character_base_assets/gt_parts/head_open.png";
           if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
           const imgHead = getSpriteImage(headSrc);
@@ -2409,6 +2423,7 @@
           else if (isFalling) backArmAngle = -1.1;
           else if (isJumping) backArmAngle = -0.7;
           else if (isWalking) backArmAngle = -Math.cos(player.animTimer * 14) * 0.5;
+          else backArmAngle = -idleArmWiggle;
 
           ctx.save();
           ctx.translate(8, 4 + breatheBob - stepBob);
@@ -2418,23 +2433,23 @@
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Hip at 8, 8)
-          // Reference Flight Pose: Back leg stepped back, knee bent (0.35 rad)
+          // 2. Back Leg (Kaki Kanan - Hip at 8, 10 - moved down 2px so not swallowed by shorts)
+          // Reference Flight Pose: Opposite rotation from front leg!
           let legRAngle = 0;
           if (isFloating) legRAngle = 0.35 + Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
           ctx.save();
-          ctx.translate(8, 8 + (isFloating ? floatBob : 0));
+          ctx.translate(8, 10 + (isFloating ? floatBob : 0));
           ctx.rotate(legRAngle);
           if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
             ctx.drawImage(imgLegR, -24, -24, 32, 32);
           }
           ctx.restore();
 
-          // 3. Front Leg (Kaki Kiri - Hip at -4, 8)
-          // Reference Flight Pose: Front leg stepped slightly forward/down (-0.35 rad)
+          // 3. Front Leg (Kaki Kiri - Hip at -4, 10 - moved down 2px so not swallowed by shorts)
+          // Reference Flight Pose: Opposite rotation from back leg!
           let legLAngle = 0;
           if (isFloating) legLAngle = -0.35 - Math.sin(player.animTimer * 5) * 0.08;
           else if (isFalling) legLAngle = -0.3;
@@ -2442,17 +2457,16 @@
           else if (isWalking) legLAngle = -walkCycle * 0.4;
 
           ctx.save();
-          ctx.translate(-4, 8 + (isFloating ? floatBob : 0));
+          ctx.translate(-4, 10 + (isFloating ? floatBob : 0));
           ctx.rotate(legLAngle);
           if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
             ctx.drawImage(imgLegL, -12, -24, 32, 32);
           }
           ctx.restore();
 
-          // 4. Torso & Body (Bobbing with breathing & step bounce)
+          // 4. Torso & Body (Bobbing with breathing & step bounce - Upright, no hunch)
           ctx.save();
           ctx.translate(0, breatheBob - stepBob);
-          if (isFloating) ctx.rotate(0.08); // Heroic slight forward torso tilt
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
@@ -2477,6 +2491,8 @@
             frontArmAngle = -0.6;
           } else if (isWalking) {
             frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
+          } else {
+            frontArmAngle = idleArmWiggle;
           }
 
           ctx.save();
@@ -2495,7 +2511,7 @@
           // 1. Back Leg
           const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
           ctx.save();
-          ctx.translate(0, isFloating ? floatBob : 0);
+          ctx.translate(0, (isFloating ? floatBob : 0) + 2);
           ctx.rotate(cLegRAngle);
           ctx.fillStyle = "#1e3a8a";
           ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
@@ -2508,7 +2524,7 @@
           // 2. Front Leg
           const cLegLAngle = isFloating ? -0.35 : (isFalling ? -0.3 : 0);
           ctx.save();
-          ctx.translate(0, isFloating ? floatBob : 0);
+          ctx.translate(0, (isFloating ? floatBob : 0) + 2);
           ctx.rotate(cLegLAngle);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
@@ -2521,7 +2537,6 @@
           // 3. Torso
           ctx.save();
           ctx.translate(0, breatheBob - stepBob);
-          if (isFloating) ctx.rotate(0.08);
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-8, -6, 16, 10);
           ctx.fillStyle = "#38bdf8";
@@ -2545,10 +2560,11 @@
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5, 5, 2);
 
-          // 5. Dynamic Eye Expression
+          // 5. Dynamic Eye Expression (Separate 2 slits for blink)
           if (isBlinking) {
             ctx.fillStyle = "#452817";
-            ctx.fillRect(1, -13, 5, 1.5);
+            ctx.fillRect(0, -13, 2.5, 1.5);
+            ctx.fillRect(3.5, -13, 2.5, 1.5);
           } else {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(1, -14, 5, 3.5);
@@ -2565,9 +2581,14 @@
           ctx.fillRect(-2, -9.5, 3, 1.5);
           ctx.restore();
 
-          // 6. Arm with Spin Throw Punch
-          let cArmAngle = isFloating ? 0.45 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
+          // 6. Arm with Spin Throw Punch & Idle Wiggle
+          let cArmAngle = 0;
           if (isPunching) cArmAngle = punchSpinAngle;
+          else if (isFloating) cArmAngle = 0.45;
+          else if (isFalling) cArmAngle = -1.0;
+          else if (isJumping) cArmAngle = -0.8;
+          else if (isWalking) cArmAngle = Math.cos(player.animTimer * 14) * 0.6;
+          else cArmAngle = idleArmWiggle;
 
           ctx.save();
           ctx.translate(-2, -3 + breatheBob);

@@ -58,10 +58,15 @@
       font-family: 'Outfit', sans-serif;
       font-weight: 700;
       font-size: 15px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       white-space: nowrap;
+    }
+    #topbar .logo span.logo-highlight {
+      color: #38bdf8;
+      font-weight: 800;
     }
 
     #topbar .sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
@@ -955,7 +960,10 @@
 <div id="app">
   <!-- Top Bar -->
   <div id="topbar">
-    <div class="logo">🌍 GT World Planner Studio</div>
+    <div class="logo">
+      <img src="favicon.ico" width="20" height="20" style="image-rendering:pixelated;vertical-align:middle;" alt="GT">
+      <span><span class="logo-highlight">Growtopia</span> World Planner</span>
+    </div>
     <div class="sep"></div>
     <span id="world-name-display">World</span>
     <span id="world-coords-display">X: 0, Y: 0</span>
@@ -2136,10 +2144,10 @@
   charModal?.addEventListener('click', (e) => {
     if (e.target === charModal) closeSkinModal();
   });
-  // Global Button Click Sound Effect (Authentic Growtopia UI click.wav)
+  // Global Button Click Sound Effect (Exclude virtual touch controller keys)
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('button, .picker-item, .world-menu-item, .world-tool-btn, .hotbar-slot, .skin-card, .size-preset-btn, .action-btn-jump, .action-btn-pill');
-    if (btn) {
+    const btn = e.target.closest('button, .picker-item, .world-menu-item, .world-tool-btn, .hotbar-slot, .skin-card, .size-preset-btn, .action-btn-pill');
+    if (btn && !btn.closest('#mobile-touch-controller') && !btn.classList.contains('dpad-btn') && !btn.classList.contains('action-btn-jump')) {
       try {
         const audio = new Audio('audio/click.wav');
         audio.volume = 0.4;
