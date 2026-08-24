@@ -357,6 +357,7 @@
           }
         }
         if (item && player.active) {
+          triggerPlayerPunch(x, y);
           spawnBlockPlaceEffect(x, y, item);
           playSfx("pop", 0.95 + Math.random() * 0.15, 0.4);
         }
@@ -367,6 +368,9 @@
         const idx = getTileIndex(x, y);
         if (idx === -1) return false;
         // Erase FG first if present, then BG
+        if (player.active) {
+          triggerPlayerPunch(x, y);
+        }
         if (world.fg[idx] !== 0) {
           world.fg[idx] = 0;
           world.flags[idx] = 0;
@@ -2367,40 +2371,39 @@
         if (player.moderatorMode) ctx.globalAlpha = 0.94;
 
         const isWalking = player.state === "walk";
-        const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < 0);
-        const isFalling = !player.isGrounded && player.vy > 0.5;
+        const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
+        const isFalling = !player.isGrounded && player.vy > 0.8;
         const isFloating = player.moderatorMode;
 
-        // Eye Blink Animation (Every 3.5 seconds, blink for 0.15s)
-        const isBlinking = (player.animTimer % 3.5) < 0.15;
+        // Dynamic Facial Expression State (Idle relaxed, Jump happy, Fall surprised, Blink soft)
+        const isBlinking = (player.animTimer % 3.8) < 0.14;
 
-        // Float & Breathing Dynamics
-        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.5 : 0;
+        // Mod Flying Hover Float Wave
+        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.8 : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
         const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
-        // Arm Stretch / Placing Punch Animation
+        // Arm Stretch / Placing Punch Dynamics
         let punchProgress = 0;
         let punchArmOffsetX = 0;
         let punchArmOffsetY = 0;
-        let punchStretch = 1.0;
         let punchAngle = 0;
+        let punchDist = 0;
 
         if (player.punchTimer > 0) {
           punchProgress = Math.sin((player.punchTimer / 0.25) * Math.PI);
           const rawAngle = Math.atan2(player.punchTargetY, player.punchTargetX * (player.facing < 0 ? -1 : 1));
           punchAngle = rawAngle;
-          const dist = Math.min(28, Math.hypot(player.punchTargetX, player.punchTargetY));
-          punchArmOffsetX = Math.cos(rawAngle) * dist * punchProgress;
-          punchArmOffsetY = Math.sin(rawAngle) * dist * punchProgress;
-          punchStretch = 1.0 + punchProgress * 0.6;
+          punchDist = Math.min(34, Math.hypot(player.punchTargetX, player.punchTargetY)) * punchProgress;
+          punchArmOffsetX = Math.cos(rawAngle) * punchDist;
+          punchArmOffsetY = Math.sin(rawAngle) * punchDist;
         }
 
         const skin = player.skinStyle || "classic";
 
         if (skin === "classic" || skin === "growtopia" || skin === "builder") {
-          // ── 1. Official Growtopia Set Character Engine ──
+          // ── 1. Authentic Growtopia Set Character Engine ──
           ctx.imageSmoothingEnabled = false;
 
           const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
@@ -2409,15 +2412,18 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          const headSrc = isBlinking
-            ? "character_base_assets/gt_parts/head_blink.png"
-            : "character_base_assets/gt_parts/head_open.png";
+          // Pick dynamic expression head
+          let headSrc = "character_base_assets/gt_parts/head_idle.png";
+          if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
+          else if (isJumping || isFloating) headSrc = "character_base_assets/gt_parts/head_happy.png";
+          else if (isFalling) headSrc = "character_base_assets/gt_parts/head_surprised.png";
           const imgHead = getSpriteImage(headSrc);
 
           // 1. Back Arm (Tangan Kanan - Shoulder at 8, 4)
+          // Inverted V pose in Mod flight: angle backwards/downwards (0.6 rad)
           let backArmAngle = 0;
-          if (isFloating) backArmAngle = -0.5 + Math.sin(player.animTimer * 5) * 0.15;
-          else if (isFalling) backArmAngle = -1.1; // Raising arms in fall
+          if (isFloating) backArmAngle = 0.65 + Math.sin(player.animTimer * 5) * 0.08;
+          else if (isFalling) backArmAngle = -1.1; // Raising arms up in freefall
           else if (isJumping) backArmAngle = -0.7;
           else if (isWalking) backArmAngle = -Math.cos(player.animTimer * 14) * 0.5;
 
@@ -2429,10 +2435,10 @@
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Hip at 8, 8, Feet stay on ground)
+          // 2. Back Leg (Kaki Kanan - Hip at 8, 8, Feet stay on ground when walking)
           let legRAngle = 0;
-          if (isFloating) legRAngle = 0.2 + Math.sin(player.animTimer * 5) * 0.1;
-          else if (isFalling) legRAngle = 0.35; // Legs trailing behind in fall
+          if (isFloating) legRAngle = -0.55 + Math.sin(player.animTimer * 5) * 0.08; // Streamlined back in flight
+          else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
           ctx.save();
@@ -2445,7 +2451,7 @@
 
           // 3. Front Leg (Kaki Kiri - Hip at -4, 8)
           let legLAngle = 0;
-          if (isFloating) legLAngle = -0.2 - Math.sin(player.animTimer * 5) * 0.1;
+          if (isFloating) legLAngle = -0.55 - Math.sin(player.animTimer * 5) * 0.08; // Streamlined back in flight
           else if (isFalling) legLAngle = -0.3;
           else if (isJumping) legLAngle = -0.25;
           else if (isWalking) legLAngle = -walkCycle * 0.4;
@@ -2465,32 +2471,36 @@
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 5. Head with Eyes & Dark Smile Line (Clean head with zero forehead artifacts)
+          // 5. Head with Dynamic Eyes (Relaxed, Happy, Surprised, Blink)
           if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
             ctx.drawImage(imgHead, -16, -16, 32, 32);
           }
           ctx.restore();
 
           // 6. Front Arm (Tangan Kiri - Shoulder at -7, 4, DRAWN ON TOP of shirt!)
+          // Inverted V pose in Mod flight: angle backwards/downwards (0.6 rad)
           let frontArmAngle = 0;
-          if (punchProgress > 0) {
-            frontArmAngle = punchAngle;
-          } else if (isFloating) {
-            frontArmAngle = -0.6 + Math.sin(player.animTimer * 5) * 0.15;
-          } else if (isFalling) {
-            frontArmAngle = -1.1; // Raising arms in fall
-          } else if (isJumping) {
-            frontArmAngle = -0.6;
-          } else if (isWalking) {
-            frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
-          }
+          if (isFloating) frontArmAngle = 0.65 - Math.sin(player.animTimer * 5) * 0.08;
+          else if (isFalling) frontArmAngle = -1.1; // Raising arms up in freefall
+          else if (isJumping) frontArmAngle = -0.6;
+          else if (isWalking) frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
 
           ctx.save();
-          ctx.translate(-7 + punchArmOffsetX, 4 + breatheBob - stepBob + punchArmOffsetY);
-          ctx.rotate(frontArmAngle);
-          ctx.scale(punchStretch, 1.0);
-          if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
-            ctx.drawImage(imgArmL, -9, -20, 32, 32);
+          if (punchProgress > 0) {
+            // Draw connecting stretched arm beam
+            ctx.translate(-7, 4 + breatheBob - stepBob);
+            ctx.rotate(punchAngle);
+            ctx.fillStyle = "#ffe9c8";
+            ctx.fillRect(0, -2.5, punchDist, 5);
+            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+              ctx.drawImage(imgArmL, punchDist - 9, -20, 32, 32);
+            }
+          } else {
+            ctx.translate(-7, 4 + breatheBob - stepBob);
+            ctx.rotate(frontArmAngle);
+            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+              ctx.drawImage(imgArmL, -9, -20, 32, 32);
+            }
           }
           ctx.restore();
         } else {
@@ -2500,7 +2510,7 @@
           const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
 
           // 1. Back Leg
-          const cLegRAngle = isFloating ? 0.2 : (isFalling ? 0.35 : 0);
+          const cLegRAngle = isFloating ? -0.4 : (isFalling ? 0.35 : 0);
           ctx.save();
           ctx.translate(0, isFloating ? floatBob : 0);
           ctx.rotate(cLegRAngle);
@@ -2513,7 +2523,7 @@
           ctx.restore();
 
           // 2. Front Leg
-          const cLegLAngle = isFloating ? -0.2 : (isFalling ? -0.3 : 0);
+          const cLegLAngle = isFloating ? -0.4 : (isFalling ? -0.3 : 0);
           ctx.save();
           ctx.translate(0, isFloating ? floatBob : 0);
           ctx.rotate(cLegLAngle);
@@ -2549,17 +2559,30 @@
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
 
-          // 5. Expressive GT Eye & Smile (Blinks smoothly)
+          // 5. Dynamic Eye Expression
           if (isBlinking) {
             ctx.fillStyle = "#452817";
             ctx.fillRect(1, -13 + breatheBob, 5, 1.5);
-          } else {
+          } else if (isJumping || isFloating) {
+            // Smiling Happy ^ ^ Eyes
+            ctx.fillStyle = "#452817";
+            ctx.fillRect(1, -15 + breatheBob, 2, 1.5);
+            ctx.fillRect(3, -16 + breatheBob, 2, 1.5);
+            ctx.fillRect(5, -15 + breatheBob, 2, 1.5);
+          } else if (isFalling) {
+            // Surprised Wide Eyes
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
+            ctx.fillRect(0, -16 + breatheBob, 7, 6);
             ctx.fillStyle = "#0f172a";
-            ctx.fillRect(3, -14 + breatheBob, 3, 2.5);
+            ctx.fillRect(3, -14 + breatheBob, 3, 3);
+          } else {
+            // Idle Relaxed Eyes
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(4, -15 + breatheBob, 1.5, 1.5);
+            ctx.fillRect(1, -14 + breatheBob, 5, 3.5);
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(3, -13.5 + breatheBob, 2.5, 2.5);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(4, -14 + breatheBob, 1, 1);
           }
           ctx.fillStyle = "#452817";
           ctx.fillRect(1, -16.5 + breatheBob, 5, 1.2);
@@ -2569,19 +2592,29 @@
           ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
 
           // 6. Arm with Stretched Placing Punch
-          let cArmAngle = isFloating ? -0.6 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
-          if (punchProgress > 0) cArmAngle = punchAngle;
+          let cArmAngle = isFloating ? 0.65 : (isFalling ? -1.0 : (isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0)));
 
           ctx.save();
-          ctx.translate(-2 + punchArmOffsetX, -3 + breatheBob + punchArmOffsetY);
-          ctx.rotate(cArmAngle);
-          ctx.scale(punchStretch, 1.0);
-          ctx.fillStyle = "#0284c7";
-          ctx.fillRect(-2, 0, 5, 3.5);
-          ctx.fillStyle = skinColor;
-          ctx.fillRect(-2, 3.5, 4.5, 6);
-          ctx.fillStyle = darkSkin;
-          ctx.fillRect(1, 7.5, 2, 2);
+          if (punchProgress > 0) {
+            ctx.translate(-2, -3 + breatheBob);
+            ctx.rotate(punchAngle);
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(0, -2, punchDist, 4);
+            ctx.translate(punchDist, 0);
+            ctx.fillStyle = "#0284c7";
+            ctx.fillRect(-2, 0, 5, 3.5);
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(-2, 3.5, 4.5, 6);
+          } else {
+            ctx.translate(-2, -3 + breatheBob);
+            ctx.rotate(cArmAngle);
+            ctx.fillStyle = "#0284c7";
+            ctx.fillRect(-2, 0, 5, 3.5);
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(-2, 3.5, 4.5, 6);
+            ctx.fillStyle = darkSkin;
+            ctx.fillRect(1, 7.5, 2, 2);
+          }
           ctx.restore();
         }
 
