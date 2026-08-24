@@ -100,7 +100,7 @@
         state: "idle",
         respawnX: 100,
         respawnY: 100,
-        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "cartoon",
+        skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "classic",
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -2269,10 +2269,25 @@
         });
       }
 
+      const spriteImageCache = new Map();
+      function getSpriteImage(src) {
+        if (spriteImageCache.has(src)) return spriteImageCache.get(src);
+        if (typeof Image === "undefined") return null;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          spriteImageCache.set(src, img);
+          requestRender();
+        };
+        img.src = src;
+        if (img.complete && img.naturalWidth > 0) {
+          spriteImageCache.set(src, img);
+        }
+        return img;
+      }
+
       function drawPlayerAvatar(ctx) {
         ctx.save();
-        ensureAvatarSprites();
-
         const px = player.x;
         const py = player.y;
         const pw = player.width;
@@ -2312,90 +2327,29 @@
         ctx.save();
         ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
         if (player.facing < 0) ctx.scale(-1, 1);
-        if (player.moderatorMode) ctx.globalAlpha = 0.92;
+        if (player.moderatorMode) ctx.globalAlpha = 0.94;
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || !player.isGrounded;
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
+        const walkCycle = isWalking ? Math.sin(player.animTimer * 15) : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
+        const stepOffset = isWalking ? Math.abs(Math.sin(player.animTimer * 15)) * 1.5 : 0;
 
-        const skin = player.skinStyle || "cartoon";
+        const skin = player.skinStyle || "classic";
 
-        if (skin === "classic") {
-          // ── 1. Classic Pixel-Perfect Growtopia Sprite ──
+        if (skin === "classic" || skin === "builder" || skin === "guardian") {
+          // ── Pixel Art Official Growtopia Character Sprites ──
           ctx.imageSmoothingEnabled = false;
-          const imgBody = avatarTextureCache.get("Base Set GT/Body.png");
-          const comp = avatarTextureCache.get("character_base_assets/gt_avatar_preview.png");
+          let spritePath = "character_base_assets/gt_classic_avatar.png";
+          if (skin === "builder") spritePath = "character_base_assets/gt_builder_avatar.png";
+          else if (skin === "guardian") spritePath = "character_base_assets/gt_guardian_avatar.png";
 
-          if (comp || imgBody) {
-            const img = comp || imgBody;
-            ctx.drawImage(img, -16, -16 + breatheBob, 32, 32);
-          } else if (typeof Image !== "undefined") {
-            const fallbackImg = new Image();
-            fallbackImg.src = "character_base_assets/gt_avatar_preview.png";
-            fallbackImg.onload = () => {
-              avatarTextureCache.set("character_base_assets/gt_avatar_preview.png", fallbackImg);
-              requestRender();
-            };
+          const spriteImg = getSpriteImage(spritePath);
+          if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
+            ctx.drawImage(spriteImg, -16, -16 + breatheBob - stepOffset, 32, 32);
           }
-        } else if (skin === "guardian") {
-          // ── 2. Cyber Guardian / Mod (Glowing Visor, Trenchcoat & Energy Wings) ──
-          // Wings behind
-          const wingAngle = Math.sin(player.animTimer * 8) * 0.25;
-          ctx.save();
-          ctx.translate(0, -6 + breatheBob);
-          ctx.rotate(wingAngle);
-          ctx.fillStyle = "rgba(168, 85, 247, 0.75)";
-          ctx.beginPath();
-          ctx.moveTo(-4, 0); ctx.lineTo(-18, -12); ctx.lineTo(-14, 4); ctx.closePath();
-          ctx.fill();
-          ctx.fillStyle = "#00e5ff";
-          ctx.beginPath();
-          ctx.moveTo(4, 0); ctx.lineTo(18, -12); ctx.lineTo(14, 4); ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-
-          // Legs & Boots
-          ctx.fillStyle = "#1e1b4b";
-          ctx.fillRect(-6, 3 - walkCycle * 3, 5, 9 + walkCycle * 3);
-          ctx.fillRect(1, 3 + walkCycle * 3, 5, 9 - walkCycle * 3);
-          ctx.fillStyle = "#c084fc";
-          ctx.fillRect(-7, 12, 6, 2.5);
-          ctx.fillRect(1, 12, 6, 2.5);
-
-          // Torso (Cyber Trenchcoat)
-          ctx.fillStyle = "#312e81";
-          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
-          ctx.fillStyle = "#a855f7";
-          ctx.fillRect(-8, 1 + breatheBob, 16, 3);
-          ctx.fillStyle = "#00e5ff";
-          ctx.fillRect(-2, -5 + breatheBob, 4, 6);
-
-          // Head & Visor
-          ctx.fillStyle = "#fcd34d"; // Blonde Hair
-          ctx.beginPath();
-          ctx.arc(0, -12 + breatheBob, 9, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#1e1b4b";
-          ctx.fillRect(-8, -16 + breatheBob, 16, 4);
-          // Neon Cyan Visor
-          ctx.fillStyle = "#00e5ff";
-          ctx.fillRect(1, -14 + breatheBob, 7, 3);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(2, -14 + breatheBob, 2, 1);
-
-          // Hand
-          const gArmAngle = isJumping ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.5 : 0);
-          ctx.save();
-          ctx.translate(-2, -3 + breatheBob);
-          ctx.rotate(gArmAngle);
-          ctx.fillStyle = "#312e81";
-          ctx.fillRect(-2, 0, 5, 4);
-          ctx.fillStyle = "#a855f7";
-          ctx.fillRect(-2, 4, 4.5, 6);
-          ctx.restore();
         } else {
-          // ── 3. Stylized Cartoon Growtopian (Clean Illustrated Style) ──
+          // ── Cartoon Chibi (Stylized HD Growtopian) ──
           const skinColor = "#f6b484";
           const darkSkin = "#d88b56";
           const legOffset = walkCycle * 3.5;
@@ -3038,7 +2992,7 @@
           }
           render();
         },
-        getPlayerSkin: () => player.skinStyle || "cartoon",
+        getPlayerSkin: () => player.skinStyle || "classic",
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);
