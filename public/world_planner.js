@@ -2113,6 +2113,11 @@
         if (!player.active) return;
         player.animTimer += dt;
 
+        // Decrement placing/punch animation timer so arm doesn't freeze
+        if (player.punchTimer > 0) {
+          player.punchTimer = Math.max(0, player.punchTimer - dt);
+        }
+
         // Delta-time normalization: base is 60fps (dt = 0.0166s -> timeScale = 1.0)
         // This guarantees IDENTICAL fast physics regardless of screen refresh rate (60Hz, 144Hz, 240Hz)
         const timeScale = Math.max(0.5, Math.min(2.5, (dt || 0.0166) * 60));
@@ -2617,12 +2622,12 @@
           ctx.fillRect(-2, -9.5, 3, 1.5);
           ctx.restore();
 
-          // 6. Arm with Spin Throw Punch & Idle Wiggle & Walking Swing
+          // 6. Arm with Spin Throw Punch & Idle Wiggle & Walking Swing & Flight Wave
           let cArmAngle = 0;
           if (isPunching) cArmAngle = punchSpinAngle;
-          else if (isFloating) cArmAngle = 0.45;
-          else if (isFalling) cArmAngle = -1.0;
-          else if (isJumping) cArmAngle = -0.8;
+          else if (isFloating) cArmAngle = 0.45 + Math.sin(player.animTimer * 6) * 0.15;
+          else if (isFalling) cArmAngle = -1.0 + Math.sin(player.animTimer * 8) * 0.1;
+          else if (isJumping) cArmAngle = -0.8 + Math.sin(player.animTimer * 8) * 0.1;
           else if (isWalking) cArmAngle = Math.cos(player.animTimer * 14) * 0.6;
           else cArmAngle = idleArmWiggle;
 
@@ -3212,14 +3217,14 @@
             if (key === "jump" && isPressed) {
               if (!player.jumpConsumed) {
                 if (player.isGrounded || player.jumpCount === 0) {
-                  player.vy = -6.1;
+                  player.vy = -10.5;
                   player.isGrounded = false;
                   player.jumpCount = 1;
                   player.jumpConsumed = true;
                   player.state = "jump";
                   playJumpSound(false);
                 } else if (player.jumpCount === 1) {
-                  player.vy = -5.6;
+                  player.vy = -9.2;
                   player.jumpCount = 2;
                   player.jumpConsumed = true;
                   player.state = "jump";
