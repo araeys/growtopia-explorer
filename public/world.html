@@ -1129,26 +1129,33 @@
     </div>
     <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select your preferred character appearance for Game Mode:</div>
     
-    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:18px;" id="skin-grid">
-      <!-- Option 1: Cartoon Chibi (Default) -->
-      <div class="skin-card active" data-skin="cartoon" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <div style="font-size:32px;margin-bottom:6px;">🎨</div>
-        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cartoon Chibi</div>
-        <div style="font-size:10px;color:#38bdf8;">Default Illustrated</div>
+    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:18px;" id="skin-grid">
+      <!-- Option 1: Classic Pixel Growtopian -->
+      <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <img src="character_base_assets/gt_classic_avatar.png" width="36" height="36" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Classic">
+        <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Classic Pixel</div>
+        <div style="font-size:9px;color:#38bdf8;">Official GT Set</div>
       </div>
 
       <!-- Option 2: World Builder -->
-      <div class="skin-card" data-skin="builder" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <div style="font-size:32px;margin-bottom:6px;">🔨</div>
-        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Master Builder</div>
-        <div style="font-size:10px;color:#fde047;">Yellow Hard Hat</div>
+      <div class="skin-card" data-skin="builder" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <img src="character_base_assets/gt_builder_avatar.png" width="36" height="36" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Builder">
+        <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Builder Set</div>
+        <div style="font-size:9px;color:#fde047;">Hard Hat</div>
       </div>
 
-      <!-- Option 3: Cyber Guardian -->
-      <div class="skin-card" data-skin="guardian" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <div style="font-size:32px;margin-bottom:6px;">🛡️</div>
-        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cyber Guardian</div>
-        <div style="font-size:10px;color:#c084fc;">Winged Moderator</div>
+      <!-- Option 3: Winged Guardian -->
+      <div class="skin-card" data-skin="guardian" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <img src="character_base_assets/gt_guardian_avatar.png" width="36" height="36" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Guardian">
+        <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Guardian</div>
+        <div style="font-size:9px;color:#c084fc;">Mod Wings</div>
+      </div>
+
+      <!-- Option 4: Cartoon Chibi -->
+      <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <div style="font-size:28px;line-height:1.2;margin-bottom:4px;">🎨</div>
+        <div style="font-size:11px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cartoon</div>
+        <div style="font-size:9px;color:#94a3b8;">Illustrated HD</div>
       </div>
     </div>
 
@@ -1214,18 +1221,24 @@
 
     <div id="render-modal-desc" style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select resolution upscale multiplier:</div>
 
-    <div class="size-presets-grid" id="render-scale-grid" style="grid-template-columns:repeat(2, 1fr);margin-bottom:14px;">
+    <div class="size-presets-grid" id="render-scale-grid" style="grid-template-columns:repeat(3, 1fr);margin-bottom:14px;">
       <button class="size-preset-btn active" data-scale="1">
-        <strong>1× Original</strong><br><span style="font-size:11px;color:#94a3b8;">32px/tile (Standard)</span>
+        <strong>1× Original</strong><br><span style="font-size:10px;color:#94a3b8;">32px/tile (100%)</span>
       </button>
       <button class="size-preset-btn" data-scale="2">
-        <strong>2× HD Quality</strong><br><span style="font-size:11px;color:#94a3b8;">64px/tile (200%)</span>
-      </button>
-      <button class="size-preset-btn" data-scale="3">
-        <strong>3× Ultra HD</strong><br><span style="font-size:11px;color:#94a3b8;">96px/tile (300%)</span>
+        <strong>2× HD</strong><br><span style="font-size:10px;color:#94a3b8;">64px/tile (200%)</span>
       </button>
       <button class="size-preset-btn" data-scale="4">
-        <strong>4× 4K Maximum</strong><br><span style="font-size:11px;color:#94a3b8;">128px/tile (400%)</span>
+        <strong>4× Ultra</strong><br><span style="font-size:10px;color:#94a3b8;">128px/tile (400%)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="6">
+        <strong>6× Hi-Res</strong><br><span style="font-size:10px;color:#94a3b8;">192px/tile (600%)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="8">
+        <strong>8× 4K Epic</strong><br><span style="font-size:10px;color:#94a3b8;">256px/tile (800%)</span>
+      </button>
+      <button class="size-preset-btn" data-scale="10">
+        <strong>10× Maximum</strong><br><span style="font-size:10px;color:#38bdf8;">320px/tile (1000%)</span>
       </button>
     </div>
 
@@ -2137,6 +2150,17 @@
   document.getElementById('character-modal-close')?.addEventListener('click', closeSkinModal);
   charModal?.addEventListener('click', (e) => {
     if (e.target === charModal) closeSkinModal();
+  });
+  // Global Button Click Sound Effect (Authentic Growtopia UI clicks)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button, .picker-item, .world-menu-item, .world-tool-btn, .hotbar-slot, .skin-card, .size-preset-btn, .action-btn-jump, .action-btn-pill');
+    if (btn) {
+      try {
+        const audio = new Audio('audio/switch.wav');
+        audio.volume = 0.35;
+        audio.play().catch(() => {});
+      } catch (_) {}
+    }
   });
 })();
 </script>

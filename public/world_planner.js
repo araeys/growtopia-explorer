@@ -912,7 +912,7 @@
 
       // Render selection / full world to PNG with optional upscale (1x, 2x, 3x, 4x)
       function exportToPNG({ onlySelection = false, scale = 1 } = {}) {
-        scale = Math.max(1, Math.min(8, parseInt(scale, 10) || 1));
+        scale = Math.max(1, Math.min(10, parseInt(scale, 10) || 1));
         let minX = 0;
         let maxX = world.width - 1;
         let minY = 0;
@@ -2319,7 +2319,7 @@
         const ph = player.height;
 
         // Shadow beneath player
-        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.beginPath();
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -2356,98 +2356,64 @@
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || !player.isGrounded;
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
         const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.5 : (isJumping ? -1 : 0);
+        const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 15)) * 1.5 : 0;
+        const walkTilt = isWalking ? Math.sin(player.animTimer * 15) * 0.08 : 0;
 
-        const skin = player.skinStyle || "cartoon";
-        const skinColor = "#f6b484";
-        const darkSkin = "#d88b56";
-        const legOffset = walkCycle * 3.5;
+        const skin = player.skinStyle || "classic";
 
-        // 1. Wings (Guardian Skin)
-        if (skin === "guardian") {
-          const wingFlap = Math.sin(player.animTimer * 10) * 0.25;
+        if (skin === "classic" || skin === "builder" || skin === "guardian") {
+          // ── Authentic Official Growtopia Pixel Art Character Engine ──
+          ctx.imageSmoothingEnabled = false;
+          let spritePath = "character_base_assets/gt_classic_avatar.png";
+          if (skin === "builder") spritePath = "character_base_assets/gt_builder_avatar.png";
+          else if (skin === "guardian") spritePath = "character_base_assets/gt_guardian_avatar.png";
+
+          const spriteImg = getSpriteImage(spritePath);
           ctx.save();
-          ctx.translate(0, -6 + breatheBob);
-          ctx.rotate(wingFlap);
-          // Left Wing
-          ctx.fillStyle = "rgba(168, 85, 247, 0.85)";
-          ctx.beginPath();
-          ctx.moveTo(-4, 0); ctx.lineTo(-18, -14); ctx.lineTo(-12, 4); ctx.closePath();
-          ctx.fill();
-          // Right Wing
-          ctx.fillStyle = "#00e5ff";
-          ctx.beginPath();
-          ctx.moveTo(4, 0); ctx.lineTo(18, -14); ctx.lineTo(12, 4); ctx.closePath();
-          ctx.fill();
+          ctx.rotate(walkTilt);
+          if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
+            ctx.drawImage(spriteImg, -16, -16 + breatheBob - stepBob, 32, 32);
+          }
           ctx.restore();
-        }
-
-        // 2. Back Leg (Jeans + Sneaker)
-        ctx.fillStyle = skin === "guardian" ? "#1e1b4b" : "#1e3a8a";
-        ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(-7, 12, 6, 2.5);
-        ctx.fillStyle = skin === "guardian" ? "#a855f7" : "#1d4ed8";
-        ctx.fillRect(-7, 13, 6, 1);
-
-        // 3. Front Leg (Jeans + Sneaker)
-        ctx.fillStyle = skin === "guardian" ? "#312e81" : "#2563eb";
-        ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(1, 12, 6, 2.5);
-        ctx.fillStyle = skin === "guardian" ? "#a855f7" : "#2563eb";
-        ctx.fillRect(1, 13, 6, 1);
-
-        // 4. Torso
-        if (skin === "builder") {
-          // Yellow safety vest
-          ctx.fillStyle = "#f59e0b";
-          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
-          ctx.fillStyle = "#fef08a"; // reflective stripe
-          ctx.fillRect(-8, -3 + breatheBob, 16, 2.5);
-          ctx.fillStyle = "#0f172a"; // Belt
-          ctx.fillRect(-8, 2 + breatheBob, 16, 2);
-          ctx.fillStyle = "#e2e8f0";
-          ctx.fillRect(-2, 2 + breatheBob, 4, 2);
-        } else if (skin === "guardian") {
-          // Deep purple cyber robe
-          ctx.fillStyle = "#312e81";
-          ctx.fillRect(-8, -6 + breatheBob, 16, 10);
-          ctx.fillStyle = "#a855f7";
-          ctx.fillRect(-8, 1 + breatheBob, 16, 3);
-          ctx.fillStyle = "#00e5ff";
-          ctx.fillRect(-2, -5 + breatheBob, 4, 6);
         } else {
-          // Classic / Cartoon Cyan Shirt
+          // ── Cartoon Chibi (Stylized HD Growtopian) ──
+          const skinColor = "#f6b484";
+          const darkSkin = "#d88b56";
+          const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
+
+          // 1. Back Leg
+          ctx.fillStyle = "#1e3a8a";
+          ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(-7, 12, 6, 2.5);
+          ctx.fillStyle = "#1d4ed8";
+          ctx.fillRect(-7, 13, 6, 1);
+
+          // 2. Front Leg
+          ctx.fillStyle = "#2563eb";
+          ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(1, 12, 6, 2.5);
+          ctx.fillStyle = "#2563eb";
+          ctx.fillRect(1, 13, 6, 1);
+
+          // 3. Torso
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-8, -6 + breatheBob, 16, 10);
           ctx.fillStyle = "#38bdf8";
           ctx.fillRect(-6, -6 + breatheBob, 12, 2);
-          ctx.fillStyle = "#0f172a"; // Belt
+          ctx.fillStyle = "#0f172a";
           ctx.fillRect(-8, 2 + breatheBob, 16, 2);
-          ctx.fillStyle = "#e2e8f0"; // Belt silver buckle
+          ctx.fillStyle = "#e2e8f0";
           ctx.fillRect(-2, 2 + breatheBob, 4, 2);
-        }
 
-        // 5. Head (Clean GT Shape)
-        ctx.fillStyle = skinColor;
-        ctx.beginPath();
-        ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 6. Hair & Hats (Properly Positioned on Top of Head)
-        if (skin === "builder") {
-          // Yellow Hard Hat
-          ctx.fillStyle = "#fbbf24";
+          // 4. Head & Shaded Hair
+          ctx.fillStyle = skinColor;
           ctx.beginPath();
-          ctx.arc(0, -14.5 + breatheBob, 9, Math.PI, Math.PI * 2);
+          ctx.arc(0, -12 + breatheBob, 8.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillRect(-9, -15 + breatheBob, 18, 3); // Brim
-          ctx.fillStyle = "#d97706";
-          ctx.fillRect(-3, -20 + breatheBob, 6, 4); // Top ridge
-        } else {
-          // Shaded Brown Hair on Top of Head
+
           ctx.fillStyle = "#452817";
           ctx.beginPath();
           ctx.arc(0, -14 + breatheBob, 8, Math.PI, Math.PI * 2);
@@ -2455,19 +2421,8 @@
           ctx.fillRect(-8, -14 + breatheBob, 5, 3.5);
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5 + breatheBob, 5, 2);
-        }
 
-        // 7. Eyes, Visor & Facial Features
-        if (skin === "guardian") {
-          // Neon Cyan Cyber Visor
-          ctx.fillStyle = "#00e5ff";
-          ctx.fillRect(1, -14.5 + breatheBob, 7, 4);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(2, -14.5 + breatheBob, 2, 1.5);
-          ctx.fillStyle = "#833a1e";
-          ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
-        } else {
-          // Expressive Eyes & Smile
+          // 5. Expressive GT Eye & Smile
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(1, -15 + breatheBob, 5, 4.5);
           ctx.fillStyle = "#0f172a";
@@ -2480,24 +2435,24 @@
           ctx.fillRect(2, -8.5 + breatheBob, 4, 1.2);
           ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
           ctx.fillRect(-2, -9.5 + breatheBob, 3, 1.5);
-        }
 
-        // 8. Arms with swing animation
-        const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
-        ctx.save();
-        ctx.translate(-2, -3 + breatheBob);
-        ctx.rotate(armAngle);
-        ctx.fillStyle = skin === "builder" ? "#f59e0b" : (skin === "guardian" ? "#312e81" : "#0284c7");
-        ctx.fillRect(-2, 0, 5, 3.5);
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(-2, 3.5, 4.5, 6);
-        ctx.fillStyle = darkSkin;
-        ctx.fillRect(1, 7.5, 2, 2);
-        ctx.restore();
+          // 6. Arm
+          const armAngle = isJumping || player.moderatorMode ? -0.8 : (isWalking ? Math.cos(player.animTimer * 14) * 0.6 : 0);
+          ctx.save();
+          ctx.translate(-2, -3 + breatheBob);
+          ctx.rotate(armAngle);
+          ctx.fillStyle = "#0284c7";
+          ctx.fillRect(-2, 0, 5, 3.5);
+          ctx.fillStyle = skinColor;
+          ctx.fillRect(-2, 3.5, 4.5, 6);
+          ctx.fillStyle = darkSkin;
+          ctx.fillRect(1, 7.5, 2, 2);
+          ctx.restore();
+        }
 
         ctx.restore(); // Restore sprite transform
 
-        // 9. Growtopia Nametag ("Raey" with Flag Logo)
+        // Growtopia Nametag ("Raey" with Flag Logo)
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
 
         ctx.restore();
