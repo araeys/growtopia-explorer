@@ -310,17 +310,18 @@
       const gameParticles = [];
 
       function spawnFootstepDust(x, y, facing) {
-        for (let i = 0; i < 2; i++) {
+        const colors = ["#8d5524", "#a16207", "#d97706", "#78716c", "#cbd5e1"];
+        for (let i = 0; i < 4; i++) {
           gameParticles.push({
-            x: x + (Math.random() - 0.5) * 6,
-            y: y + (Math.random() - 0.5) * 2,
-            vx: -facing * (0.8 + Math.random() * 1.6),
-            vy: -(0.6 + Math.random() * 1.2),
-            radius: 2.0 + Math.random() * 1.5,
-            color: Math.random() > 0.5 ? "#8d5524" : "#a16207",
-            alpha: 0.85,
-            life: 0.35,
-            maxLife: 0.35
+            x: x + (Math.random() - 0.5) * 8,
+            y: y + (Math.random() - 0.5) * 3,
+            vx: -facing * (1.2 + Math.random() * 2.2),
+            vy: -(0.8 + Math.random() * 1.5),
+            radius: 2.5 + Math.random() * 2.2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 0.9,
+            life: 0.42,
+            maxLife: 0.42
           });
         }
       }
@@ -2100,11 +2101,12 @@
       function killPlayer(reason = "Ouch! Hit a lethal hazard!") {
         if (player.isDead || player.moderatorMode || player.respawnInvincible > 0) return;
         player.isDead = true;
-        player.deathTimer = 0.65;
+        player.deathTimer = 0.70;
         player.vx = 0;
-        player.vy = -3.8; // Upward death pop
+        player.vy = -4.2; // Upward death pop
         spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
-        playSfx("grunt", 1.0, 0.7);
+        playSfx("grunt", 1.0, 0.85);
+        playSfx("splat", 1.0, 0.85);
         onStatusMessage(`💀 ${reason}`);
       }
 
@@ -2119,10 +2121,11 @@
         player.isGrounded = false;
         player.jumpCount = 0;
         player.jumpConsumed = false;
-        player.respawnInvincible = 1.6; // 1.6s invincibility shield
+        player.respawnInvincible = 1.8; // 1.8s invincibility shield
         player.respawnRingRadius = 4;
         player.state = "idle";
-        playSfx("door_shut", 1.0, 0.7);
+        playSfx("door_shut", 1.0, 0.9);
+        playSfx("already_used", 1.0, 0.75);
         if (msg) onStatusMessage(msg);
       }
 
@@ -2210,6 +2213,13 @@
 
       function updatePlayerPhysics(dt) {
         if (!player.active) return;
+
+        // Smooth Zoom Interpolation directly inside the physics frame (100% synchronized with camera)
+        if (Math.abs(smoothZoomTarget - viewport.zoom) > 0.001) {
+          viewport.zoom += (smoothZoomTarget - viewport.zoom) * Math.min(1.0, 14.0 * dt);
+        } else {
+          viewport.zoom = smoothZoomTarget;
+        }
 
         // Death state handling
         if (player.isDead) {
@@ -2364,15 +2374,17 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Butter-Smooth Camera Center on Player in Game Mode
+        // Rock-Solid Center on Player in Game Mode (Zero Camera Jitter During Zoom & Walk)
         if (canvas && player.active) {
           const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
           const viewW = canvas.width / dpr;
           const viewH = canvas.height / dpr;
           const targetX = viewW / 2 - (player.x + player.width / 2) * viewport.zoom;
           const targetY = viewH / 2 - (player.y + player.height / 2) * viewport.zoom;
-          viewport.x += (targetX - viewport.x) * Math.min(1.0, 0.35 * (timeScale || 1.0));
-          viewport.y += (targetY - viewport.y) * Math.min(1.0, 0.35 * (timeScale || 1.0));
+          // Direct lock during active zoom, smooth follow during walk
+          const lerpSpeed = Math.abs(smoothZoomTarget - viewport.zoom) > 0.01 ? 1.0 : Math.min(1.0, 0.45 * (timeScale || 1.0));
+          viewport.x += (targetX - viewport.x) * lerpSpeed;
+          viewport.y += (targetY - viewport.y) * lerpSpeed;
         }
       }
 
@@ -2515,11 +2527,11 @@
         const pw = player.width;
         const ph = player.height;
 
-        // Shadow beneath player (Ground contact shadow)
+        // Shadow beneath player (Adjusted height and natural soft spread)
         if (!player.isDead) {
-          ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+          ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
           ctx.beginPath();
-          ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
+          ctx.ellipse(px + pw / 2, py + ph + 3, pw * 0.58, 2.5, 0, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -2624,12 +2636,11 @@
 
         // Death Tumble Animation & Ghost Fade
         if (player.isDead) {
-          const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.65);
-          ctx.globalAlpha = Math.max(0, 1.0 - deathProgress * 0.8);
-          ctx.rotate(deathProgress * Math.PI * 2);
+          const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.70);
+          ctx.globalAlpha = Math.max(0, 1.0 - deathProgress * 0.85);
+          ctx.rotate(deathProgress * Math.PI * 3);
           ctx.scale(Math.max(0.2, 1.0 - deathProgress * 0.5), Math.max(0.2, 1.0 - deathProgress * 0.5));
         } else if (player.respawnInvincible > 0) {
-          // Invincible flashing shield
           ctx.globalAlpha = (player.animTimer % 0.2 < 0.1) ? 0.45 : 1.0;
         } else if (player.moderatorMode) {
           ctx.globalAlpha = 0.96;
@@ -2641,7 +2652,6 @@
         const isFloating = player.moderatorMode;
         const t = player.animTimer;
 
-        // Dynamic Facial Expression State
         let isBlinking = (t % 3.8) < 0.14;
 
         // 360-Degree Jump Double Spin Throw (2 full rotations = 720 degrees, opposing arm directions!)
@@ -2660,11 +2670,7 @@
 
         // Mod Flying Hover Float Wave
         const floatBob = isFloating ? Math.sin(t * 4.5) * 2.2 : 0;
-        
-        // Rhythmic walking step bounce on solid blocks
         const walkStepBob = (isWalking && player.isGrounded && !isFloating) ? Math.abs(Math.sin(t * 16)) * 2.2 : 0;
-
-        // Opposing gentle vertical slow hover wave for floating legs
         const legHoverWave = Math.sin(t * 4.0) * 1.8;
 
         // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS ──
@@ -2723,7 +2729,7 @@
         const legLLift = isWalking ? Math.max(0, -Math.sin(t * 14)) * 1.8 : afkLegLOffset;
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
 
-        // ── Accurate Pupil Gaze Calculation Following Mouse Cursor (Desktop PC Only) ──
+        // ── Full-Range Pupil Gaze Vector (Desktop PC Only) ──
         let pupilOffsetX = 0;
         let pupilOffsetY = 0;
         if (player.isDesktopCursor) {
@@ -2732,14 +2738,15 @@
           const dx = player.cursorWorldX - eyeWorldX;
           const dy = player.cursorWorldY - eyeWorldY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const maxPupilX = 1.4; // Max horizontal gaze shift inside eye socket
-          const maxPupilY = 0.6; // Max vertical gaze shift inside eye socket
-          pupilOffsetX = player.facing * Math.max(-maxPupilX, Math.min(maxPupilX, (dx / dist) * 1.6));
-          pupilOffsetY = Math.max(-maxPupilY, Math.min(maxPupilY, (dy / dist) * 1.0));
+          // Smooth gaze vector mapping across entire eye socket
+          const maxGazeX = 2.4;
+          const maxGazeY = 1.2;
+          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 2.6));
+          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 1.4));
         }
 
         const skin = player.skinStyle || "classic";
-        const cOffsets = player.clothesOffsets || { hair: { x: 0, y: -5 } };
+        const cOffsets = player.clothesOffsets || { hair: { x: 0, y: -6 }, shirt: { x: 0, y: 0 }, pants: { x: 0, y: 0 } };
 
         if (skin === "classic" || skin === "growtopia" || skin === "builder") {
           // ── 1. Authentic Growtopia Set Character Engine ──
@@ -2751,10 +2758,8 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          // Pick head with clean white sclera for cursor pupil tracking
-          let headSrc = "character_base_assets/gt_parts/head_sclera.png";
-          if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
-          const imgHead = getSpriteImage(headSrc);
+          const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
+          const imgHeadMask = isBlinking ? getSpriteImage("character_base_assets/gt_parts/head_blink.png") : getSpriteImage("character_base_assets/gt_parts/head_mask.png");
 
           // 1. Back Arm (Tangan Kanan) - 2x Jump Spin
           let backArmAngle = 0;
@@ -2781,8 +2786,11 @@
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
           const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
+          const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
+          const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
+
           ctx.save();
-          ctx.translate(8 + afkTorsoX, legRY);
+          ctx.translate(8 + afkTorsoX + pxLeg, legRY + pyLeg);
           ctx.rotate(legRAngle);
           if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
             ctx.drawImage(imgLegR, -24, -24, 32, 32);
@@ -2798,46 +2806,56 @@
 
           const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
           ctx.save();
-          ctx.translate(-4 + afkTorsoX, legLY);
+          ctx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
           ctx.rotate(legLAngle);
           if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
             ctx.drawImage(imgLegL, -12, -24, 32, 32);
           }
           ctx.restore();
 
-          // 4. Torso & Body
+          // 4. Torso & Shirt with Reposition Offset
+          const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
+          const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
+
           ctx.save();
-          ctx.translate(afkTorsoX, breatheBob);
+          ctx.translate(afkTorsoX + sxShirt, breatheBob + syShirt);
           ctx.rotate(afkTorsoAngle);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 5. Head with White Sclera Eyeballs & Clean Embedded Pupils
+          // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
           ctx.save();
-          ctx.translate(afkHeadX, afkHeadY);
+          ctx.translate(afkHeadX - sxShirt, afkHeadY - syShirt);
           ctx.rotate(afkHeadAngle);
-          if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
-            ctx.drawImage(imgHead, -16, -16, 32, 32);
+
+          // Layer A: White Eyeballs Sclera Base (Behind head mask)
+          if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+            ctx.drawImage(imgSclera, -16, -16, 32, 32);
           }
 
-          // Render exact 2x2 px black pupils inside left & right eye sockets (under eyelid layer)
+          // Layer B: Eye Pupils (UNDER Head Mask, naturally masked by eye socket cutout!)
           if (!isBlinking) {
             ctx.fillStyle = "#0f172a";
-            // Left Eye Pupil (Centered in x: 13..17, y: 5..7 -> base at x: 0, y: -11)
-            ctx.fillRect(0 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
-            // Right Eye Pupil (Centered in x: 21..25, y: 5..7 -> base at x: 8, y: -11)
-            ctx.fillRect(8 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
+            // Left Eye Pupil (in socket x: 13..17, y: 5..7)
+            ctx.fillRect(-1 + pupilOffsetX, -10 + pupilOffsetY, 2.0, 2.0);
+            // Right Eye Pupil (in socket x: 21..25, y: 5..7)
+            ctx.fillRect(7 + pupilOffsetX, -10 + pupilOffsetY, 2.0, 2.0);
           }
 
-          // Selected Hair Overlay with custom repositioning offset
+          // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
+          if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+            ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
+          }
+
+          // Layer D: Hair / Hats Overlay with Reposition Offset
           const hairChoice = player.hairStyle || "red";
           if (hairChoice !== "none") {
             const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
             const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
             if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
               const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
-              const hy = (cOffsets.hair ? cOffsets.hair.y : -5) || -5;
+              const hy = (cOffsets.hair ? cOffsets.hair.y : -6) || -6;
               ctx.drawImage(imgHair, -16 + hx, -16 + hy, 32, 32);
             }
           }
@@ -2955,7 +2973,7 @@
           ctx.restore();
           ctx.restore();
 
-          // 6. Arm (2x INVERTED Jump Spin)
+          // 6. Arm
           let cArmAngle = 0;
           if (isJumpSpinning) cArmAngle = jumpSpinAngleFront;
           else if (isPunching) cArmAngle = punchSpinAngle;
@@ -3595,6 +3613,8 @@
         getClipboard: () => ({ ...clipboard }),
         togglePlayMode,
         isPlayMode: () => player.active,
+        isPlayModeActive: () => player.active,
+        getSpriteImage,
         toggleModeratorMode,
         isModeratorMode: () => player.moderatorMode,
         setPlayerSkin: (skinName) => {
@@ -3604,7 +3624,7 @@
           }
           render();
         },
-        getPlayerSkin: () => player.skinStyle || "cartoon",
+        getPlayerSkin: () => player.skinStyle || "classic",
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);

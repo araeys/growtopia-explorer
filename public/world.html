@@ -1130,73 +1130,92 @@
   <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
 </div>
 
-<!-- Character / Skin Selection Modal -->
+<!-- Clothes & Wardrobe Repositioning Studio Modal -->
 <div id="character-modal" class="hidden">
-  <div class="custom-size-modal-inner" style="max-width: 480px; width: 92%;">
-    <div class="picker-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <h3 style="margin:0;font-size:16px;color:#f8fafc;display:flex;align-items:center;gap:6px;">👤 Choose Character Skin</h3>
+  <div class="custom-size-modal-inner" style="max-width: 680px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <div class="picker-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;">
+      <h3 style="margin:0;font-size:17px;color:#f8fafc;display:flex;align-items:center;gap:8px;">👔 Clothes & Wardrobe Studio</h3>
       <button class="picker-close" id="character-modal-close" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
     </div>
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select your preferred character appearance for Game Mode:</div>
-    
-    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;margin-bottom:16px;" id="skin-grid">
-      <!-- Option 1: Growtopia Set -->
-      <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <img src="character_base_assets/gt_growtopia_preview.png" width="42" height="42" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Growtopia Set">
-        <div style="font-size:12px;font-weight:700;color:#f8fafc;">Growtopia Set</div>
-        <div style="font-size:10px;color:#38bdf8;">Official Pixel Art</div>
+
+    <div style="display:grid;grid-template-columns: 220px 1fr; gap: 16px; align-items: start; margin-bottom: 16px;">
+      <!-- Left Column: Big Character Live Canvas Preview -->
+      <div style="background: rgba(15,23,42,0.9); border: 2px solid rgba(0,229,255,0.3); border-radius: 14px; padding: 14px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div style="font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Live Preview</div>
+        <div style="width: 180px; height: 210px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #1e293b 0%, #0b0f19 100%); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
+          <canvas id="wardrobe-preview-canvas" width="180" height="210" style="image-rendering: pixelated; width: 180px; height: 210px;"></canvas>
+        </div>
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Raey (Default Set)</div>
       </div>
 
-      <!-- Option 2: Cartoon Chibi -->
-      <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <div style="font-size:32px;margin-bottom:4px;line-height:1.1;">🎨</div>
-        <div style="font-size:12px;font-weight:700;color:#f8fafc;">Cartoon Chibi</div>
-        <div style="font-size:10px;color:#94a3b8;">Illustrated HD</div>
+      <!-- Right Column: Clothes Parts Selection & Repositioning Controls -->
+      <div>
+        <!-- Clothes Part Tabs -->
+        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px;">1. Select Clothes Part to Reposition:</div>
+        <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+          <button type="button" class="action-btn-pill active" id="tab-part-hair" style="padding: 6px 14px; font-size: 11px; font-weight: 700;">💇 Hair (Rambut)</button>
+          <button type="button" class="action-btn-pill" id="tab-part-shirt" style="padding: 6px 14px; font-size: 11px; font-weight: 700;">👕 Shirt (Baju)</button>
+          <button type="button" class="action-btn-pill" id="tab-part-pants" style="padding: 6px 14px; font-size: 11px; font-weight: 700;">👖 Pants (Celana)</button>
+        </div>
+
+        <!-- Position Repositioning Tool -->
+        <div style="background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 11px; font-weight: 700; color: #e2e8f0;" id="active-part-label">📐 Hair Position Offset:</span>
+            <span id="active-part-offset-display" style="font-size: 12px; color: #00e5ff; font-family: monospace; font-weight: 700;">X: 0px, Y: -6px</span>
+          </div>
+          <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" id="nudge-up" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #f8fafc; padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700;">⬆ Naik (-Y)</button>
+            <button type="button" id="nudge-down" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #f8fafc; padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700;">⬇ Turun (+Y)</button>
+            <button type="button" id="nudge-left" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #f8fafc; padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700;">⬅ Kiri (-X)</button>
+            <button type="button" id="nudge-right" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #f8fafc; padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700;">➡ Kanan (+X)</button>
+            <button type="button" id="nudge-reset" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700;">🔄 Reset</button>
+          </div>
+        </div>
+
+        <!-- Hairstyle Model Selector -->
+        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">2. Choose Hairstyle Model:</div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px;" id="hair-grid">
+          <div class="hair-card active" data-hair="red" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:8px;padding:6px 2px;text-align:center;cursor:pointer;">
+            <div style="font-size:18px;">🔴</div>
+            <div style="font-size:9px;font-weight:700;color:#f8fafc;">Red Hair</div>
+          </div>
+          <div class="hair-card" data-hair="brown" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 2px;text-align:center;cursor:pointer;">
+            <div style="font-size:18px;">🟤</div>
+            <div style="font-size:9px;font-weight:700;color:#f8fafc;">Brown</div>
+          </div>
+          <div class="hair-card" data-hair="blonde" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 2px;text-align:center;cursor:pointer;">
+            <div style="font-size:18px;">🟡</div>
+            <div style="font-size:9px;font-weight:700;color:#f8fafc;">Golden</div>
+          </div>
+          <div class="hair-card" data-hair="black" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 2px;text-align:center;cursor:pointer;">
+            <div style="font-size:18px;">⬛</div>
+            <div style="font-size:9px;font-weight:700;color:#f8fafc;">Black</div>
+          </div>
+          <div class="hair-card" data-hair="none" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 2px;text-align:center;cursor:pointer;">
+            <div style="font-size:18px;">⚪</div>
+            <div style="font-size:9px;font-weight:700;color:#f8fafc;">Bald</div>
+          </div>
+        </div>
+
+        <!-- Character Skin Style -->
+        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">3. Character Skin Style:</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;" id="skin-grid">
+          <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;">
+            <div style="font-size:11px;font-weight:700;color:#f8fafc;">Growtopia Set</div>
+            <div style="font-size:9px;color:#38bdf8;">Official Pixel Art</div>
+          </div>
+          <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;">
+            <div style="font-size:11px;font-weight:700;color:#f8fafc;">Cartoon Chibi</div>
+            <div style="font-size:9px;color:#94a3b8;">Illustrated HD</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;gap:6px;">💇 Hairstyle / Hair Model:</div>
-    <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:8px;margin-bottom:14px;" id="hair-grid">
-      <div class="hair-card active" data-hair="red" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
-        <div style="font-size:20px;margin-bottom:2px;">🔴</div>
-        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Red Hair</div>
-      </div>
-      <div class="hair-card" data-hair="brown" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
-        <div style="font-size:20px;margin-bottom:2px;">🟤</div>
-        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Brown</div>
-      </div>
-      <div class="hair-card" data-hair="blonde" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
-        <div style="font-size:20px;margin-bottom:2px;">🟡</div>
-        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Golden</div>
-      </div>
-      <div class="hair-card" data-hair="black" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
-        <div style="font-size:20px;margin-bottom:2px;">⬛</div>
-        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Black</div>
-      </div>
-      <div class="hair-card" data-hair="none" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
-        <div style="font-size:20px;margin-bottom:2px;">⚪</div>
-        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Bald</div>
-      </div>
-    </div>
-
-    <!-- Clothes & Hair Position Repositioning Tool -->
-    <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span style="font-size:11px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:5px;">📐 Reposition Hair / Clothes Height:</span>
-        <span id="hair-offset-display" style="font-size:11px;color:#00e5ff;font-family:monospace;font-weight:700;">X: 0px, Y: -5px</span>
-      </div>
-      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-        <button type="button" id="hair-nudge-up" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬆ Naik (-Y)</button>
-        <button type="button" id="hair-nudge-down" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬇ Turun (+Y)</button>
-        <button type="button" id="hair-nudge-left" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬅ Kiri (-X)</button>
-        <button type="button" id="hair-nudge-right" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">➡ Kanan (+X)</button>
-        <button type="button" id="hair-nudge-reset" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">🔄 Reset</button>
-      </div>
-    </div>
-
-    <div class="modal-actions-row" style="display:flex;justify-content:flex-end;gap:10px;">
-      <button class="btn-cancel" id="character-modal-cancel" style="padding:7px 16px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;cursor:pointer;">Cancel</button>
-      <button class="btn-create" id="character-modal-save" style="padding:7px 20px;border-radius:8px;background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#ffffff;font-weight:700;cursor:pointer;">✨ Apply Skin</button>
+    <div class="modal-actions-row" style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">
+      <button class="btn-cancel" id="character-modal-cancel" style="padding:7px 18px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;cursor:pointer;">Cancel</button>
+      <button class="btn-create" id="character-modal-save" style="padding:7px 22px;border-radius:8px;background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#ffffff;font-weight:700;cursor:pointer;">✨ Save & Apply</button>
     </div>
   </div>
 </div>
@@ -2162,61 +2181,181 @@
   });
 
 
-  // ── Character Skin & Wardrobe Modal Handlers ──
+  // ── Clothes & Wardrobe Studio Logic with Live Big Canvas Preview ──
   const charModal = document.getElementById('character-modal');
   const skinBtn = document.getElementById('world-skin-btn');
   const mobileSkinBtn = document.getElementById('mobile-skin-btn');
+  const previewCanvas = document.getElementById('wardrobe-preview-canvas');
+  const previewCtx = previewCanvas ? previewCanvas.getContext('2d') : null;
+
   let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
   let selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
-  let hairOffsetX = 0;
-  let hairOffsetY = -5;
+  let activeClothesPart = 'hair'; // 'hair', 'shirt', 'pants'
 
-  // Load saved clothes offsets
+  let clothesOffsets = {
+    hair: { x: 0, y: -6 },
+    shirt: { x: 0, y: 0 },
+    pants: { x: 0, y: 0 }
+  };
+
   try {
-    const savedOffsets = JSON.parse(localStorage.getItem('gt_clothes_offsets') || '{}');
-    if (savedOffsets.hair) {
-      hairOffsetX = Number(savedOffsets.hair.x) || 0;
-      hairOffsetY = Number(savedOffsets.hair.y) || -5;
-    }
-  } catch(err) {}
+    const saved = JSON.parse(localStorage.getItem('gt_clothes_offsets') || '{}');
+    if (saved.hair) clothesOffsets.hair = { x: Number(saved.hair.x) || 0, y: Number(saved.hair.y) || -6 };
+    if (saved.shirt) clothesOffsets.shirt = { x: Number(saved.shirt.x) || 0, y: Number(saved.shirt.y) || 0 };
+    if (saved.pants) clothesOffsets.pants = { x: Number(saved.pants.x) || 0, y: Number(saved.pants.y) || 0 };
+  } catch(e) {}
 
   if (engine && typeof engine.setClothesOffset === 'function') {
-    engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+    engine.setClothesOffset('hair', clothesOffsets.hair.x, clothesOffsets.hair.y);
+    engine.setClothesOffset('shirt', clothesOffsets.shirt.x, clothesOffsets.shirt.y);
+    engine.setClothesOffset('pants', clothesOffsets.pants.x, clothesOffsets.pants.y);
   }
 
-  function updateOffsetUI() {
-    const disp = document.getElementById('hair-offset-display');
-    if (disp) disp.textContent = `X: ${hairOffsetX}px, Y: ${hairOffsetY}px`;
+  function drawWardrobePreview() {
+    if (!previewCtx || !previewCanvas) return;
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    previewCtx.imageSmoothingEnabled = false;
+
+    const cx = previewCanvas.width / 2;
+    const cy = previewCanvas.height / 2 + 10;
+    const scale = 4.2;
+
+    previewCtx.save();
+    previewCtx.translate(cx, cy);
+    previewCtx.scale(scale, scale);
+
+    // 1. Back Arm
+    const imgArmR = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/arm_r.png") : null;
+    if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
+      previewCtx.save();
+      previewCtx.translate(8, 4);
+      previewCtx.drawImage(imgArmR, -24, -20, 32, 32);
+      previewCtx.restore();
+    }
+
+    // 2. Legs (Pants)
+    const imgLegR = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_r.png") : null;
+    const imgLegL = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_l.png") : null;
+    const pxLeg = clothesOffsets.pants.x;
+    const pyLeg = clothesOffsets.pants.y;
+
+    if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
+      previewCtx.save();
+      previewCtx.translate(8 + pxLeg, 8 + pyLeg);
+      previewCtx.drawImage(imgLegR, -24, -24, 32, 32);
+      previewCtx.restore();
+    }
+    if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
+      previewCtx.save();
+      previewCtx.translate(-4 + pxLeg, 8 + pyLeg);
+      previewCtx.drawImage(imgLegL, -12, -24, 32, 32);
+      previewCtx.restore();
+    }
+
+    // 3. Body / Shirt
+    const imgBody = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/body.png") : null;
+    const sxShirt = clothesOffsets.shirt.x;
+    const syShirt = clothesOffsets.shirt.y;
+    if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+      previewCtx.save();
+      previewCtx.translate(sxShirt, syShirt);
+      previewCtx.drawImage(imgBody, -16, -16, 32, 32);
+      previewCtx.restore();
+    }
+
+    // 4. Head & Eyeballs & Pupils UNDER Head Mask
+    const imgSclera = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png") : null;
+    const imgHeadMask = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/head_mask.png") : null;
+    
+    if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+      previewCtx.drawImage(imgSclera, -16, -16, 32, 32);
+    }
+    // Pupils
+    previewCtx.fillStyle = "#0f172a";
+    previewCtx.fillRect(-1, -10, 2, 2);
+    previewCtx.fillRect(7, -10, 2, 2);
+
+    if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+      previewCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
+    }
+
+    // 5. Hair
+    if (selectedHairTemp !== "none") {
+      const hairName = selectedHairTemp === "red" ? "red_hair.png" : (selectedHairTemp === "brown" ? "brown_hair.png" : (selectedHairTemp === "blonde" ? "blonde_hair.png" : "black_hair.png"));
+      const imgHair = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/" + hairName) : null;
+      if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
+        previewCtx.drawImage(imgHair, -16 + clothesOffsets.hair.x, -16 + clothesOffsets.hair.y, 32, 32);
+      }
+    }
+
+    // 6. Front Arm
+    const imgArmL = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/arm_l.png") : null;
+    if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+      previewCtx.save();
+      previewCtx.translate(-7, 4);
+      previewCtx.drawImage(imgArmL, -9, -20, 32, 32);
+      previewCtx.restore();
+    }
+
+    previewCtx.restore();
   }
 
-  document.getElementById('hair-nudge-up')?.addEventListener('click', () => {
-    hairOffsetY -= 1;
-    updateOffsetUI();
-    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  function updateOffsetDisplay() {
+    const cur = clothesOffsets[activeClothesPart] || { x: 0, y: 0 };
+    const label = document.getElementById('active-part-label');
+    const disp = document.getElementById('active-part-offset-display');
+    const partName = activeClothesPart === 'hair' ? 'Hair' : (activeClothesPart === 'shirt' ? 'Shirt' : 'Pants');
+    if (label) label.textContent = `📐 ${partName} Position Offset:`;
+    if (disp) disp.textContent = `X: ${cur.x}px, Y: ${cur.y}px`;
+    drawWardrobePreview();
+  }
+
+  document.getElementById('tab-part-hair')?.addEventListener('click', () => {
+    activeClothesPart = 'hair';
+    document.querySelectorAll('#tab-part-hair, #tab-part-shirt, #tab-part-pants').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-part-hair')?.classList.add('active');
+    updateOffsetDisplay();
   });
-  document.getElementById('hair-nudge-down')?.addEventListener('click', () => {
-    hairOffsetY += 1;
-    updateOffsetUI();
-    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  document.getElementById('tab-part-shirt')?.addEventListener('click', () => {
+    activeClothesPart = 'shirt';
+    document.querySelectorAll('#tab-part-hair, #tab-part-shirt, #tab-part-pants').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-part-shirt')?.classList.add('active');
+    updateOffsetDisplay();
   });
-  document.getElementById('hair-nudge-left')?.addEventListener('click', () => {
-    hairOffsetX -= 1;
-    updateOffsetUI();
-    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
-  });
-  document.getElementById('hair-nudge-right')?.addEventListener('click', () => {
-    hairOffsetX += 1;
-    updateOffsetUI();
-    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
-  });
-  document.getElementById('hair-nudge-reset')?.addEventListener('click', () => {
-    hairOffsetX = 0;
-    hairOffsetY = -5;
-    updateOffsetUI();
-    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  document.getElementById('tab-part-pants')?.addEventListener('click', () => {
+    activeClothesPart = 'pants';
+    document.querySelectorAll('#tab-part-hair, #tab-part-shirt, #tab-part-pants').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-part-pants')?.classList.add('active');
+    updateOffsetDisplay();
   });
 
-  function updateSkinCards(activeSkin) {
+  document.getElementById('nudge-up')?.addEventListener('click', () => {
+    clothesOffsets[activeClothesPart].y -= 1;
+    updateOffsetDisplay();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
+  });
+  document.getElementById('nudge-down')?.addEventListener('click', () => {
+    clothesOffsets[activeClothesPart].y += 1;
+    updateOffsetDisplay();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
+  });
+  document.getElementById('nudge-left')?.addEventListener('click', () => {
+    clothesOffsets[activeClothesPart].x -= 1;
+    updateOffsetDisplay();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
+  });
+  document.getElementById('nudge-right')?.addEventListener('click', () => {
+    clothesOffsets[activeClothesPart].x += 1;
+    updateOffsetDisplay();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
+  });
+  document.getElementById('nudge-reset')?.addEventListener('click', () => {
+    clothesOffsets[activeClothesPart] = activeClothesPart === 'hair' ? { x: 0, y: -6 } : { x: 0, y: 0 };
+    updateOffsetDisplay();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
+  });
+
+    function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
       const isSel = card.getAttribute('data-skin') === activeSkin;
       card.style.borderColor = isSel ? '#00e5ff' : 'rgba(255,255,255,0.15)';
@@ -2310,6 +2449,18 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSendGameChat();
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && engine && typeof engine.isPlayModeActive === 'function' && engine.isPlayModeActive()) {
+      const bar = document.getElementById('game-chat-bar');
+      if (bar && !bar.classList.contains('hidden')) {
+        if (document.activeElement !== chatInput) {
+          e.preventDefault();
+          chatInput?.focus();
+        }
+      }
     }
   });
   // Global Button Click Sound Effect (Exclude virtual touch controller keys)
