@@ -551,6 +551,33 @@
             continue;
           }
 
+          if (p.type === "wind_breeze") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.94; // air drag
+            p.vy *= 0.96;
+            p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
+
+            const progress = 1.0 - (p.life / p.maxLife);
+            const frameIdx = Math.min(2, Math.floor(progress * 3));
+            const frameSrc = windMoveFrames[frameIdx];
+            const img = getSpriteImage(frameSrc);
+
+            if (img && img.complete && img.naturalWidth > 0) {
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              const alpha = (progress < 0.25 ? (progress / 0.25) : Math.max(0, 1.0 - (progress - 0.25) / 0.75)) * 0.72;
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.rot);
+              const curScale = p.scale * (0.85 + progress * 0.45);
+              ctx.scale(curScale, curScale);
+              ctx.drawImage(img, -14, -14, 28, 28);
+              ctx.restore();
+            }
+            continue;
+          }
+
           p.x += p.vx;
           p.y += p.vy;
 
@@ -844,8 +871,17 @@
 
 
         // 2. Apply Viewport Matrix (pan + zoom) for World Tiles & Grid
+        let transformShakeX = 0;
+        let transformShakeY = 0;
+        if (player.modTransformTimer > 0) {
+          const shakeFactor = player.modTransformTimer / 0.65;
+          const maxShake = 3.5 * shakeFactor;
+          transformShakeX = (Math.random() - 0.5) * maxShake * 2;
+          transformShakeY = (Math.random() - 0.5) * maxShake * 2;
+        }
+
         ctx.save();
-        ctx.translate(viewport.x, viewport.y);
+        ctx.translate(viewport.x + transformShakeX, viewport.y + transformShakeY);
         ctx.scale(viewport.zoom, viewport.zoom);
 
         // Mask tiles strictly inside World Rectangle (0, 0, worldW, worldH)
@@ -1070,6 +1106,26 @@
 
         ctx.restore(); // Restore clip mask
         ctx.restore(); // Restore viewport matrix
+
+        // 11. Subtle Screen-Space Digital Scanline / Micro-Glitch on Transformation
+        if (player.modTransformTimer > 0) {
+          ctx.save();
+          const transProg = 1.0 - (player.modTransformTimer / 0.65);
+          const viewW = cw / dpr;
+          const viewH = ch / dpr;
+          // 2-3 brief micro-glitch slice scanlines
+          if (Math.random() < 0.65) {
+            const sliceY = Math.random() * viewH;
+            const sliceH = 2 + Math.random() * 5;
+            ctx.fillStyle = Math.random() < 0.5 ? "rgba(56, 189, 248, 0.12)" : "rgba(168, 85, 247, 0.12)";
+            ctx.fillRect(0, sliceY, viewW, sliceH);
+          }
+          // Soft cyan-violet chromatic flash on borders
+          ctx.fillStyle = `rgba(168, 85, 247, ${0.04 * Math.sin(transProg * Math.PI)})`;
+          ctx.fillRect(0, 0, viewW, viewH);
+          ctx.restore();
+        }
+
         ctx.restore(); // Restore dpr scale
       }
 
@@ -2686,6 +2742,36 @@
           respawnPlayer("Fell into the void!");
         }
 
+        // Continuous Breezy Wind Trail Particles behind Character on Movement
+        const isPlayerMoving = Math.abs(player.vx) > 0.45 || Math.abs(player.vy) > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump;
+        if (isPlayerMoving && !player.isDead) {
+          player.windTrailTimer = (player.windTrailTimer || 0) + dt;
+          if (player.windTrailTimer >= 0.085) {
+            player.windTrailTimer = 0;
+            const facing = player.facing || 1;
+            // Spawn location right behind the character torso/legs
+            const backOffset = facing > 0 ? -4 : (player.width + 4);
+            const spawnX = player.x + backOffset + (Math.random() - 0.5) * 6;
+            const spawnY = player.y + player.height - 12 + (Math.random() - 0.5) * 10;
+            const driftVx = -player.vx * 0.15 + (Math.random() - 0.5) * 0.25;
+            const driftVy = -player.vy * 0.10 - (0.18 + Math.random() * 0.25); // gentle sepoi-sepoi upward breeze lift
+
+            gameParticles.push({
+              type: "wind_breeze",
+              x: spawnX,
+              y: spawnY,
+              vx: driftVx,
+              vy: driftVy,
+              scale: 0.65 + Math.random() * 0.35,
+              rot: (Math.random() - 0.5) * 0.5,
+              rotSpeed: (Math.random() - 0.5) * 2.0,
+              life: 0.38 + Math.random() * 0.12,
+              maxLife: 0.38 + Math.random() * 0.12
+            });
+            requestRender();
+          }
+        }
+
         // Direct, Rock-Solid Center on Player in Game Mode (Zero vibration)
         if (canvas && player.active) {
           const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
@@ -2833,6 +2919,13 @@
         purpleSparkleFrames.push(`particles/sparkles/PurpleStar_${pad}.png`);
       }
 
+      // ── Wind Movement Breeze Particle Sequence (3 Frames) ──
+      const windMoveFrames = [
+        "particles/wind/WindMoves_001.png",
+        "particles/wind/WindMoves_002.png",
+        "particles/wind/WindMoves_003.png"
+      ];
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2868,6 +2961,9 @@
           getSpriteImage(path);
         });
         purpleSparkleFrames.forEach(path => {
+          getSpriteImage(path);
+        });
+        windMoveFrames.forEach(path => {
           getSpriteImage(path);
         });
       }
@@ -3675,8 +3771,28 @@
         const isTransforming = player.modTransformTimer > 0;
         const transProg = isTransforming ? (1.0 - (player.modTransformTimer / 0.65)) : 1.0;
         
-        // Sleek and stylish name transition without chaotic text scrambling
-        const nameText = isMod ? "[MOD] Raey" : "Raey";
+        let nameText = isMod ? "[MOD] Raey" : "Raey";
+        let textJitterX = 0;
+        let textJitterY = 0;
+
+        // Punchy Cyber Glitch Text Animation on Transformation
+        if (isTransforming) {
+          textJitterX = (Math.random() - 0.5) * 1.8;
+          textJitterY = (Math.random() - 0.5) * 1.2;
+          const glitchSet = "!@#$%^&*<>01R43Y_+-=/~";
+          const baseName = transProg > 0.4 ? "[MOD] Raey" : "Raey";
+          const chars = baseName.split("");
+          if (transProg < 0.85 && Math.random() < 0.75) {
+            const glitchCount = Math.random() < 0.6 ? 1 : 2;
+            for (let g = 0; g < glitchCount; g++) {
+              const idx = Math.floor(Math.random() * chars.length);
+              if (chars[idx] !== " " && chars[idx] !== "[" && chars[idx] !== "]") {
+                chars[idx] = glitchSet[Math.floor(Math.random() * glitchSet.length)];
+              }
+            }
+          }
+          nameText = chars.join("");
+        }
 
         ctx.font = "bold 10px 'Outfit', 'Inter', sans-serif";
         const textMetrics = ctx.measureText ? ctx.measureText(nameText) : { width: 30 };
@@ -3686,8 +3802,8 @@
         const paddingH = 6;
         const boxW = flagSize + 5 + textW + paddingH * 2;
         const boxH = 18;
-        const boxX = centerX - boxW / 2;
-        const boxY = topY - boxH;
+        const boxX = centerX - boxW / 2 + textJitterX;
+        const boxY = topY - boxH + textJitterY;
 
         // Pill background
         ctx.fillStyle = "rgba(9, 13, 26, 0.88)";
@@ -3704,26 +3820,16 @@
         ctx.lineWidth = 1.2 / viewport.zoom;
         if (isMod || isTransforming) {
           ctx.shadowColor = isTransforming ? "#38bdf8" : "#a855f7";
-          ctx.shadowBlur = isTransforming ? (6 + 6 * Math.sin(transProg * Math.PI)) : 6;
+          ctx.shadowBlur = isTransforming ? (8 + 4 * Math.sin(transProg * Math.PI)) : 6;
         }
         ctx.stroke();
 
-        // Sleek Holographic Light Sweep Across Pill on Transformation
-        if (isTransforming) {
-          const sweepX = boxX + (boxW + 24) * transProg - 12;
-          const sweepGrad = ctx.createLinearGradient(sweepX - 10, boxY, sweepX + 10, boxY);
-          sweepGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
-          sweepGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.40)");
-          sweepGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+        // Micro-glitch scanline slice across pill
+        if (isTransforming && Math.random() < 0.60) {
           ctx.save();
-          ctx.fillStyle = sweepGrad;
-          ctx.beginPath();
-          if (typeof ctx.roundRect === "function") {
-            ctx.roundRect(boxX, boxY, boxW, boxH, 5);
-          } else {
-            ctx.rect(boxX, boxY, boxW, boxH);
-          }
-          ctx.fill();
+          const sliceY = boxY + Math.random() * (boxH - 3);
+          ctx.fillStyle = Math.random() < 0.5 ? "rgba(56, 189, 248, 0.35)" : "rgba(168, 85, 247, 0.35)";
+          ctx.fillRect(boxX, sliceY, boxW, 2);
           ctx.restore();
         }
 
@@ -3742,17 +3848,20 @@
           ctx.fillRect(flagX + flagSize / 2 - 1, flagY + flagSize / 2 - 1, 2, 2);
         }
 
-        // Nametag Text with subtle futuristic chromatic neon edge on transform
+        // Nametag Text with Cyber Chromatic Aberration RGB split on transform
         const textPosX = flagX + flagSize + 4;
         const textPosY = boxY + boxH - 5;
         if (typeof ctx.fillText === "function") {
           if (isTransforming) {
-            // Subtle 0.8px cyan and violet edge glow
+            // Cyan Aberration Pass
             ctx.save();
-            ctx.fillStyle = "rgba(56, 189, 248, 0.65)";
-            ctx.fillText(nameText, textPosX - 0.8, textPosY);
-            ctx.fillStyle = "rgba(192, 132, 252, 0.65)";
-            ctx.fillText(nameText, textPosX + 0.8, textPosY);
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText(nameText, textPosX - 1.2, textPosY);
+            ctx.restore();
+            // Magenta Aberration Pass
+            ctx.save();
+            ctx.fillStyle = "#f43f5e";
+            ctx.fillText(nameText, textPosX + 1.2, textPosY);
             ctx.restore();
           }
 
