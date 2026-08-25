@@ -1638,7 +1638,13 @@
           const diff = smoothZoomTarget - viewport.zoom;
           if (Math.abs(diff) < 0.001) {
             viewport.zoom = smoothZoomTarget;
-            if (!player.active) {
+            if (player.active) {
+              const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+              const viewW = canvas.width / dpr;
+              const viewH = canvas.height / dpr;
+              viewport.x = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
+              viewport.y = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
+            } else {
               viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
               viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
             }
@@ -1649,7 +1655,13 @@
 
           // Silky smooth exponential decay easing
           viewport.zoom += diff * 0.22;
-          if (!player.active) {
+          if (player.active) {
+            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+            const viewW = canvas.width / dpr;
+            const viewH = canvas.height / dpr;
+            viewport.x = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
+            viewport.y = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
+          } else {
             viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
             viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
           }
@@ -1662,24 +1674,21 @@
 
         canvas.addEventListener("wheel", event => {
           event.preventDefault();
+          const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 800, height: 600 };
+          const sx = event.clientX - rect.left;
+          const sy = event.clientY - rect.top;
+          zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
+          zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
+          zoomScreenX = sx;
+          zoomScreenY = sy;
+
           const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
           smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
 
-          if (!player.active) {
-            // Builder Mode: anchor to cursor
-            const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 800, height: 600 };
-            const sx = event.clientX - rect.left;
-            const sy = event.clientY - rect.top;
-            zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
-            zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
-            zoomScreenX = sx;
-            zoomScreenY = sy;
-
-            if (!isZoomAnimating) {
-              isZoomAnimating = true;
-              if (typeof requestAnimationFrame !== "undefined") {
-                requestAnimationFrame(stepSmoothZoom);
-              }
+          if (!isZoomAnimating) {
+            isZoomAnimating = true;
+            if (typeof requestAnimationFrame !== "undefined") {
+              requestAnimationFrame(stepSmoothZoom);
             }
           }
         }, { passive: false });
@@ -2653,11 +2662,11 @@
 
         let isBlinking = (t % 3.8) < 0.14;
 
-        // 360-Degree Jump Double Spin Throw (2 full rotations = 720 degrees, opposing arm directions!)
+        // 360-Degree Single Jump Spin Throw (1x forward spin for back arm, 1x INVERTED spin for front arm!)
         const isJumpSpinning = player.jumpSpinTimer > 0;
         const jumpSpinProgress = isJumpSpinning ? (1.0 - player.jumpSpinTimer / 0.28) : 0;
-        const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 4;   // 2x forward spin for back arm
-        const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 4; // 2x INVERTED spin for front arm!
+        const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 2;   // 1x 360-degree forward spin
+        const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 2; // 1x 360-degree INVERTED spin
 
         // Placing / Punch Spin Throw Animation
         const isPunching = player.punchTimer > 0;
@@ -2687,35 +2696,36 @@
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
             isBlinking = true;
-            afkHeadAngle = 0.28;
-            afkHeadY = 2;
-            afkTorsoY = 2;
-            afkBackArmAngle = 0.45;
-            afkFrontArmAngle = 0.55;
-            afkLegROffset = 1.5;
-            afkLegLOffset = 1.5;
+            afkHeadAngle = 0.12;
+            afkHeadY = 1;
+            afkTorsoY = 1;
+            afkBackArmAngle = 0.35;
+            afkFrontArmAngle = 0.45;
+            afkLegROffset = 1;
+            afkLegLOffset = 1;
           } else if (player.afkAction === "dance") {
             afkTorsoX = Math.sin(t * 8) * 3.5;
             afkTorsoAngle = Math.sin(t * 8) * 0.18;
-            afkHeadAngle = -Math.sin(t * 8) * 0.12;
+            afkHeadAngle = -Math.sin(t * 8) * 0.10;
             afkBackArmAngle = -Math.cos(t * 8) * 1.3;
             afkFrontArmAngle = Math.sin(t * 8) * 1.3;
             afkLegROffset = Math.max(0, Math.sin(t * 8)) * 3;
             afkLegLOffset = Math.max(0, -Math.sin(t * 8)) * 3;
           } else if (player.afkAction === "think") {
-            afkHeadAngle = -0.30;
-            afkHeadY = -1;
-            afkFrontArmAngle = -1.85;
-            afkBackArmAngle = 0.65;
+            afkHeadAngle = -0.08; // Gentle subtle thinking tilt
+            afkHeadY = 0;
+            afkFrontArmAngle = -1.75;
+            afkBackArmAngle = 0.50;
           } else if (player.afkAction === "cheer") {
-            const hopY = -Math.abs(Math.sin(t * 12)) * 6.0;
+            const hopY = -Math.abs(Math.sin(t * 12)) * 5.5;
             afkTorsoY = hopY;
-            afkHeadY = hopY;
+            afkHeadY = 0; // Stays firmly attached to the neck, no detachment!
             afkBackArmAngle = -2.3;
             afkFrontArmAngle = -2.3;
           } else if (player.afkAction === "angry") {
             afkTorsoX = (Math.random() - 0.5) * 2.5;
-            afkTorsoY = 1.5;
+            afkTorsoY = 1.0;
+            afkHeadY = 0;
             afkBackArmAngle = -0.7 + Math.sin(t * 30) * 0.15;
             afkFrontArmAngle = -0.7 + Math.cos(t * 30) * 0.15;
             afkLegROffset = Math.abs(Math.sin(t * 12)) * 3.5;
@@ -2728,20 +2738,21 @@
         const legLLift = isWalking ? Math.max(0, -Math.sin(t * 14)) * 1.8 : afkLegLOffset;
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
 
-        // ── Full-Range Pupil Gaze Vector (Desktop PC Only) ──
+        // ── Subtle, Natural Pupil Gaze Vector (Desktop PC Only) ──
         let pupilOffsetX = 0;
         let pupilOffsetY = 0;
-        if (player.isDesktopCursor) {
+        const eyeMode = player.eyeTrackingMode || "cursor";
+        if (eyeMode === "cursor" && player.isDesktopCursor) {
           const eyeWorldX = px + pw / 2 + player.facing * 4;
           const eyeWorldY = py + 6;
           const dx = player.cursorWorldX - eyeWorldX;
           const dy = player.cursorWorldY - eyeWorldY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          // Smooth gaze vector mapping across entire eye socket
-          const maxGazeX = 2.4;
-          const maxGazeY = 1.2;
-          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 2.6));
-          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 1.4));
+          // Gentle, subtle gaze boundaries
+          const maxGazeX = 1.2;
+          const maxGazeY = 0.5;
+          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 1.3));
+          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 0.6));
         }
 
         const skin = player.skinStyle || "classic";
@@ -3053,6 +3064,19 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(text, bubbleX, bTop + bubbleH / 2);
+          ctx.restore();
+        }
+
+        // AFK Sleeping "Zzz..." animated floating text
+        if (player.afkAction === "sleep" && !player.isDead) {
+          ctx.save();
+          const zProgress = (t * 1.5) % 1.6;
+          ctx.fillStyle = "#93c5fd";
+          ctx.font = "bold 13px sans-serif";
+          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 3) * 4, py - 20 - zProgress * 16);
+          ctx.font = "bold 10px sans-serif";
+          ctx.fillText("z", px + pw / 2 + 8 + Math.sin(t * 3 + 1) * 3, py - 14 - zProgress * 16);
+          ctx.fillText("z", px + pw / 2 + 14 + Math.sin(t * 3 + 2) * 2, py - 8 - zProgress * 16);
           ctx.restore();
         }
 

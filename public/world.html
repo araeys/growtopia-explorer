@@ -1198,8 +1198,17 @@
           </div>
         </div>
 
+        <!-- Eye Tracking Mode Toggle -->
+        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
+          <span>3. Eye Pupil Tracking (Desktop):</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button type="button" class="action-btn-pill active" id="eye-mode-cursor" style="padding:6px 14px; font-size:11px; font-weight:700;">👁️ Follow Cursor</button>
+          <button type="button" class="action-btn-pill" id="eye-mode-lock" style="padding:6px 14px; font-size:11px; font-weight:700;">🔒 Lock Forward</button>
+        </div>
+
         <!-- Character Skin Style -->
-        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">3. Character Skin Style:</div>
+        <div style="font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;">4. Character Skin Style:</div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;" id="skin-grid">
           <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;">
             <div style="font-size:11px;font-weight:700;color:#f8fafc;">Growtopia Set</div>
@@ -2376,7 +2385,7 @@
     selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
     updateSkinCards(selectedSkinTemp);
     updateHairCards(selectedHairTemp);
-    updateOffsetUI();
+    updateOffsetDisplay();
     if (charModal) charModal.classList.remove('hidden');
   }
 
@@ -2407,6 +2416,45 @@
       updateHairCards(selectedHairTemp);
     });
   });
+
+  let eyeTrackingMode = 'cursor';
+  try {
+    eyeTrackingMode = localStorage.getItem('gt_eye_tracking_mode') || 'cursor';
+  } catch(e) {}
+  if (engine && typeof engine.setEyeTrackingMode === 'function') engine.setEyeTrackingMode(eyeTrackingMode);
+
+  function updateEyeModeButtons() {
+    document.getElementById('eye-mode-cursor')?.classList.toggle('active', eyeTrackingMode === 'cursor');
+    document.getElementById('eye-mode-lock')?.classList.toggle('active', eyeTrackingMode === 'forward');
+  }
+
+  document.getElementById('eye-mode-cursor')?.addEventListener('click', () => {
+    eyeTrackingMode = 'cursor';
+    updateEyeModeButtons();
+    if (engine && typeof engine.setEyeTrackingMode === 'function') engine.setEyeTrackingMode('cursor');
+    try { localStorage.setItem('gt_eye_tracking_mode', 'cursor'); } catch(e) {}
+  });
+
+  document.getElementById('eye-mode-lock')?.addEventListener('click', () => {
+    eyeTrackingMode = 'forward';
+    updateEyeModeButtons();
+    if (engine && typeof engine.setEyeTrackingMode === 'function') engine.setEyeTrackingMode('forward');
+    try { localStorage.setItem('gt_eye_tracking_mode', 'forward'); } catch(e) {}
+  });
+
+  // Focus Chat Input on button click
+  function openGameChat() {
+    const chatBar = document.getElementById('game-chat-bar');
+    const input = document.getElementById('game-chat-input');
+    if (chatBar) chatBar.classList.remove('hidden');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }
+
+  document.getElementById('hud-chat-btn')?.addEventListener('click', openGameChat);
+  document.getElementById('mobile-chat-btn')?.addEventListener('click', openGameChat);
 
   document.getElementById('character-modal-save')?.addEventListener('click', () => {
     if (engine && typeof engine.setPlayerSkin === 'function') {
