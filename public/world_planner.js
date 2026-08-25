@@ -2956,35 +2956,30 @@
           ctx.rotate(afkHeadAngle + (isWalking ? -walkCycleSin * 0.04 : 0));
 
           if (player.moderatorMode) {
-            // ── Glowing Pure White Eyes (Mod Mode - No Pupils) ──
-            if (!isBlinking) {
-              // 1. Luminous White Sclera with Electric Glow
+            // ── Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Aura) ──
+            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
+            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+              // 1. White Eyeball Sclera base with glowing cyan pulse under head mask
               ctx.save();
-              ctx.shadowColor = "#00e5ff";
-              ctx.shadowBlur = 12;
-              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-                ctx.drawImage(imgSclera, -16, -16, 32, 32);
-              }
-              // Fill eye sockets with intense solid white
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(-1, -13, 4.5, 4.5);
-              ctx.fillRect(7, -13, 4.5, 4.5);
+              ctx.shadowColor = "#38bdf8";
+              ctx.shadowBlur = 6 + 6 * eyePulse;
+              ctx.drawImage(imgSclera, -16, -16, 32, 32);
               ctx.restore();
             }
 
-            // Layer C: Head Mask with transparent eye cutouts (Drawn on top of glowing eyes!)
+            // Layer C: Head Mask with transparent eye cutouts (Draws face, framing the eyes naturally!)
             if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
               ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
             }
 
-            // Layer C2: Pure White Electric Eye Glow Flare overlay
-            if (!isBlinking) {
+            // Layer D: Subtle eye glow flare from the exact eye shape (Using screen blend mode on imgSclera)
+            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
               ctx.save();
-              ctx.shadowColor = "#ffffff";
-              ctx.shadowBlur = 8;
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(-0.5, -12, 3.5, 3.5);
-              ctx.fillRect(7.5, -12, 3.5, 3.5);
+              ctx.globalCompositeOperation = "screen";
+              ctx.globalAlpha = 0.55 * eyePulse;
+              ctx.shadowColor = "#00e5ff";
+              ctx.shadowBlur = 8 * eyePulse;
+              ctx.drawImage(imgSclera, -16, -16, 32, 32);
               ctx.restore();
             }
           } else {
@@ -3118,13 +3113,14 @@
             ctx.fillRect(0, -13, 2.5, 1.5);
             ctx.fillRect(3.5, -13, 2.5, 1.5);
           } else if (player.moderatorMode) {
-            // Glowing Pure White Eyes (Mod Mode - No Pupils)
+            // Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Soft Glow)
+            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
             ctx.save();
-            ctx.shadowColor = "#00e5ff";
-            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 4 + 6 * eyePulse;
+            ctx.globalAlpha = 0.85 + 0.15 * eyePulse;
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(1, -14.5, 5.5, 4.2);
-            ctx.fillRect(-4, -14.5, 4.0, 4.2);
+            ctx.fillRect(1, -14, 5, 3.5);
             ctx.restore();
           } else {
             ctx.fillStyle = "#ffffff";
