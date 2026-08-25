@@ -354,20 +354,22 @@
       }
 
       function spawnDeathParticles(x, y) {
-        // 1. Fiery Hazard Spark Debris (24 particles)
-        for (let i = 0; i < 24; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 2.5 + Math.random() * 6.5;
-          const lifeTime = 0.60 + Math.random() * 0.25;
+        // 1. Popping & Floating Heart Particles (Replacing generic circles with authentic randomized heart assets)
+        for (let i = 0; i < 14; i++) {
+          const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 1.5;
+          const speed = 2.2 + Math.random() * 5.2;
+          const lifeTime = 0.65 + Math.random() * 0.35;
+          const randImg = deathHeartImages[Math.floor(Math.random() * deathHeartImages.length)];
           gameParticles.push({
-            type: "burst",
-            x: x,
-            y: y,
+            type: "heart",
+            src: randImg,
+            x: x + (Math.random() - 0.5) * 8,
+            y: y + (Math.random() - 0.5) * 8,
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 2.0,
-            radius: 2.8 + Math.random() * 3.2,
-            color: Math.random() > 0.5 ? "#ef4444" : (Math.random() > 0.5 ? "#fbbf24" : "#ffffff"),
-            borderColor: "rgba(185, 28, 28, 0.5)",
+            vy: Math.sin(angle) * speed - 1.8,
+            rotation: (Math.random() - 0.5) * 0.6,
+            rotSpeed: (Math.random() - 0.5) * 4.5,
+            scale: 0.85 + Math.random() * 0.40,
             life: lifeTime,
             maxLife: lifeTime
           });
@@ -407,51 +409,38 @@
       }
 
       function spawnModTransformParticles(x, y) {
-        // 1. Electrical Lightning Energy Sparks (20 particles)
-        for (let i = 0; i < 20; i++) {
+        // 1. Lightweight Electrical Sparks (12 particles, zero GPU stall)
+        for (let i = 0; i < 12; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = 2.2 + Math.random() * 5.5;
-          const lifeTime = 0.50 + Math.random() * 0.20;
+          const speed = 2.0 + Math.random() * 4.5;
+          const lifeTime = 0.45 + Math.random() * 0.15;
           gameParticles.push({
-            type: "burst",
+            type: "dust",
             x: x,
             y: y,
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 1.2,
-            radius: 2.6 + Math.random() * 2.6,
+            vy: Math.sin(angle) * speed - 1.0,
+            radius: 2.2 + Math.random() * 2.0,
             color: Math.random() > 0.5 ? "#c084fc" : (Math.random() > 0.5 ? "#38bdf8" : "#ffffff"),
-            borderColor: "rgba(192, 132, 252, 0.45)",
+            borderColor: "rgba(192, 132, 252, 0.4)",
             life: lifeTime,
             maxLife: lifeTime
           });
         }
 
-        // 2. Expanding Celestial Power Rings
+        // 2. Single Expanding Power Ring
         gameParticles.push({
           type: "ring",
           x: x,
           y: y,
           vx: 0,
           vy: 0,
-          radius: 8,
-          maxRadius: 44,
+          radius: 6,
+          maxRadius: 40,
           color: "#c084fc",
           borderColor: "#a855f7",
-          life: 0.50,
-          maxLife: 0.50
-        });
-        gameParticles.push({
-          type: "ring",
-          x: x,
-          y: y,
-          vx: 0,
-          vy: 0,
-          radius: 4,
-          maxRadius: 34,
-          color: "#38bdf8",
-          borderColor: "#0284c7",
-          life: 0.40,
-          maxLife: 0.40
+          life: 0.42,
+          maxLife: 0.42
         });
       }
 
@@ -504,6 +493,32 @@
               ctx.save();
               ctx.imageSmoothingEnabled = false;
               ctx.drawImage(img, p.x - 16, p.y - 16, 32, 32);
+              ctx.restore();
+            }
+            continue;
+          }
+
+          if (p.type === "heart") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.20; // gentle gravity
+            p.vx *= 0.95; // air drag
+            p.rotation += (p.rotSpeed || 0) * dt;
+
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.max(0, 1.0 - Math.pow(progress, 2.0));
+            const img = getSpriteImage(p.src);
+
+            if (img && img.complete && img.naturalWidth > 0) {
+              ctx.save();
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.rotation);
+              // Pop scale curve
+              const popScale = p.scale * (progress < 0.2 ? (0.5 + (progress / 0.2) * 0.7) : (1.2 - (progress - 0.2) * 0.4));
+              ctx.scale(popScale, popScale);
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(img, -10, -10, 20, 20);
               ctx.restore();
             }
             continue;
@@ -2732,6 +2747,14 @@
         breakParticleFrames.push(`particles/breaks/Breaks_${pad}.png`);
       }
 
+      // ── Death Heart Particles ──
+      const deathHeartImages = [
+        "particles/hearts/heart_1.png",
+        "particles/hearts/heart_2.png",
+        "particles/hearts/Heart_001.png",
+        "particles/hearts/Heart_002.png"
+      ];
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2755,6 +2778,9 @@
           getSpriteImage(path);
         });
         breakParticleFrames.forEach(path => {
+          getSpriteImage(path);
+        });
+        deathHeartImages.forEach(path => {
           getSpriteImage(path);
         });
       }
@@ -2926,7 +2952,8 @@
           const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.85);
           const isDeathImpact = player.deathTimer > 0.70; // 0.15s initial damage hit flash
           if (isDeathImpact) {
-            ctx.filter = "brightness(1.6) drop-shadow(0 0 8px #ef4444)";
+            ctx.shadowColor = "#ef4444";
+            ctx.shadowBlur = 12;
           }
           ctx.globalAlpha = Math.max(0, 1.0 - Math.pow(deathProgress, 2.2));
           const spinDir = player.vx < 0 ? -1 : 1;
@@ -2934,12 +2961,13 @@
           const deathScale = Math.max(0.15, 1.0 + Math.sin(deathProgress * Math.PI * 0.5) * 0.2 - deathProgress * 0.6);
           ctx.scale(deathScale, deathScale);
         } else if (player.modTransformTimer > 0) {
-          // Mod Transformation Electrical Strobe Flicker Effect
+          // Mod Transformation Electrical Strobe Flicker Effect (GPU-friendly zero lag)
           const transProg = 1.0 - (player.modTransformTimer / 0.65);
           // Rapid alternating holographic electrical flash
           const isFlickerOn = Math.sin((0.65 - player.modTransformTimer) * 55) > -0.2;
           ctx.globalAlpha = isFlickerOn ? 1.0 : 0.35;
-          ctx.filter = `brightness(${1.4 + (1.0 - transProg) * 1.4}) drop-shadow(0 0 ${14 * (1.0 - transProg)}px #a855f7)`;
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 14 * (1.0 - transProg);
           const transformScale = 1.0 + Math.sin(transProg * Math.PI) * 0.16;
           ctx.scale(transformScale, transformScale);
         } else if (player.respawnInvincible > 0) {
