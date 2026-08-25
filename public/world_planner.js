@@ -2626,7 +2626,7 @@
         }
 
         ctx.save();
-        ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
+        ctx.translate(px + pw / 2, py + ph / 2);
         if (player.facing < 0) ctx.scale(-1, 1);
 
         // Death Tumble Animation & Ghost Fade
