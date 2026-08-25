@@ -1682,13 +1682,17 @@
           zoomScreenX = sx;
           zoomScreenY = sy;
 
-          const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
-          smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
+          const minZ = player.active ? 0.35 : 0.15;
+          const maxZ = player.active ? 4.5 : 8.0;
+          const zoomFactor = event.deltaY < 0 ? 1.18 : 0.84;
+          smoothZoomTarget = Math.max(minZ, Math.min(maxZ, smoothZoomTarget * zoomFactor));
 
-          if (!isZoomAnimating) {
-            isZoomAnimating = true;
-            if (typeof requestAnimationFrame !== "undefined") {
-              requestAnimationFrame(stepSmoothZoom);
+          if (!player.active) {
+            if (!isZoomAnimating) {
+              isZoomAnimating = true;
+              if (typeof requestAnimationFrame !== "undefined") {
+                requestAnimationFrame(stepSmoothZoom);
+              }
             }
           }
         }, { passive: false });
@@ -2224,9 +2228,10 @@
       function updatePlayerPhysics(dt) {
         if (!player.active) return;
 
-        // Smooth Zoom Interpolation directly inside the physics frame (100% synchronized with camera)
-        if (Math.abs(smoothZoomTarget - viewport.zoom) > 0.001) {
-          viewport.zoom += (smoothZoomTarget - viewport.zoom) * Math.min(1.0, 14.0 * dt);
+        // Rock-Solid Zoom Interpolation in Physics Frame (Zero jitter, single-source of truth)
+        const zDiff = smoothZoomTarget - viewport.zoom;
+        if (Math.abs(zDiff) > 0.0005) {
+          viewport.zoom += zDiff * Math.min(1.0, 12.0 * dt);
         } else {
           viewport.zoom = smoothZoomTarget;
         }
@@ -2738,21 +2743,24 @@
         const legLLift = isWalking ? Math.max(0, -Math.sin(t * 14)) * 1.8 : afkLegLOffset;
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
 
-        // ── Subtle, Natural Pupil Gaze Vector (Desktop PC Only) ──
+        // ── Ultra-Subtle Pupil Gaze Vector & 100% Strict Lock Forward Support ──
         let pupilOffsetX = 0;
         let pupilOffsetY = 0;
-        const eyeMode = player.eyeTrackingMode || "cursor";
+        const eyeMode = (player.eyeTrackingMode === "forward") ? "forward" : "cursor";
         if (eyeMode === "cursor" && player.isDesktopCursor) {
           const eyeWorldX = px + pw / 2 + player.facing * 4;
           const eyeWorldY = py + 6;
           const dx = player.cursorWorldX - eyeWorldX;
           const dy = player.cursorWorldY - eyeWorldY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          // Gentle, subtle gaze boundaries
-          const maxGazeX = 1.2;
-          const maxGazeY = 0.5;
-          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 1.3));
-          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 0.6));
+          // Ultra-small, crisp natural eye glance (strictly <= 0.6px)
+          const maxGazeX = 0.55;
+          const maxGazeY = 0.28;
+          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 0.7));
+          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 0.35));
+        } else {
+          pupilOffsetX = 0;
+          pupilOffsetY = 0;
         }
 
         const skin = player.skinStyle || "classic";
