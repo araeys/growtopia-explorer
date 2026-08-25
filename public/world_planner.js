@@ -655,7 +655,7 @@
         } else if (world.bg[idx] !== 0) {
           world.bg[idx] = 0;
         }
-        playSfx("tile_removed", 0.95 + Math.random() * 0.15, 0.70);
+        playSfx("rock_destroy", 0.95 + Math.random() * 0.15, 0.75);
         return true;
       }
 
@@ -1703,7 +1703,6 @@
                   pushUndoSnapshot("Erase Tile");
                   triggerPlayerPunch(tileX, tileY);
                   eraseTile(tileX, tileY);
-                  playSfx("tile_removed", 1.0 + Math.random() * 0.2, 0.55);
                   lastDrawTile = { x: tileX, y: tileY };
                   render();
                   onWorldChange(world);
@@ -2819,13 +2818,25 @@
         return img;
       }
 
+      let avatarMaskCanvas = null;
+      let avatarMaskCtx = null;
+      function getAvatarMaskCtx() {
+        if (!avatarMaskCanvas && typeof document !== "undefined") {
+          avatarMaskCanvas = document.createElement("canvas");
+          avatarMaskCanvas.width = 64;
+          avatarMaskCanvas.height = 64;
+          avatarMaskCtx = avatarMaskCanvas.getContext("2d");
+        }
+        return { canvas: avatarMaskCanvas, ctx: avatarMaskCtx };
+      }
+
       function drawCrystalOrbs(ctx, px, py, pw, ph, layer) {
         if (!player.moderatorMode || player.isDead) return;
         const cx = px + pw / 2;
         const cy = py + ph / 2 + 1;
         const t = player.animTimer;
-        const rx = 30; // Horizontal elliptical span
-        const ry = 8.5; // Vertical orbit tilt
+        const rx = 24; // Horizontal elliptical span
+        const ry = 6.5; // Vertical orbit tilt
         const orbitSpeed = 2.4; // 3D orbit speed
         const orbCount = 3; // 3 Symmetrical orbiting crystal orbs
 
@@ -2848,15 +2859,15 @@
           if (img && img.complete && img.naturalWidth > 0) {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-            // Dynamic 3D depth scaling (larger and brighter in front, smaller in back)
-            const depthScale = 0.80 + (oz + 1.0) * 0.20;
+            // Dynamic 3D depth scaling (delicate miniature floating orbs)
+            const depthScale = 0.70 + (oz + 1.0) * 0.16; // 0.70 to 1.02
             const depthAlpha = 0.75 + (oz + 1.0) * 0.12;
             ctx.globalAlpha = Math.max(0, Math.min(1, depthAlpha));
             ctx.shadowColor = "#38bdf8";
-            ctx.shadowBlur = 8 * depthScale;
+            ctx.shadowBlur = 4 * depthScale;
             ctx.translate(ox, oy);
             ctx.scale(depthScale, depthScale);
-            ctx.drawImage(img, -12, -12, 24, 24);
+            ctx.drawImage(img, -6, -6, 12, 12);
             ctx.restore();
           }
         }
@@ -3165,333 +3176,355 @@
         const skin = player.skinStyle || "classic";
         const cOffsets = player.clothesOffsets || { hair: { x: 0, y: -6 }, shirt: { x: 0, y: 0 }, pants: { x: 0, y: 0 } };
 
-        if (skin === "classic" || skin === "growtopia" || skin === "builder") {
-          // ── 1. Authentic Growtopia Set Character Engine ──
-          ctx.imageSmoothingEnabled = false;
+        function renderAvatarParts(tCtx) {
+          if (skin === "classic" || skin === "growtopia" || skin === "builder") {
+            // ── 1. Authentic Growtopia Set Character Engine ──
+            tCtx.imageSmoothingEnabled = false;
 
-          const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
-          const imgArmL = getSpriteImage("character_base_assets/gt_parts/arm_l.png");
-          const imgLegR = getSpriteImage("character_base_assets/gt_parts/leg_r.png");
-          const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
-          const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
+            const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
+            const imgArmL = getSpriteImage("character_base_assets/gt_parts/arm_l.png");
+            const imgLegR = getSpriteImage("character_base_assets/gt_parts/leg_r.png");
+            const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
+            const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
-          const imgHeadMask = isBlinking ? getSpriteImage("character_base_assets/gt_parts/head_blink.png") : getSpriteImage("character_base_assets/gt_parts/head_mask.png");
+            const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
+            const imgHeadMask = isBlinking ? getSpriteImage("character_base_assets/gt_parts/head_blink.png") : getSpriteImage("character_base_assets/gt_parts/head_mask.png");
 
-          const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
+            const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
 
-          // 1. Back Arm (Tangan Kanan) - Dynamic swing & pose
-          let backArmAngle = 0;
-          if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
-          else if (isPunching) backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
-          else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
-          else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
-          else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
-          else if (isJumping) backArmAngle = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
-          else if (isWalking) backArmAngle = -walkCycleCos * 0.85;
-          else backArmAngle = -idleArmWiggle;
+            // 1. Back Arm (Tangan Kanan) - Dynamic swing & pose
+            let backArmAngle = 0;
+            if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
+            else if (isPunching) backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
+            else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
+            else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
+            else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
+            else if (isJumping) backArmAngle = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
+            else if (isWalking) backArmAngle = -walkCycleCos * 0.85;
+            else backArmAngle = -idleArmWiggle;
 
-          ctx.save();
-          ctx.translate(8 + afkTorsoX, 4 + breatheBob);
-          ctx.rotate(backArmAngle);
-          if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
-            ctx.drawImage(imgArmR, -24, -20, 32, 32);
-          }
-          ctx.restore();
+            tCtx.save();
+            tCtx.translate(8 + afkTorsoX, 4 + breatheBob);
+            tCtx.rotate(backArmAngle);
+            if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
+              tCtx.drawImage(imgArmR, -24, -20, 32, 32);
+            }
+            tCtx.restore();
 
-          // 2. Back Leg (Kaki Kanan)
-          let legRAngle = 0;
-          if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
-          else if (isFalling) legRAngle = -0.15 + Math.sin(t * 16) * 0.10;
-          else if (isJumping) legRAngle = -0.45 - jumpIntensity * 0.20;
-          else if (isWalking) legRAngle = walkCycleSin * 0.65;
+            // 2. Back Leg (Kaki Kanan)
+            let legRAngle = 0;
+            if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
+            else if (isFalling) legRAngle = -0.15 + Math.sin(t * 16) * 0.10;
+            else if (isJumping) legRAngle = -0.45 - jumpIntensity * 0.20;
+            else if (isWalking) legRAngle = walkCycleSin * 0.65;
 
-          const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
-          const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
-          const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
+            const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
+            const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
+            const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
 
-          ctx.save();
-          ctx.translate(8 + afkTorsoX + pxLeg, legRY + pyLeg);
-          ctx.rotate(legRAngle);
-          if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
-            ctx.drawImage(imgLegR, -24, -24, 32, 32);
-          }
-          ctx.restore();
+            tCtx.save();
+            tCtx.translate(8 + afkTorsoX + pxLeg, legRY + pyLeg);
+            tCtx.rotate(legRAngle);
+            if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
+              tCtx.drawImage(imgLegR, -24, -24, 32, 32);
+            }
+            tCtx.restore();
 
-          // 3. Front Leg (Kaki Kiri)
-          let legLAngle = 0;
-          if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
-          else if (isFalling) legLAngle = 0.40 + Math.cos(t * 16) * 0.10;
-          else if (isJumping) legLAngle = 0.55 + jumpIntensity * 0.20;
-          else if (isWalking) legLAngle = -walkCycleSin * 0.65;
+            // 3. Front Leg (Kaki Kiri)
+            let legLAngle = 0;
+            if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
+            else if (isFalling) legLAngle = 0.40 + Math.cos(t * 16) * 0.10;
+            else if (isJumping) legLAngle = 0.55 + jumpIntensity * 0.20;
+            else if (isWalking) legLAngle = -walkCycleSin * 0.65;
 
-          const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
-          ctx.save();
-          ctx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
-          ctx.rotate(legLAngle);
-          if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
-            ctx.drawImage(imgLegL, -12, -24, 32, 32);
-          }
-          ctx.restore();
+            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
+            tCtx.save();
+            tCtx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
+            tCtx.rotate(legLAngle);
+            if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
+              tCtx.drawImage(imgLegL, -12, -24, 32, 32);
+            }
+            tCtx.restore();
 
-          // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Punch Lunge
-          const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
-          const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
-          const torsoTwist = isWalking ? Math.sin(walkPhase) * 0.04 : (isJumping ? -0.06 * jumpIntensity : 0);
+            // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Punch Lunge
+            const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
+            const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
+            const torsoTwist = isWalking ? Math.sin(walkPhase) * 0.04 : (isJumping ? -0.06 * jumpIntensity : 0);
 
-          ctx.save();
-          ctx.translate(afkTorsoX + sxShirt + punchStepX, breatheBob + syShirt);
-          ctx.rotate(afkTorsoAngle + runLean + torsoTwist + punchTorsoLean);
-          if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
-            ctx.drawImage(imgBody, -16, -16, 32, 32);
-          }
-
-          // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
-          ctx.save();
-          const headBobLag = isWalking ? (Math.sin(walkPhase - 0.5) * 0.85) : 0;
-          const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
-          const jumpHeadTilt = isJumping ? (-0.10 * jumpIntensity) : 0;
-          ctx.translate(afkHeadX - sxShirt + punchStepX * 0.5, afkHeadY - syShirt + headBobLag);
-          ctx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (isWalking ? -walkCycleSin * 0.05 : 0));
-
-          if (player.moderatorMode) {
-            // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
-            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
-            
-            // Layer A: Authentic White Sclera Base with soft glowing aura behind head mask
-            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-              ctx.save();
-              ctx.shadowColor = "#38bdf8";
-              ctx.shadowBlur = 6 + 6 * eyePulse;
-              ctx.drawImage(imgSclera, -16, -16, 32, 32);
-              ctx.restore();
+            tCtx.save();
+            tCtx.translate(afkTorsoX + sxShirt + punchStepX, breatheBob + syShirt);
+            tCtx.rotate(afkTorsoAngle + runLean + torsoTwist + punchTorsoLean);
+            if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+              tCtx.drawImage(imgBody, -16, -16, 32, 32);
             }
 
-            // Layer B: Head Mask with transparent eye cutouts (Frames the white eyes naturally)
-            if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
-              ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
+            // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
+            tCtx.save();
+            const headBobLag = isWalking ? (Math.sin(walkPhase - 0.5) * 0.85) : 0;
+            const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
+            const jumpHeadTilt = isJumping ? (-0.10 * jumpIntensity) : 0;
+            tCtx.translate(afkHeadX - sxShirt + punchStepX * 0.5, afkHeadY - syShirt + headBobLag);
+            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (isWalking ? -walkCycleSin * 0.05 : 0));
+
+            if (player.moderatorMode) {
+              // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
+              const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
+              
+              // Layer A: Authentic White Sclera Base with soft glowing aura behind head mask
+              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                tCtx.save();
+                tCtx.shadowColor = "#38bdf8";
+                tCtx.shadowBlur = 6 + 6 * eyePulse;
+                tCtx.drawImage(imgSclera, -16, -16, 32, 32);
+                tCtx.restore();
+              }
+
+              // Layer B: Head Mask with transparent eye cutouts (Frames the white eyes naturally)
+              if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+                tCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
+              }
+
+              // Layer C: Radiant Eye Aura radiating from the exact eyeball sprite pixels
+              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                tCtx.save();
+                tCtx.globalCompositeOperation = "screen";
+                tCtx.globalAlpha = 0.65 * eyePulse;
+                tCtx.shadowColor = "#ffffff";
+                tCtx.shadowBlur = 8 * eyePulse;
+                tCtx.drawImage(imgSclera, -16, -16, 32, 32);
+                tCtx.restore();
+              }
+            } else {
+              // Standard Normal Mode: White Sclera + Dark Locked Pupils
+              // Layer A: White Eyeballs Sclera Base (Behind head mask)
+              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                tCtx.drawImage(imgSclera, -16, -16, 32, 32);
+              }
+
+              // Layer B: Eye Pupils (UNDER Head Mask, permanently locked forward in eye sockets!)
+              if (!isBlinking) {
+                tCtx.fillStyle = "#0f172a";
+                // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
+                tCtx.fillRect(0, -11, 2.0, 2.0);
+                // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
+                tCtx.fillRect(8, -11, 2.0, 2.0);
+              }
+
+              // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
+              if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+                tCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
+              }
             }
 
-            // Layer C: Radiant Eye Aura radiating from the exact eyeball sprite pixels
-            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-              ctx.save();
-              ctx.globalCompositeOperation = "screen";
-              ctx.globalAlpha = 0.65 * eyePulse;
-              ctx.shadowColor = "#ffffff";
-              ctx.shadowBlur = 8 * eyePulse;
-              ctx.drawImage(imgSclera, -16, -16, 32, 32);
-              ctx.restore();
+            // Layer D: Hair / Hats Overlay with Physics Inertial Sway & Bend (Subtle & Natural)
+            const hairChoice = player.hairStyle || "red";
+            if (hairChoice !== "none") {
+              const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
+              const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
+              if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
+                const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
+                const hy = (cOffsets.hair ? cOffsets.hair.y : -6) || -6;
+
+                tCtx.save();
+                tCtx.translate(hx, hy);
+
+                // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
+                const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.072) : 0;
+                const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0;
+                const hairJumpSway = isJumping ? (-player.vy * 0.013) : 0;
+                const hairFallLift = isFalling ? (-player.vy * 0.015) : 0;
+                const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.022) : 0;
+
+                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
+                tCtx.rotate(totalHairBend);
+
+                // Elastic vertical bounce / wind lift
+                const hairScaleY = 1.0 + (isJumping ? 0.05 : (isFalling ? -0.04 : (isWalking ? Math.sin(walkPhase) * 0.03 : 0)));
+                const hairScaleX = 1.0 + (isFalling ? 0.035 : 0);
+                tCtx.scale(hairScaleX, hairScaleY);
+
+                tCtx.drawImage(imgHair, -16, -16, 32, 32);
+                tCtx.restore();
+              }
             }
+            tCtx.restore();
+            tCtx.restore();
+
+            // 6. Front Arm (Tangan Kiri - Dynamic opposing swing & Punch Jab Thrust)
+            let frontArmAngle = 0;
+            if (isJumpSpinning) {
+              frontArmAngle = jumpSpinAngleFront;
+            } else if (isPunching) {
+              frontArmAngle = punchSnapAngle;
+            } else if (afkFrontArmAngle !== null) {
+              frontArmAngle = afkFrontArmAngle;
+            } else if (isFloating) {
+              frontArmAngle = 0.45 - Math.sin(t * 5) * 0.1;
+            } else if (isFalling) {
+              frontArmAngle = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
+            } else if (isJumping) {
+              frontArmAngle = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
+            } else if (isWalking) {
+              frontArmAngle = walkCycleCos * 0.85;
+            } else {
+              frontArmAngle = idleArmWiggle;
+            }
+
+            tCtx.save();
+            tCtx.translate(-7 + afkTorsoX + punchThrustX, 4 + breatheBob);
+            tCtx.rotate(frontArmAngle);
+            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+              tCtx.drawImage(imgArmL, -9, -20, 32, 32);
+            }
+            tCtx.restore();
           } else {
-            // Standard Normal Mode: White Sclera + Dark Locked Pupils
-            // Layer A: White Eyeballs Sclera Base (Behind head mask)
-            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-              ctx.drawImage(imgSclera, -16, -16, 32, 32);
+            // ── 2. Cartoon Chibi Skin ──
+            const skinColor = "#f6b484";
+            const darkSkin = "#d88b56";
+            const legOffset = (isWalking ? Math.sin(t * 14) : 0) * 3.5;
+
+            // 1. Back Leg
+            const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
+            tCtx.save();
+            tCtx.translate(afkTorsoX, isFloating ? (floatBob + 2 + legHoverWave) : 0);
+            tCtx.rotate(cLegRAngle);
+            tCtx.fillStyle = "#1e3a8a";
+            tCtx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
+            tCtx.fillStyle = "#ffffff";
+            tCtx.fillRect(-7, 12, 6, 2.5);
+            tCtx.fillStyle = "#1d4ed8";
+            tCtx.fillRect(-7, 13, 6, 1);
+            tCtx.restore();
+
+            // 2. Front Leg
+            const cLegLAngle = isFloating ? 0.30 : (isFalling ? 0.25 : (isJumping ? 0.20 : 0));
+            tCtx.save();
+            tCtx.translate(afkTorsoX, isFloating ? (floatBob + 2 - legHoverWave) : 0);
+            tCtx.rotate(cLegLAngle);
+            tCtx.fillStyle = "#2563eb";
+            tCtx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
+            tCtx.fillStyle = "#ffffff";
+            tCtx.fillRect(1, 12, 6, 2.5);
+            tCtx.fillStyle = "#2563eb";
+            tCtx.fillRect(1, 13, 6, 1);
+            tCtx.restore();
+
+            // 3. Torso
+            tCtx.save();
+            tCtx.translate(afkTorsoX, breatheBob);
+            tCtx.rotate(afkTorsoAngle);
+            tCtx.fillStyle = "#0284c7";
+            tCtx.fillRect(-8, -6, 16, 10);
+            tCtx.fillStyle = "#38bdf8";
+            tCtx.fillRect(-6, -6, 12, 2);
+            tCtx.fillStyle = "#0f172a";
+            tCtx.fillRect(-8, 2, 16, 2);
+            tCtx.fillStyle = "#e2e8f0";
+            tCtx.fillRect(-2, 2, 4, 2);
+
+            // 4. Head & Pupil
+            tCtx.save();
+            tCtx.translate(afkHeadX, afkHeadY);
+            tCtx.rotate(afkHeadAngle);
+            tCtx.fillStyle = skinColor;
+            tCtx.beginPath();
+            tCtx.arc(0, -12, 8.5, 0, Math.PI * 2);
+            tCtx.fill();
+
+            tCtx.fillStyle = "#452817";
+            tCtx.beginPath();
+            tCtx.arc(0, -14, 8, Math.PI, Math.PI * 2);
+            tCtx.fill();
+            tCtx.fillRect(-8, -14, 5, 3.5);
+            tCtx.fillStyle = "#784c2f";
+            tCtx.fillRect(-4, -17.5, 5, 2);
+
+            // 5. Dynamic Eye Expression
+            if (isBlinking) {
+              tCtx.fillStyle = "#452817";
+              tCtx.fillRect(0, -13, 2.5, 1.5);
+              tCtx.fillRect(3.5, -13, 2.5, 1.5);
+            } else if (player.moderatorMode) {
+              // Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Soft Glow)
+              const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
+              tCtx.save();
+              tCtx.shadowColor = "#38bdf8";
+              tCtx.shadowBlur = 4 + 6 * eyePulse;
+              tCtx.globalAlpha = 0.85 + 0.15 * eyePulse;
+              tCtx.fillStyle = "#ffffff";
+              tCtx.fillRect(1, -14, 5, 3.5);
+              tCtx.restore();
+            } else {
+              tCtx.fillStyle = "#ffffff";
+              tCtx.fillRect(1, -14, 5, 3.5);
+              tCtx.fillStyle = "#0f172a";
+              tCtx.fillRect(3 + pupilOffsetX * 0.7, -13.5 + pupilOffsetY * 0.7, 2.5, 2.5);
+              tCtx.fillStyle = "#ffffff";
+              tCtx.fillRect(4 + pupilOffsetX * 0.7, -14 + pupilOffsetY * 0.7, 1, 1);
             }
+            tCtx.fillStyle = "#452817";
+            tCtx.fillRect(1, -16.5, 5, 1.2);
+            tCtx.fillStyle = "#833a1e";
+            tCtx.fillRect(2, -8.5, 4, 1.2);
+            tCtx.fillStyle = "rgba(244, 114, 182, 0.4)";
+            tCtx.fillRect(-2, -9.5, 3, 1.5);
+            tCtx.restore();
+            tCtx.restore();
 
-            // Layer B: Eye Pupils (UNDER Head Mask, permanently locked forward in eye sockets!)
-            if (!isBlinking) {
-              ctx.fillStyle = "#0f172a";
-              // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
-              ctx.fillRect(0, -11, 2.0, 2.0);
-              // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
-              ctx.fillRect(8, -11, 2.0, 2.0);
-            }
+            // 6. Arm
+            let cArmAngle = 0;
+            if (isJumpSpinning) cArmAngle = jumpSpinAngleFront;
+            else if (isPunching) cArmAngle = punchSpinAngle;
+            else if (afkFrontArmAngle !== null) cArmAngle = afkFrontArmAngle;
+            else if (isFloating) cArmAngle = 0.45 + Math.sin(t * 6) * 0.15;
+            else if (isFalling) cArmAngle = -1.0 + Math.sin(t * 8) * 0.1;
+            else if (isJumping) cArmAngle = -0.8 + Math.sin(t * 8) * 0.1;
+            else if (isWalking) cArmAngle = Math.cos(t * 14) * 0.6;
+            else cArmAngle = idleArmWiggle;
 
-            // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
-            if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
-              ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
-            }
+            tCtx.save();
+            tCtx.translate(-2 + afkTorsoX, -3 + breatheBob);
+            tCtx.rotate(cArmAngle);
+            tCtx.fillStyle = "#0284c7";
+            tCtx.fillRect(-2, 0, 5, 3.5);
+            tCtx.fillStyle = skinColor;
+            tCtx.fillRect(-2, 3.5, 4.5, 6);
+            tCtx.fillStyle = darkSkin;
+            tCtx.fillRect(1, 7.5, 2, 2);
+            tCtx.restore();
           }
-
-          // Layer D: Hair / Hats Overlay with Physics Inertial Sway & Bend (Subtle & Natural)
-          const hairChoice = player.hairStyle || "red";
-          if (hairChoice !== "none") {
-            const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
-            const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
-            if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
-              const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
-              const hy = (cOffsets.hair ? cOffsets.hair.y : -6) || -6;
-
-              ctx.save();
-              ctx.translate(hx, hy);
-
-              // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
-              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.072) : 0;
-              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0;
-              const hairJumpSway = isJumping ? (-player.vy * 0.013) : 0;
-              const hairFallLift = isFalling ? (-player.vy * 0.015) : 0;
-              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.022) : 0;
-
-              const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
-              ctx.rotate(totalHairBend);
-
-              // Elastic vertical bounce / wind lift
-              const hairScaleY = 1.0 + (isJumping ? 0.05 : (isFalling ? -0.04 : (isWalking ? Math.sin(walkPhase) * 0.03 : 0)));
-              const hairScaleX = 1.0 + (isFalling ? 0.035 : 0);
-              ctx.scale(hairScaleX, hairScaleY);
-
-              ctx.drawImage(imgHair, -16, -16, 32, 32);
-              ctx.restore();
-            }
-          }
-          ctx.restore();
-          ctx.restore();
-
-          // 6. Front Arm (Tangan Kiri - Dynamic opposing swing & Punch Jab Thrust)
-          let frontArmAngle = 0;
-          if (isJumpSpinning) {
-            frontArmAngle = jumpSpinAngleFront;
-          } else if (isPunching) {
-            frontArmAngle = punchSnapAngle;
-          } else if (afkFrontArmAngle !== null) {
-            frontArmAngle = afkFrontArmAngle;
-          } else if (isFloating) {
-            frontArmAngle = 0.45 - Math.sin(t * 5) * 0.1;
-          } else if (isFalling) {
-            frontArmAngle = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
-          } else if (isJumping) {
-            frontArmAngle = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
-          } else if (isWalking) {
-            frontArmAngle = walkCycleCos * 0.85;
-          } else {
-            frontArmAngle = idleArmWiggle;
-          }
-
-          ctx.save();
-          ctx.translate(-7 + afkTorsoX + punchThrustX, 4 + breatheBob);
-          ctx.rotate(frontArmAngle);
-          if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
-            ctx.drawImage(imgArmL, -9, -20, 32, 32);
-          }
-          ctx.restore();
-        } else {
-          // ── 2. Cartoon Chibi Skin ──
-          const skinColor = "#f6b484";
-          const darkSkin = "#d88b56";
-          const legOffset = (isWalking ? Math.sin(t * 14) : 0) * 3.5;
-
-          // 1. Back Leg
-          const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
-          ctx.save();
-          ctx.translate(afkTorsoX, isFloating ? (floatBob + 2 + legHoverWave) : 0);
-          ctx.rotate(cLegRAngle);
-          ctx.fillStyle = "#1e3a8a";
-          ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(-7, 12, 6, 2.5);
-          ctx.fillStyle = "#1d4ed8";
-          ctx.fillRect(-7, 13, 6, 1);
-          ctx.restore();
-
-          // 2. Front Leg
-          const cLegLAngle = isFloating ? 0.30 : (isFalling ? 0.25 : (isJumping ? 0.20 : 0));
-          ctx.save();
-          ctx.translate(afkTorsoX, isFloating ? (floatBob + 2 - legHoverWave) : 0);
-          ctx.rotate(cLegLAngle);
-          ctx.fillStyle = "#2563eb";
-          ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(1, 12, 6, 2.5);
-          ctx.fillStyle = "#2563eb";
-          ctx.fillRect(1, 13, 6, 1);
-          ctx.restore();
-
-          // 3. Torso
-          ctx.save();
-          ctx.translate(afkTorsoX, breatheBob);
-          ctx.rotate(afkTorsoAngle);
-          ctx.fillStyle = "#0284c7";
-          ctx.fillRect(-8, -6, 16, 10);
-          ctx.fillStyle = "#38bdf8";
-          ctx.fillRect(-6, -6, 12, 2);
-          ctx.fillStyle = "#0f172a";
-          ctx.fillRect(-8, 2, 16, 2);
-          ctx.fillStyle = "#e2e8f0";
-          ctx.fillRect(-2, 2, 4, 2);
-
-          // 4. Head & Pupil
-          ctx.save();
-          ctx.translate(afkHeadX, afkHeadY);
-          ctx.rotate(afkHeadAngle);
-          ctx.fillStyle = skinColor;
-          ctx.beginPath();
-          ctx.arc(0, -12, 8.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = "#452817";
-          ctx.beginPath();
-          ctx.arc(0, -14, 8, Math.PI, Math.PI * 2);
-          ctx.fill();
-          ctx.fillRect(-8, -14, 5, 3.5);
-          ctx.fillStyle = "#784c2f";
-          ctx.fillRect(-4, -17.5, 5, 2);
-
-          // 5. Dynamic Eye Expression
-          if (isBlinking) {
-            ctx.fillStyle = "#452817";
-            ctx.fillRect(0, -13, 2.5, 1.5);
-            ctx.fillRect(3.5, -13, 2.5, 1.5);
-          } else if (player.moderatorMode) {
-            // Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Soft Glow)
-            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
-            ctx.save();
-            ctx.shadowColor = "#38bdf8";
-            ctx.shadowBlur = 4 + 6 * eyePulse;
-            ctx.globalAlpha = 0.85 + 0.15 * eyePulse;
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(1, -14, 5, 3.5);
-            ctx.restore();
-          } else {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(1, -14, 5, 3.5);
-            ctx.fillStyle = "#0f172a";
-            ctx.fillRect(3 + pupilOffsetX * 0.7, -13.5 + pupilOffsetY * 0.7, 2.5, 2.5);
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(4 + pupilOffsetX * 0.7, -14 + pupilOffsetY * 0.7, 1, 1);
-          }
-          ctx.fillStyle = "#452817";
-          ctx.fillRect(1, -16.5, 5, 1.2);
-          ctx.fillStyle = "#833a1e";
-          ctx.fillRect(2, -8.5, 4, 1.2);
-          ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
-          ctx.fillRect(-2, -9.5, 3, 1.5);
-          ctx.restore();
-          ctx.restore();
-
-          // 6. Arm
-          let cArmAngle = 0;
-          if (isJumpSpinning) cArmAngle = jumpSpinAngleFront;
-          else if (isPunching) cArmAngle = punchSpinAngle;
-          else if (afkFrontArmAngle !== null) cArmAngle = afkFrontArmAngle;
-          else if (isFloating) cArmAngle = 0.45 + Math.sin(t * 6) * 0.15;
-          else if (isFalling) cArmAngle = -1.0 + Math.sin(t * 8) * 0.1;
-          else if (isJumping) cArmAngle = -0.8 + Math.sin(t * 8) * 0.1;
-          else if (isWalking) cArmAngle = Math.cos(t * 14) * 0.6;
-          else cArmAngle = idleArmWiggle;
-
-          ctx.save();
-          ctx.translate(-2 + afkTorsoX, -3 + breatheBob);
-          ctx.rotate(cArmAngle);
-          ctx.fillStyle = "#0284c7";
-          ctx.fillRect(-2, 0, 5, 3.5);
-          ctx.fillStyle = skinColor;
-          ctx.fillRect(-2, 3.5, 4.5, 6);
-          ctx.fillStyle = darkSkin;
-          ctx.fillRect(1, 7.5, 2, 2);
-          ctx.restore();
         }
 
         // Mod Mode Transformation Invert / White Strobe Flash (100% Zero-Lag Hardware Accelerated)
-        if (player.modTransformTimer > 0) {
-          const isWhiteStrobe = Math.sin((0.65 - player.modTransformTimer) * 48) > 0.0;
-          if (isWhiteStrobe) {
+        const isModTransform = player.modTransformTimer > 0;
+        const isWhiteStrobe = isModTransform && (Math.sin((0.65 - player.modTransformTimer) * 48) > 0.0);
+
+        if (isWhiteStrobe) {
+          const maskObj = getAvatarMaskCtx();
+          if (maskObj && maskObj.ctx) {
+            maskObj.ctx.clearRect(0, 0, 64, 64);
+            maskObj.ctx.save();
+            maskObj.ctx.translate(32, 32);
+            renderAvatarParts(maskObj.ctx);
+            maskObj.ctx.restore();
+
+            // Mask ONLY the character sprite pixels to pure white
+            maskObj.ctx.save();
+            maskObj.ctx.globalCompositeOperation = "source-in";
+            maskObj.ctx.fillStyle = "#ffffff";
+            maskObj.ctx.fillRect(0, 0, 64, 64);
+            maskObj.ctx.restore();
+
             ctx.save();
-            ctx.globalCompositeOperation = "source-atop";
-            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-            ctx.fillRect(-24, -32, 48, 48);
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 10;
+            ctx.drawImage(maskObj.canvas, -32, -32);
             ctx.restore();
+          } else {
+            renderAvatarParts(ctx);
           }
+        } else {
+          renderAvatarParts(ctx);
         }
 
         ctx.restore();
