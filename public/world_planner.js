@@ -567,7 +567,8 @@
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
               ctx.imageSmoothingEnabled = false;
-              const alpha = (progress < 0.25 ? (progress / 0.25) : Math.max(0, 1.0 - (progress - 0.25) / 0.75)) * 0.72;
+              // Soft, subtle airy opacity
+              const alpha = (progress < 0.25 ? (progress / 0.25) : Math.max(0, 1.0 - (progress - 0.25) / 0.75)) * 0.22;
               ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
               ctx.translate(p.x, p.y);
               ctx.rotate(p.rot);
@@ -576,6 +577,26 @@
               ctx.drawImage(img, -14, -14, 28, 28);
               ctx.restore();
             }
+            continue;
+          }
+
+          if (p.type === "wind_streak") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.95;
+            const progress = 1.0 - (p.life / p.maxLife);
+            const fade = Math.sin(progress * Math.PI);
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, fade * (p.baseAlpha || 0.65));
+            ctx.strokeStyle = p.color || "rgba(255, 255, 255, 0.75)";
+            ctx.lineWidth = p.lineWidth || 1.4;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            const tailLen = p.length * (0.6 + 0.4 * (1.0 - progress));
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x - tailLen * (p.dir || 1), p.y - (p.vy * 4));
+            ctx.stroke();
+            ctx.restore();
             continue;
           }
 
@@ -884,10 +905,11 @@
         let impactShakeX = 0;
         let impactShakeY = 0;
         if (player.impactShakeTimer > 0) {
-          const impactProg = player.impactShakeTimer / 0.38;
-          const impactMag = 8.0 * Math.pow(impactProg, 1.4);
-          impactShakeX = (Math.random() - 0.5) * impactMag * 2;
-          impactShakeY = (Math.random() - 0.5) * impactMag * 2;
+          const impactProg = player.impactShakeTimer / 0.12;
+          const impactMag = 4.5 * impactProg;
+          const kickDir = Math.sin((0.12 - player.impactShakeTimer) * 45);
+          impactShakeX = kickDir * impactMag;
+          impactShakeY = -Math.abs(kickDir) * impactMag * 0.7;
         }
 
         ctx.save();
@@ -1141,13 +1163,13 @@
           ctx.save();
           const viewW = cw / dpr;
           const viewH = ch / dpr;
-          const hitProg = player.hitFlashTimer / 0.30;
-          // Red Shockwave Overlay
-          ctx.fillStyle = `rgba(239, 68, 68, ${0.30 * hitProg})`;
+          const hitProg = player.hitFlashTimer / 0.12;
+          // Soft subtle red edge flash (non-dominating)
+          ctx.fillStyle = `rgba(239, 68, 68, ${0.10 * hitProg})`;
           ctx.fillRect(0, 0, viewW, viewH);
-          // Initial White Flash Impact
+          // Quick crisp white impact flash
           if (hitProg > 0.6) {
-            const whiteAlpha = 0.40 * ((hitProg - 0.6) / 0.4);
+            const whiteAlpha = 0.20 * ((hitProg - 0.6) / 0.4);
             ctx.fillStyle = `rgba(255, 255, 255, ${whiteAlpha})`;
             ctx.fillRect(0, 0, viewW, viewH);
           }
@@ -2443,8 +2465,8 @@
         player.vy = -7.6; // Powerful upward death pop launch
         
         // Hazard Impact Hit Flash & Screen Shake
-        player.impactShakeTimer = 0.38;
-        player.hitFlashTimer = 0.30;
+        player.impactShakeTimer = 0.12;
+        player.hitFlashTimer = 0.12;
         
         spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
         playSfx("boo_death", 1.0, 0.95);
@@ -2768,6 +2790,41 @@
           }
         }
 
+        // Continuous Smooth Animation Blend Weights (Zero jump-cut transition)
+        const isWalkingOnGround = (player.state === "walk" && player.isGrounded) || (player.isGrounded && Math.abs(player.vx) > 0.15);
+        if (isWalkingOnGround) {
+          player.walkBlend = Math.min(1.0, (player.walkBlend || 0) + dt * 10.0);
+          const strideSpeed = 15;
+          const strideMultiplier = Math.min(1.25, Math.max(0.65, Math.abs(player.vx) / 3.2));
+          player.walkPhase = (player.walkPhase || 0) + dt * strideSpeed * strideMultiplier;
+        } else {
+          player.walkBlend = Math.max(0.0, (player.walkBlend || 0) - dt * 10.0);
+          if (player.walkBlend > 0) {
+            player.walkPhase = (player.walkPhase || 0) + dt * 15 * (player.walkBlend || 0);
+          }
+        }
+
+        const isJumpingState = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
+        if (isJumpingState) {
+          player.jumpBlend = Math.min(1.0, (player.jumpBlend || 0) + dt * 14.0);
+        } else {
+          player.jumpBlend = Math.max(0.0, (player.jumpBlend || 0) - dt * 12.0);
+        }
+
+        const isFallingState = !player.isGrounded && player.vy > 0.8;
+        if (isFallingState) {
+          player.fallBlend = Math.min(1.0, (player.fallBlend || 0) + dt * 10.0);
+        } else {
+          player.fallBlend = Math.max(0.0, (player.fallBlend || 0) - dt * 12.0);
+        }
+
+        const isFloatingState = Boolean(player.moderatorMode);
+        if (isFloatingState) {
+          player.floatBlend = Math.min(1.0, (player.floatBlend || 0) + dt * 8.0);
+        } else {
+          player.floatBlend = Math.max(0.0, (player.floatBlend || 0) - dt * 10.0);
+        }
+
         // World Bounds Check
         const worldPixelW = world.width * TILE_SIZE;
         const worldPixelH = world.height * TILE_SIZE;
@@ -2777,19 +2834,19 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Continuous Breezy Wind Trail Particles behind Character on Movement
-        const isPlayerMoving = Math.abs(player.vx) > 0.45 || Math.abs(player.vy) > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump;
+        // Continuous Breezy Wind Trail & Speed Wind Streak Lines
+        const playerSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+        const isPlayerMoving = playerSpeed > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump;
         if (isPlayerMoving && !player.isDead) {
           player.windTrailTimer = (player.windTrailTimer || 0) + dt;
           if (player.windTrailTimer >= 0.085) {
             player.windTrailTimer = 0;
             const facing = player.facing || 1;
-            // Spawn location right behind the character torso/legs
             const backOffset = facing > 0 ? -4 : (player.width + 4);
             const spawnX = player.x + backOffset + (Math.random() - 0.5) * 6;
             const spawnY = player.y + player.height - 12 + (Math.random() - 0.5) * 10;
             const driftVx = -player.vx * 0.15 + (Math.random() - 0.5) * 0.25;
-            const driftVy = -player.vy * 0.10 - (0.18 + Math.random() * 0.25); // gentle sepoi-sepoi upward breeze lift
+            const driftVy = -player.vy * 0.10 - (0.18 + Math.random() * 0.25);
 
             gameParticles.push({
               type: "wind_breeze",
@@ -2800,11 +2857,41 @@
               scale: 0.65 + Math.random() * 0.35,
               rot: (Math.random() - 0.5) * 0.5,
               rotSpeed: (Math.random() - 0.5) * 2.0,
-              life: 0.38 + Math.random() * 0.12,
-              maxLife: 0.38 + Math.random() * 0.12
+              life: 0.35 + Math.random() * 0.10,
+              maxLife: 0.35 + Math.random() * 0.10
             });
-            requestRender();
           }
+
+          // Dynamic Speed Wind Streak Lines (Speed lines rush when running or flying)
+          if (playerSpeed > 0.6) {
+            player.speedStreakTimer = (player.speedStreakTimer || 0) + dt;
+            const streakInterval = playerSpeed > 2.5 ? 0.035 : 0.055;
+            if (player.speedStreakTimer >= streakInterval) {
+              player.speedStreakTimer = 0;
+              const streakDir = player.vx !== 0 ? (player.vx > 0 ? 1 : -1) : (player.facing || 1);
+              const streakCount = playerSpeed > 3.2 ? 2 : 1;
+              for (let i = 0; i < streakCount; i++) {
+                const sX = player.x + (streakDir > 0 ? -2 : player.width + 2) + (Math.random() - 0.5) * 4;
+                const sY = player.y + 4 + Math.random() * (player.height - 8);
+                const sLen = 20 + Math.random() * 25 + Math.min(22, playerSpeed * 4.5);
+                gameParticles.push({
+                  type: "wind_streak",
+                  x: sX,
+                  y: sY,
+                  vx: -player.vx * 0.28 + (Math.random() - 0.5) * 0.3,
+                  vy: -player.vy * 0.08 + (Math.random() - 0.5) * 0.15,
+                  dir: streakDir,
+                  length: sLen,
+                  lineWidth: 1.2 + Math.random() * 0.8,
+                  baseAlpha: 0.55 + Math.random() * 0.25,
+                  color: Math.random() < 0.4 ? "rgba(224, 242, 254, 0.85)" : "rgba(255, 255, 255, 0.75)",
+                  life: 0.20 + Math.random() * 0.08,
+                  maxLife: 0.20 + Math.random() * 0.08
+                });
+              }
+            }
+          }
+          requestRender();
         }
 
         // Direct, Rock-Solid Center on Player in Game Mode (Zero vibration)
@@ -3275,10 +3362,10 @@
         const t = player.animTimer;
         const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
 
-        // Dynamic Falling Aerodynamic Stretch (Velocity Stretch)
-        if (isFalling && !player.isDead) {
-          const fallStretchY = 1.0 + fallIntensity * 0.14;
-          const fallStretchX = 1.0 - fallIntensity * 0.08;
+        // Dynamic Falling Aerodynamic Stretch (Velocity Stretch) - Zero stretch in Mod mode, subtle in normal fall
+        if (isFalling && !player.isDead && !player.moderatorMode) {
+          const fallStretchY = 1.0 + fallIntensity * 0.04;
+          const fallStretchX = 1.0 - fallIntensity * 0.02;
           ctx.translate(0, -ph / 2);
           ctx.scale(fallStretchX, fallStretchY);
           ctx.translate(0, ph / 2);
@@ -3304,19 +3391,25 @@
         // Jump Thrust Leg Extension
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
 
+        // Blended kinematic weights (Continuous zero jump-cut blending)
+        const wBlend = player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0);
+        const jBlend = player.jumpBlend !== undefined ? player.jumpBlend : (isJumping ? 1.0 : 0.0);
+        const fBlend = player.fallBlend !== undefined ? player.fallBlend : (isFalling ? 1.0 : 0.0);
+        const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
+        const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend);
+
         // Dynamic Running Forward Lean (Momentum & Weight)
-        const runLean = (isWalking && player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0)) : 0;
+        const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
 
         // Mod Flying Hover Float Wave
-        const floatBob = isFloating ? Math.sin(t * 4.5) * 2.2 : 0;
+        const floatBob = isFloating ? Math.sin(t * 4.5) * 1.6 : 0;
         
         // Fluid Striding Walk Cycle
-        const strideSpeed = 15;
-        const walkPhase = t * strideSpeed;
-        const walkCycleSin = isWalking ? Math.sin(walkPhase) : 0;
-        const walkCycleCos = isWalking ? Math.cos(walkPhase) : 0;
-        const walkStepBob = (isWalking && player.isGrounded && !isFloating) ? (Math.abs(Math.sin(walkPhase)) * 2.0) : 0;
-        const legHoverWave = Math.sin(t * 4.0) * 1.8;
+        const walkPhase = player.walkPhase || (t * 15);
+        const walkCycleSin = Math.sin(walkPhase) * wBlend;
+        const walkCycleCos = Math.cos(walkPhase) * wBlend;
+        const walkStepBob = (player.isGrounded && !isFloating) ? (Math.abs(Math.sin(walkPhase)) * 1.8 * wBlend) : 0;
+        const legHoverWave = Math.sin(t * 4.0) * 1.4;
 
         // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS ──
         let afkHeadAngle = 0;
@@ -3369,10 +3462,10 @@
           }
         }
 
-        const breatheBob = player.isGrounded ? (Math.sin(t * 4) * 0.75 - walkStepBob + afkTorsoY) : (isJumping ? -1.8 : (isFalling ? 1.2 : floatBob));
-        const legRLift = isWalking ? Math.max(0, walkCycleSin) * 2.8 : afkLegROffset;
-        const legLLift = isWalking ? Math.max(0, -walkCycleSin) * 2.8 : afkLegLOffset;
-        const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
+        const breatheBob = (player.isGrounded ? (Math.sin(t * 4) * 0.75 * idleBlend - walkStepBob + afkTorsoY) : 0) + (isJumping ? -1.8 * jBlend : 0) + (isFalling ? 1.2 * fBlend : 0) + (floatBob * flBlend);
+        const legRLift = isWalking ? (Math.max(0, walkCycleSin) * 2.8) : afkLegROffset;
+        const legLLift = isWalking ? (Math.max(0, -walkCycleSin) * 2.8) : afkLegLOffset;
+        const idleArmWiggle = (player.isGrounded && !isWalking) ? (Math.sin(t * 2.5) * 0.08 * idleBlend) : 0;
 
         // ── Ultra-Subtle Pupil Gaze Vector & 100% Strict Lock Forward Support ──
         let pupilOffsetX = 0;
@@ -3410,16 +3503,22 @@
 
             const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
 
-            // 1. Back Arm (Tangan Kanan) - Dynamic swing & pose
+            // 1. Back Arm (Tangan Kanan) - Smooth dynamic blended pose
             let backArmAngle = 0;
-            if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
-            else if (isPunching) backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
-            else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
-            else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
-            else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
-            else if (isJumping) backArmAngle = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
-            else if (isWalking) backArmAngle = -walkCycleCos * 0.85;
-            else backArmAngle = -idleArmWiggle;
+            if (isJumpSpinning) {
+              backArmAngle = jumpSpinAngleBack;
+            } else if (isPunching) {
+              backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
+            } else if (afkBackArmAngle !== null) {
+              backArmAngle = afkBackArmAngle;
+            } else {
+              const idleAng = -idleArmWiggle;
+              const walkAng = -walkCycleCos * 0.85;
+              const jumpAng = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
+              const fallAng = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
+              const floatAng = -0.75 + Math.sin(t * 5) * 0.1;
+              backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend);
+            }
 
             tCtx.save();
             tCtx.translate(8 + afkTorsoX, 4 + breatheBob);
@@ -3431,10 +3530,11 @@
 
             // 2. Back Leg (Kaki Kanan)
             let legRAngle = 0;
-            if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
-            else if (isFalling) legRAngle = -0.15 + Math.sin(t * 16) * 0.10;
-            else if (isJumping) legRAngle = -0.45 - jumpIntensity * 0.20;
-            else if (isWalking) legRAngle = walkCycleSin * 0.65;
+            const floatLegRAng = 0.40 + Math.sin(t * 4) * 0.08;
+            const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
+            const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
+            const walkLegRAng = walkCycleSin * 0.65;
+            legRAngle = (walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend);
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -3450,10 +3550,11 @@
 
             // 3. Front Leg (Kaki Kiri)
             let legLAngle = 0;
-            if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
-            else if (isFalling) legLAngle = 0.40 + Math.cos(t * 16) * 0.10;
-            else if (isJumping) legLAngle = 0.55 + jumpIntensity * 0.20;
-            else if (isWalking) legLAngle = -walkCycleSin * 0.65;
+            const floatLegLAng = 0.30 - Math.sin(t * 4) * 0.08;
+            const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
+            const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
+            const walkLegLAng = -walkCycleSin * 0.65;
+            legLAngle = (walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend);
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
@@ -3467,7 +3568,7 @@
             // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Punch Lunge
             const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
-            const torsoTwist = isWalking ? Math.sin(walkPhase) * 0.04 : (isJumping ? -0.06 * jumpIntensity : 0);
+            const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
 
             tCtx.save();
             tCtx.translate(afkTorsoX + sxShirt + punchStepX, breatheBob + syShirt);
@@ -3478,11 +3579,11 @@
 
             // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
             tCtx.save();
-            const headBobLag = isWalking ? (Math.sin(walkPhase - 0.5) * 0.85) : 0;
-            const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
-            const jumpHeadTilt = isJumping ? (-0.10 * jumpIntensity) : 0;
+            const headBobLag = (Math.sin(walkPhase - 0.5) * 0.85 * wBlend);
+            const fallHeadTilt = (0.12 + fallIntensity * 0.10) * fBlend;
+            const jumpHeadTilt = (-0.10 * jumpIntensity) * jBlend;
             tCtx.translate(afkHeadX - sxShirt + punchStepX * 0.5, afkHeadY - syShirt + headBobLag);
-            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (isWalking ? -walkCycleSin * 0.05 : 0));
+            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (-walkCycleSin * 0.05 * wBlend));
 
             if (player.moderatorMode) {
               // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -3547,18 +3648,18 @@
                 tCtx.translate(hx, hy);
 
                 // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
-                const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.072) : 0;
+                const hairWalkSway = (-Math.sin(walkPhase - 0.7) * 0.072 * wBlend);
                 const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0;
-                const hairJumpSway = isJumping ? (-player.vy * 0.013) : 0;
-                const hairFallLift = isFalling ? (-player.vy * 0.015) : 0;
-                const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.022) : 0;
+                const hairJumpSway = (-player.vy * 0.013 * jBlend);
+                const hairFallLift = (-player.vy * 0.015 * fBlend);
+                const hairIdleSway = (Math.sin(t * 3.0) * 0.022 * idleBlend);
 
                 const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
                 tCtx.rotate(totalHairBend);
 
                 // Elastic vertical bounce / wind lift
-                const hairScaleY = 1.0 + (isJumping ? 0.05 : (isFalling ? -0.04 : (isWalking ? Math.sin(walkPhase) * 0.03 : 0)));
-                const hairScaleX = 1.0 + (isFalling ? 0.035 : 0);
+                const hairScaleY = 1.0 + (isJumping ? 0.05 * jBlend : (isFalling ? -0.04 * fBlend : (Math.sin(walkPhase) * 0.03 * wBlend)));
+                const hairScaleX = 1.0 + (isFalling ? 0.035 * fBlend : 0);
                 tCtx.scale(hairScaleX, hairScaleY);
 
                 tCtx.drawImage(imgHair, -16, -16, 32, 32);
@@ -3576,16 +3677,13 @@
               frontArmAngle = punchSnapAngle;
             } else if (afkFrontArmAngle !== null) {
               frontArmAngle = afkFrontArmAngle;
-            } else if (isFloating) {
-              frontArmAngle = 0.45 - Math.sin(t * 5) * 0.1;
-            } else if (isFalling) {
-              frontArmAngle = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
-            } else if (isJumping) {
-              frontArmAngle = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
-            } else if (isWalking) {
-              frontArmAngle = walkCycleCos * 0.85;
             } else {
-              frontArmAngle = idleArmWiggle;
+              const idleFront = idleArmWiggle;
+              const walkFront = walkCycleCos * 0.85;
+              const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
+              const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
+              const floatFront = 0.45 - Math.sin(t * 5) * 0.1;
+              frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend);
             }
 
             tCtx.save();
