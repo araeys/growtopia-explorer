@@ -559,6 +559,70 @@
             continue;
           }
 
+          if (p.type === "dance_note") {
+            p.x += p.vx + Math.sin((p.maxLife - p.life) * 8) * 0.45;
+            p.y += p.vy;
+            p.vx *= 0.96;
+            p.vy *= 0.98;
+            p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
+
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = progress < 0.15 ? (progress / 0.15) : Math.max(0, 1.0 - (progress - 0.15) / 0.85);
+            const img = getSpriteImage(p.src);
+
+            if (img && img.complete && img.naturalWidth > 0) {
+              ctx.save();
+              ctx.imageSmoothingEnabled = true;
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.95));
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.rot);
+              const popScale = p.scale * (0.8 + Math.sin(progress * Math.PI) * 0.45);
+              ctx.scale(popScale, popScale);
+              ctx.shadowColor = "#fde047";
+              ctx.shadowBlur = 8;
+              ctx.drawImage(img, -10, -10, 20, 20);
+              ctx.restore();
+            }
+            continue;
+          }
+
+          if (p.type === "anger_fume") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy -= 0.06;
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.sin(progress * Math.PI) * 0.70;
+            ctx.save();
+            ctx.fillStyle = `rgba(239, 68, 68, ${alpha})`;
+            ctx.shadowColor = "#dc2626";
+            ctx.shadowBlur = 5;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, (p.radius || 2.5) * (0.8 + progress * 0.6), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            continue;
+          }
+
+          if (p.type === "cheer_star") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05; // light gravity on confetti
+            p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.sin(progress * Math.PI);
+            ctx.save();
+            ctx.fillStyle = p.color || "#facc15";
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.shadowColor = p.color || "#facc15";
+            ctx.shadowBlur = 4;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            const sz = (p.size || 3.0) * (0.8 + progress * 0.4);
+            ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+            ctx.restore();
+            continue;
+          }
+
           if (p.type === "wind_breeze") {
             p.x += p.vx;
             p.y += p.vy;
@@ -2657,21 +2721,91 @@
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
 
-        // Continuous 10-Second AFK Loop (Runs continuously until player moves)
+        // Continuous AFK Animation Loop (Runs continuously when idle until player moves)
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
         if (isUserMoving || player.moderatorMode || !player.isGrounded) {
           player.afkTimer = 0;
           player.afkAction = null;
+          player.afkParticleTimer = 0;
         } else {
           player.afkTimer += dt;
-          if (player.afkTimer >= 10.0) {
-            player.afkTimer = 0; // Reset for the NEXT 10-second cycle
-            const afkList = ["sleep", "dance", "think", "cheer", "angry"];
-            // Pick a different animation from current
+          if (player.afkTimer >= 6.5) {
+            player.afkTimer = 0; // Next randomized animation cycle every 6.5 seconds
+            const afkList = ["dance", "sleep", "think", "cheer", "angry", "wave", "laugh"];
             const available = afkList.filter(a => a !== player.afkAction);
             player.afkAction = available[Math.floor(Math.random() * available.length)];
-            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.5);
-            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.5);
+            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.45);
+            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.45);
+            else if (player.afkAction === "dance") playSfx("magic", 1.0, 0.35);
+          }
+
+          // Active AFK Particle FX Spawners
+          if (player.afkAction) {
+            player.afkParticleTimer = (player.afkParticleTimer || 0) + dt;
+
+            // 1. Dancing Floating Musical Notes (from user assets note_1, note_2, note_4)
+            if (player.afkAction === "dance" && player.afkParticleTimer >= 0.22) {
+              player.afkParticleTimer = 0;
+              const noteList = [
+                "character_base_assets/dance_notes/note_1.png",
+                "character_base_assets/dance_notes/note_2.png",
+                "character_base_assets/dance_notes/note_4.png"
+              ];
+              const noteSrc = noteList[Math.floor(Math.random() * noteList.length)];
+              const nX = player.x + player.width / 2 + (Math.random() - 0.5) * 26;
+              const nY = player.y + player.height / 2 - 6 + (Math.random() - 0.5) * 12;
+              gameParticles.push({
+                type: "dance_note",
+                src: noteSrc,
+                x: nX,
+                y: nY,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: -(0.70 + Math.random() * 0.55),
+                scale: 0.20 + Math.random() * 0.08,
+                rot: (Math.random() - 0.5) * 0.4,
+                rotSpeed: (Math.random() - 0.5) * 1.5,
+                life: 0.75 + Math.random() * 0.25,
+                maxLife: 0.75 + Math.random() * 0.25
+              });
+              requestRender();
+            }
+
+            // 2. Angry Comic Red Steam Fumes
+            else if (player.afkAction === "angry" && player.afkParticleTimer >= 0.16) {
+              player.afkParticleTimer = 0;
+              const earSide = Math.random() < 0.5 ? -6 : 6;
+              gameParticles.push({
+                type: "anger_fume",
+                x: player.x + player.width / 2 + earSide + (Math.random() - 0.5) * 3,
+                y: player.y + 4 + (Math.random() - 0.5) * 4,
+                vx: earSide * 0.08 + (Math.random() - 0.5) * 0.2,
+                vy: -(0.6 + Math.random() * 0.5),
+                radius: 2.2 + Math.random() * 1.8,
+                life: 0.45 + Math.random() * 0.15,
+                maxLife: 0.45 + Math.random() * 0.15
+              });
+              requestRender();
+            }
+
+            // 3. Cheerful Celebration Star Confetti
+            else if (player.afkAction === "cheer" && player.afkParticleTimer >= 0.18) {
+              player.afkParticleTimer = 0;
+              const cheerColors = ["#facc15", "#38bdf8", "#ec4899", "#a855f7", "#4ade80", "#fb923c"];
+              gameParticles.push({
+                type: "cheer_star",
+                x: player.x + player.width / 2 + (Math.random() - 0.5) * 24,
+                y: player.y - 4 + (Math.random() - 0.5) * 10,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: -(1.2 + Math.random() * 1.0),
+                size: 2.5 + Math.random() * 2.0,
+                color: cheerColors[Math.floor(Math.random() * cheerColors.length)],
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 6.0,
+                life: 0.65 + Math.random() * 0.25,
+                maxLife: 0.65 + Math.random() * 0.25
+              });
+              requestRender();
+            }
           }
         }
 
@@ -3484,39 +3618,54 @@
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
             isBlinking = true;
-            afkHeadAngle = 0.12;
-            afkHeadY = 1;
-            afkTorsoY = 1;
-            afkBackArmAngle = 0.35;
-            afkFrontArmAngle = 0.45;
-            afkLegROffset = 1;
-            afkLegLOffset = 1;
+            afkHeadAngle = 0.16 + Math.sin(t * 2.5) * 0.03;
+            afkHeadY = 1.5;
+            afkTorsoY = Math.sin(t * 2.5) * 1.2;
+            afkBackArmAngle = 0.38 + Math.sin(t * 2.5) * 0.04;
+            afkFrontArmAngle = 0.48 + Math.sin(t * 2.5) * 0.04;
+            afkLegROffset = 0.6;
+            afkLegLOffset = 0.6;
           } else if (player.afkAction === "dance") {
-            afkTorsoX = Math.sin(t * 8) * 3.5;
-            afkTorsoAngle = Math.sin(t * 8) * 0.18;
-            afkHeadAngle = -Math.sin(t * 8) * 0.10;
-            afkBackArmAngle = -Math.cos(t * 8) * 1.3;
-            afkFrontArmAngle = Math.sin(t * 8) * 1.3;
-            afkLegROffset = Math.max(0, Math.sin(t * 8)) * 3;
-            afkLegLOffset = Math.max(0, -Math.sin(t * 8)) * 3;
+            afkTorsoX = Math.sin(t * 7.5) * 4.0;
+            afkTorsoAngle = Math.sin(t * 7.5) * 0.22;
+            afkHeadAngle = -Math.sin(t * 7.5) * 0.16;
+            afkBackArmAngle = -Math.cos(t * 7.5) * 1.45;
+            afkFrontArmAngle = Math.sin(t * 7.5) * 1.45;
+            afkLegROffset = Math.max(0, Math.sin(t * 7.5)) * 3.5;
+            afkLegLOffset = Math.max(0, -Math.sin(t * 7.5)) * 3.5;
           } else if (player.afkAction === "think") {
-            afkHeadAngle = -0.08;
-            afkHeadY = 0;
-            afkFrontArmAngle = -1.75;
-            afkBackArmAngle = 0.50;
+            afkHeadAngle = -0.14;
+            afkHeadY = -0.5;
+            afkFrontArmAngle = -1.85;
+            afkBackArmAngle = 0.52;
+            afkTorsoAngle = -0.04;
           } else if (player.afkAction === "cheer") {
-            const hopY = -Math.abs(Math.sin(t * 12)) * 5.5;
+            const hopY = -Math.abs(Math.sin(t * 11)) * 6.5;
             afkTorsoY = hopY;
-            afkHeadY = 0;
-            afkBackArmAngle = -2.3;
-            afkFrontArmAngle = -2.3;
+            afkHeadY = hopY * 0.3;
+            afkBackArmAngle = -2.35 + Math.sin(t * 14) * 0.25;
+            afkFrontArmAngle = -2.35 - Math.sin(t * 14) * 0.25;
+            afkLegROffset = Math.abs(Math.sin(t * 11)) * 2.0;
+            afkLegLOffset = Math.abs(Math.sin(t * 11)) * 2.0;
           } else if (player.afkAction === "angry") {
-            afkTorsoX = (Math.random() - 0.5) * 2.5;
+            afkTorsoX = (Math.random() - 0.5) * 2.8;
             afkTorsoY = 1.0;
-            afkHeadY = 0;
-            afkBackArmAngle = -0.7 + Math.sin(t * 30) * 0.15;
-            afkFrontArmAngle = -0.7 + Math.cos(t * 30) * 0.15;
-            afkLegROffset = Math.abs(Math.sin(t * 12)) * 3.5;
+            afkHeadAngle = (Math.random() - 0.5) * 0.08;
+            afkBackArmAngle = -0.75 + Math.sin(t * 30) * 0.18;
+            afkFrontArmAngle = -0.75 + Math.cos(t * 30) * 0.18;
+            afkLegROffset = Math.abs(Math.sin(t * 14)) * 3.8;
+          } else if (player.afkAction === "wave") {
+            afkHeadAngle = -0.10 + Math.sin(t * 5) * 0.05;
+            afkFrontArmAngle = -2.1 + Math.sin(t * 10) * 0.45;
+            afkBackArmAngle = 0.30;
+            afkTorsoY = Math.sin(t * 4) * 0.8;
+          } else if (player.afkAction === "laugh") {
+            const laughBounce = Math.abs(Math.sin(t * 14)) * 2.5;
+            afkTorsoY = laughBounce;
+            afkTorsoAngle = 0.20 + Math.sin(t * 14) * 0.08;
+            afkHeadAngle = 0.15 + Math.sin(t * 14) * 0.10;
+            afkBackArmAngle = -0.65;
+            afkFrontArmAngle = -1.25;
           }
         }
 
