@@ -1072,6 +1072,83 @@
     .welcome-close-btn:active {
       transform: scale(0.94);
     }
+    .welcome-nav-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px 18px 0 18px;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+      background: rgba(10, 18, 30, 0.6);
+    }
+    .welcome-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: #94a3b8;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 7px 14px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .welcome-tab-btn:hover {
+      color: #e2e8f0;
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .welcome-tab-btn.active {
+      background: #0284c7;
+      border: 1px solid #38bdf8;
+      border-bottom: none;
+      color: #ffffff;
+      box-shadow: 0 -2px 10px rgba(56, 189, 248, 0.35);
+      text-shadow: 1px 1px 0 #000;
+    }
+    .changelog-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .changelog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+    .changelog-version {
+      font-size: 12.5px;
+      font-weight: 900;
+      color: #fde047;
+      text-shadow: 1px 1px 0 #000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .changelog-date {
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .changelog-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .changelog-list li {
+      margin-bottom: 5px;
+    }
+    .changelog-list strong {
+      color: #38bdf8;
+    }
     .welcome-body-content {
       padding: 16px 18px;
       display: flex;
@@ -1490,48 +1567,99 @@
       </button>
     </div>
 
+    <!-- Navigation Tabs -->
+    <div class="welcome-nav-tabs">
+      <button class="welcome-tab-btn active" data-tab="updates" onclick="switchWelcomeTab('updates');">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>Update Logs / Changelog</span>
+      </button>
+      <button class="welcome-tab-btn" data-tab="features" onclick="switchWelcomeTab('features');">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Features & Controls</span>
+      </button>
+    </div>
+
     <!-- Dialog Body Content -->
     <div class="welcome-body-content">
       
-      <!-- Feature Showcase 2x2 Grid -->
-      <div class="welcome-feature-grid">
-        <div class="welcome-feature-card">
-          <div class="welcome-feature-card-header">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span class="welcome-feature-card-title">Platformer & Parkour</span>
+      <!-- TAB 1: UPDATE LOGS / CHANGELOG -->
+      <div id="welcome-tab-updates">
+        <!-- Changelog v2.6 -->
+        <div class="changelog-card">
+          <div class="changelog-header">
+            <div class="changelog-version">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="#fde047" stroke-width="2.4" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>v2.6 — AFK Overhaul, Notes Sequence & Face Expressions</span>
+            </div>
+            <span class="changelog-date">LATEST PATCH</span>
           </div>
-          <div class="welcome-feature-card-desc">
-            Kontrol WASD responsif, 360° spin kick jump, landing squash, dan partikel debu langkah kaki alami.
-          </div>
+          <ul class="changelog-list">
+            <li><strong>Dancing Musical Notes:</strong> Partikel not balok (kuning & oranye) melayang dinamis dengan pendaran cahaya lembut saat animasi Dance aktif.</li>
+            <li><strong>7 Randomized AFK Animations:</strong> Menambahkan 7 aksi gerak acak: Dancing, Sleeping Zzz, Deep Thinking, Cheering dengan konfeti bintang, Angry rage steam fumes, Friendly Waving ke kamera, dan Laughing membungkuk.</li>
+            <li><strong>1:1 Authentic Character Expressions:</strong> Mulut serius menggigit gigi saat berlari dengan kunci kedip (*blink lock*), serta mulut terbuka berteriak saat melompat.</li>
+            <li><strong>Mod Transformation & Glitch VFX:</strong> Efek animasi teks nama glitch saat transformasi Mod Mode, kilatan ray ungu, dan pita angin aerodinamis halus.</li>
+            <li><strong>Dynamic Camera Shake System:</strong> Guncangan kamera kinetik saat lari dan getaran turbulensi jatuh bebas (&ge; 0.5s) dengan tombol ON/OFF terpadu.</li>
+            <li><strong>Universal Double Jump:</strong> Tombol Panah Atas (*Arrow Up*) dan tombol Jump kini mendukung double jump spin kick di desktop maupun mobile.</li>
+          </ul>
         </div>
 
-        <div class="welcome-feature-card">
-          <div class="welcome-feature-card-header">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c084fc" stroke-width="2.2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span class="welcome-feature-card-title">Mod Noclip & Electro Aura</span>
+        <!-- Changelog v2.5 -->
+        <div class="changelog-card">
+          <div class="changelog-header">
+            <div class="changelog-version">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="#38bdf8" stroke-width="2.2" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <span>v2.5 — Growtopia Set Physics Engine & Skin Studio</span>
+            </div>
+            <span class="changelog-date">CORE UPDATE</span>
           </div>
-          <div class="welcome-feature-card-desc">
-            Terbang bebas 8 arah (<kbd style="background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;">M</kbd>), 12-frame looping lightning aura, dan mata bercahaya putih.
-          </div>
+          <ul class="changelog-list">
+            <li><strong>Modular Player Body:</strong> Rekonstruksi anatomi karakter otentik Growtopia (tangan kiri/kanan dinamis, kaki melangkah, sklera mata putih, pupil tatapan).</li>
+            <li><strong>World Planner Tools:</strong> 16,000+ item catalog, koneksi autotile presisi, background weather machines, dan import/export file <code style="color:#fde047;">.dat</code>.</li>
+          </ul>
         </div>
+      </div>
 
-        <div class="welcome-feature-card">
-          <div class="welcome-feature-card-header">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span class="welcome-feature-card-title">Speech Chat & 5 Emotes</span>
+      <!-- TAB 2: FEATURES & CONTROLS -->
+      <div id="welcome-tab-features" style="display:none;">
+        <div class="welcome-feature-grid">
+          <div class="welcome-feature-card">
+            <div class="welcome-feature-card-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span class="welcome-feature-card-title">Platformer & Parkour</span>
+            </div>
+            <div class="welcome-feature-card-desc">
+              Kontrol WASD responsif, 360° spin kick double jump, landing squash, dan partikel debu langkah kaki alami.
+            </div>
           </div>
-          <div class="welcome-feature-card-desc">
-            Gelembung chat langsung (<kbd style="background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;">Enter</kbd>) serta animasi AFK: Tidur Zzz, Dance, Thinking, Angry & Cheer.
-          </div>
-        </div>
 
-        <div class="welcome-feature-card">
-          <div class="welcome-feature-card-header">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#fbbf24" stroke-width="2.2" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            <span class="welcome-feature-card-title">16,000+ Items & Autotile</span>
+          <div class="welcome-feature-card">
+            <div class="welcome-feature-card-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c084fc" stroke-width="2.2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span class="welcome-feature-card-title">Mod Noclip & Electro Aura</span>
+            </div>
+            <div class="welcome-feature-card-desc">
+              Terbang bebas 8 arah (<kbd style="background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;">M</kbd>), 12-frame looping lightning aura, dan mata bercahaya putih.
+            </div>
           </div>
-          <div class="welcome-feature-card-desc">
-            Koneksi autotile presisi, background weather machines, item favorit, serta import/export file <code style="color:#fde047;">.dat</code>.
+
+          <div class="welcome-feature-card">
+            <div class="welcome-feature-card-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span class="welcome-feature-card-title">Speech Chat & 7 AFK Actions</span>
+            </div>
+            <div class="welcome-feature-card-desc">
+              Gelembung chat langsung (<kbd style="background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;">Enter</kbd>) serta 7 animasi AFK: Tidur Zzz, Dance, Thinking, Cheer, Angry, Wave & Laugh.
+            </div>
+          </div>
+
+          <div class="welcome-feature-card">
+            <div class="welcome-feature-card-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="#fbbf24" stroke-width="2.2" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <span class="welcome-feature-card-title">16,000+ Items & Autotile</span>
+            </div>
+            <div class="welcome-feature-card-desc">
+              Koneksi autotile presisi, background weather machines, item favorit, serta import/export file <code style="color:#fde047;">.dat</code>.
+            </div>
           </div>
         </div>
       </div>
@@ -3030,6 +3158,41 @@
     window.addEventListener("DOMContentLoaded", playPianoIntroSfx);
   }
 
+  function openWelcomeModal() {
+    if (wModal) {
+      wModal.style.display = 'flex';
+      try {
+        const openAudio = new Audio("audio/switch.wav");
+        openAudio.volume = 0.5;
+        openAudio.play().catch(() => {});
+      } catch (e) {}
+    }
+  }
+  window.openWelcomeModal = openWelcomeModal;
+
+  function switchWelcomeTab(tabName) {
+    const tabUpdates = document.getElementById('welcome-tab-updates');
+    const tabFeatures = document.getElementById('welcome-tab-features');
+    const tabBtns = document.querySelectorAll('.welcome-tab-btn');
+
+    tabBtns.forEach(btn => {
+      if (btn.getAttribute('data-tab') === tabName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    if (tabName === 'updates') {
+      if (tabUpdates) tabUpdates.style.display = 'block';
+      if (tabFeatures) tabFeatures.style.display = 'none';
+    } else {
+      if (tabUpdates) tabUpdates.style.display = 'none';
+      if (tabFeatures) tabFeatures.style.display = 'block';
+    }
+  }
+  window.switchWelcomeTab = switchWelcomeTab;
+
   function hideWelcomeDialog() {
     if (wModal) {
       wModal.style.display = 'none';
@@ -3040,7 +3203,9 @@
       } catch (e) {}
     }
   }
+  window.hideWelcomeDialog = hideWelcomeDialog;
 
+  document.getElementById('world-about-btn')?.addEventListener('click', openWelcomeModal);
   if (wClose) wClose.addEventListener('click', hideWelcomeDialog);
   if (wAck) wAck.addEventListener('click', hideWelcomeDialog);
   if (wModal) {
