@@ -2840,13 +2840,13 @@
             ctx.drawImage(imgSclera, -16, -16, 32, 32);
           }
 
-          // Layer B: Eye Pupils (UNDER Head Mask, positioned forward in eye sockets!)
+          // Layer B: Eye Pupils (UNDER Head Mask, permanently locked forward in eye sockets!)
           if (!isBlinking) {
             ctx.fillStyle = "#0f172a";
             // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
-            ctx.fillRect(0 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
+            ctx.fillRect(0, -11, 2.0, 2.0);
             // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
-            ctx.fillRect(8 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
+            ctx.fillRect(8, -11, 2.0, 2.0);
           }
 
           // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
