@@ -2222,6 +2222,7 @@
 
           // Play Game Mode Enter Sound Effect (success.wav) & Zoom in to Player
           playSfx("success", 1.0, 0.75);
+          preloadFootstepSounds();
           viewport.zoom = 2.2;
           smoothZoomTarget = 2.2;
           if (canvas) {
@@ -2383,26 +2384,29 @@
           // Max walk speed: 6.2 px/frame
           player.vx = Math.max(-6.2, Math.min(6.2, player.vx));
 
-          // Dynamic Footstep & Skid Particles + Sound Effects
+          // Dynamic Footstep & Skid Particles + Sound Effects (Randomized footstep1-7 with 200ms gap, nonstop while moving)
+          const isMovingOnGround = player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35);
           const isSkidding = player.isGrounded && Math.abs(player.vx) > 1.8 && ((player.vx > 0 && player.keys.left) || (player.vx < 0 && player.keys.right));
+
           if (isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.06) {
+            if (player.stepParticleTimer >= 0.08) {
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
               spawnFootstepDust(footX, player.y + player.height, player.facing, true);
-              playSfx("footstep", 1.22 + Math.random() * 0.18, 0.75);
+              playRandomFootstepSfx(0.90);
             }
-          } else if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.8)) {
+          } else if (isMovingOnGround) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.16) {
+            if (player.stepParticleTimer >= 0.20) { // Exact 200ms gap continuous loop
               player.stepParticleTimer = 0;
               const footX = player.facing > 0 ? (player.x + 3) : (player.x + player.width - 3);
               spawnFootstepDust(footX, player.y + player.height, player.facing, false);
-              playSfx("footstep", 0.94 + Math.random() * 0.14, 0.70);
+              playRandomFootstepSfx(0.85);
             }
           } else {
-            player.stepParticleTimer = 0;
+            // When user stops moving, immediately reset timer to 0.19 so next step starts promptly
+            player.stepParticleTimer = 0.19;
           }
 
           // Jump & Double Jump
@@ -3330,6 +3334,35 @@
             playBuffer(buf);
           })
           .catch(() => {});
+      }
+
+      let lastFootstepIdx = -1;
+      function playRandomFootstepSfx(volume = 0.85) {
+        let idx = Math.floor(Math.random() * 7) + 1; // 1 to 7
+        if (idx === lastFootstepIdx) {
+          idx = (idx % 7) + 1;
+        }
+        lastFootstepIdx = idx;
+        const rate = 0.97 + Math.random() * 0.06;
+        playSfx(`footstep${idx}`, rate, volume);
+      }
+
+      function preloadFootstepSounds() {
+        for (let i = 1; i <= 7; i++) {
+          const key = `sfx_footstep${i}`;
+          if (!audioBufferCache.has(key)) {
+            fetch(`audio/footstep${i}.wav`)
+              .then(r => r.arrayBuffer())
+              .then(ab => {
+                const ctx = getAudioContext();
+                return ctx ? ctx.decodeAudioData(ab) : null;
+              })
+              .then(buf => {
+                if (buf) audioBufferCache.set(key, buf);
+              })
+              .catch(() => {});
+          }
+        }
       }
 
       function playJumpSound(isDoubleJump = false) {
