@@ -353,23 +353,56 @@
       }
 
       function spawnDeathParticles(x, y) {
-        for (let i = 0; i < 20; i++) {
+        // 1. Fiery Hazard Spark Debris (24 particles)
+        for (let i = 0; i < 24; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = 2.0 + Math.random() * 5.0;
-          const lifeTime = 0.55 + Math.random() * 0.15;
+          const speed = 2.5 + Math.random() * 6.5;
+          const lifeTime = 0.60 + Math.random() * 0.25;
           gameParticles.push({
             type: "burst",
             x: x,
             y: y,
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 1.5,
-            radius: 2.5 + Math.random() * 2.5,
-            color: Math.random() > 0.4 ? "#f87171" : (Math.random() > 0.5 ? "#fbbf24" : "#ffffff"),
-            borderColor: null,
+            vy: Math.sin(angle) * speed - 2.0,
+            radius: 2.8 + Math.random() * 3.2,
+            color: Math.random() > 0.5 ? "#ef4444" : (Math.random() > 0.5 ? "#fbbf24" : "#ffffff"),
+            borderColor: "rgba(185, 28, 28, 0.5)",
             life: lifeTime,
             maxLife: lifeTime
           });
         }
+
+        // 2. Rising Ghost Soul Wisps (6 particles)
+        for (let i = 0; i < 6; i++) {
+          const lifeTime = 0.75 + Math.random() * 0.25;
+          gameParticles.push({
+            type: "soul",
+            x: x + (Math.random() - 0.5) * 12,
+            y: y - 4,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: -(1.2 + Math.random() * 1.5),
+            radius: 3.5 + Math.random() * 2.5,
+            color: "#e0f2fe",
+            borderColor: "rgba(56, 189, 248, 0.4)",
+            life: lifeTime,
+            maxLife: lifeTime
+          });
+        }
+
+        // 3. Expanding Fiery Shockwave Ring
+        gameParticles.push({
+          type: "ring",
+          x: x,
+          y: y,
+          vx: 0,
+          vy: 0,
+          radius: 6,
+          maxRadius: 36,
+          color: "#f87171",
+          borderColor: "#ef4444",
+          life: 0.45,
+          maxLife: 0.45
+        });
       }
 
       function updateAndDrawParticles(ctx, dt) {
@@ -387,41 +420,50 @@
           if (p.type === "dust") {
             p.vx *= 0.88; // horizontal air drag
             p.vy = p.vy * 0.90 - 0.05; // buoyant gentle lift
+          } else if (p.type === "soul") {
+            p.vx = Math.sin(p.life * 10) * 0.6; // gentle sine wave float
+            p.vy *= 0.96;
+          } else if (p.type === "ring") {
+            p.radius += (p.maxRadius - p.radius) * 0.15;
           } else {
-            p.vx *= 0.96;
-            p.vy += 0.14; // gravity on debris
+            p.vx *= 0.94;
+            p.vy += 0.18; // gravity on debris
           }
 
           const progress = 1.0 - (p.life / p.maxLife);
-
-          // Puffy pop & dissipate scale curve
-          let scale = 1.0;
-          if (progress < 0.22) {
-            scale = 0.4 + (progress / 0.22) * 0.85; // fast puffy pop from 0.4 to 1.25
-          } else {
-            scale = 1.25 - ((progress - 0.22) / 0.78) * 0.5; // gentle shrink
-          }
-
-          const alpha = Math.max(0, (1.0 - Math.pow(progress, 1.5))) * (p.type === "dust" ? 0.88 : 1.0);
-          const currentRadius = Math.max(0.6, p.radius * scale);
+          const alpha = Math.max(0, 1.0 - Math.pow(progress, 1.4));
 
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
-          // Soft outline on cartoon dust puff
-          if (p.borderColor && currentRadius > 1.8) {
-            ctx.fillStyle = p.borderColor;
+          if (p.type === "ring") {
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = Math.max(1, 3.5 * (1.0 - progress));
             ctx.beginPath();
-            ctx.arc(p.x, p.y + 0.5, currentRadius + 0.5, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            // Puffy pop & dissipate scale curve
+            let scale = 1.0;
+            if (progress < 0.22) {
+              scale = 0.4 + (progress / 0.22) * 0.85;
+            } else {
+              scale = 1.25 - ((progress - 0.22) / 0.78) * 0.5;
+            }
+            const currentRadius = Math.max(0.6, p.radius * scale);
+
+            if (p.borderColor && currentRadius > 1.8) {
+              ctx.fillStyle = p.borderColor;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y + 0.5, currentRadius + 0.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            ctx.fillStyle = p.color || "#ffffff";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2);
             ctx.fill();
           }
-
-          // Main puffy core
-          ctx.fillStyle = p.color || "#ffffff";
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2);
-          ctx.fill();
-
           ctx.restore();
         }
       }
@@ -2174,12 +2216,13 @@
       function killPlayer(reason = "Ouch! Hit a lethal hazard!") {
         if (player.isDead || player.moderatorMode || player.respawnInvincible > 0) return;
         player.isDead = true;
-        player.deathTimer = 0.70;
-        player.vx = 0;
-        player.vy = -4.2; // Upward death pop
+        player.deathTimer = 0.85; // 0.85s full cinematic death arc
+        player.vx = player.facing > 0 ? -2.4 : 2.4; // Launch knockback recoil
+        player.vy = -7.2; // Powerful upward death pop launch
         spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
-        playSfx("grunt", 1.0, 0.85);
-        playSfx("splat", 1.0, 0.85);
+        playSfx("boo_death", 1.0, 0.95);
+        playSfx("hit", 1.15, 0.75);
+        playSfx("splat", 1.0, 0.70);
         onStatusMessage(`💀 ${reason}`);
       }
 
@@ -2295,6 +2338,12 @@
         // Death state handling
         if (player.isDead) {
           player.deathTimer -= dt;
+          const timeScale = dt * 60;
+          player.x += player.vx * timeScale;
+          player.y += player.vy * timeScale;
+          player.vy += 0.48 * timeScale; // Gravity during death arc
+          player.vx *= Math.pow(0.96, timeScale);
+
           if (player.deathTimer <= 0) {
             player.isDead = false;
             respawnPlayer("Respawned at spawn door!");
@@ -2760,12 +2809,18 @@
           ctx.translate(0, -ph / 2);
         }
 
-        // Death Tumble Animation & Ghost Fade
+        // Death Tumble Animation, Damage Flash & Ghost Fade
         if (player.isDead) {
-          const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.70);
-          ctx.globalAlpha = Math.max(0, 1.0 - deathProgress * 0.85);
-          ctx.rotate(deathProgress * Math.PI * 3);
-          ctx.scale(Math.max(0.2, 1.0 - deathProgress * 0.5), Math.max(0.2, 1.0 - deathProgress * 0.5));
+          const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.85);
+          const isDeathImpact = player.deathTimer > 0.70; // 0.15s initial damage hit flash
+          if (isDeathImpact) {
+            ctx.filter = "brightness(1.6) drop-shadow(0 0 8px #ef4444)";
+          }
+          ctx.globalAlpha = Math.max(0, 1.0 - Math.pow(deathProgress, 2.2));
+          const spinDir = player.vx < 0 ? -1 : 1;
+          ctx.rotate(deathProgress * Math.PI * 6 * spinDir);
+          const deathScale = Math.max(0.15, 1.0 + Math.sin(deathProgress * Math.PI * 0.5) * 0.2 - deathProgress * 0.6);
+          ctx.scale(deathScale, deathScale);
         } else if (player.respawnInvincible > 0) {
           ctx.globalAlpha = (player.animTimer % 0.2 < 0.1) ? 0.45 : 1.0;
         } else if (player.moderatorMode) {
@@ -2777,6 +2832,16 @@
         const isFalling = !player.isGrounded && player.vy > 0.8;
         const isFloating = player.moderatorMode;
         const t = player.animTimer;
+        const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
+
+        // Dynamic Falling Aerodynamic Stretch (Velocity Stretch)
+        if (isFalling && !player.isDead) {
+          const fallStretchY = 1.0 + fallIntensity * 0.14;
+          const fallStretchX = 1.0 - fallIntensity * 0.08;
+          ctx.translate(0, -ph / 2);
+          ctx.scale(fallStretchX, fallStretchY);
+          ctx.translate(0, ph / 2);
+        }
 
         let isBlinking = (t % 3.8) < 0.14;
 
@@ -2902,7 +2967,7 @@
           if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
           else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
           else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
-          else if (isFalling) backArmAngle = -1.35;
+          else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
           else if (isJumping) backArmAngle = -1.15;
           else if (isWalking) backArmAngle = -walkCycleCos * 0.70;
           else backArmAngle = -idleArmWiggle;
@@ -2918,7 +2983,7 @@
           // 2. Back Leg (Kaki Kanan)
           let legRAngle = 0;
           if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
-          else if (isFalling) legRAngle = 0.28;
+          else if (isFalling) legRAngle = -0.15 + Math.sin(t * 16) * 0.10;
           else if (isJumping) legRAngle = -0.35;
           else if (isWalking) legRAngle = walkCycleSin * 0.52;
 
@@ -2937,7 +3002,7 @@
           // 3. Front Leg (Kaki Kiri)
           let legLAngle = 0;
           if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
-          else if (isFalling) legLAngle = 0.28;
+          else if (isFalling) legLAngle = 0.40 + Math.cos(t * 16) * 0.10;
           else if (isJumping) legLAngle = 0.45;
           else if (isWalking) legLAngle = -walkCycleSin * 0.52;
 
@@ -2964,8 +3029,9 @@
           // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
           ctx.save();
           const headBobLag = isWalking ? (Math.sin(walkPhase - 0.4) * 0.6) : 0;
+          const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
           ctx.translate(afkHeadX - sxShirt, afkHeadY - syShirt + headBobLag);
-          ctx.rotate(afkHeadAngle + (isWalking ? -walkCycleSin * 0.04 : 0));
+          ctx.rotate(afkHeadAngle + fallHeadTilt + (isWalking ? -walkCycleSin * 0.04 : 0));
 
           if (player.moderatorMode) {
             // ── Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Aura) ──
@@ -3041,7 +3107,7 @@
           } else if (isFloating) {
             frontArmAngle = 0.45 - Math.sin(t * 5) * 0.1;
           } else if (isFalling) {
-            frontArmAngle = -1.15;
+            frontArmAngle = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
           } else if (isJumping) {
             frontArmAngle = -0.80;
           } else if (isWalking) {
