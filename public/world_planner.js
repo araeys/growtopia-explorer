@@ -476,10 +476,12 @@
             world.flags[idx] &= ~1;
           }
         }
-        if (item && player.active) {
-          triggerPlayerPunch(x, y);
-          spawnBlockPlaceEffect(x, y, item);
-          playSfx("pop", 0.95 + Math.random() * 0.15, 0.4);
+        if (item) {
+          if (player.active) {
+            triggerPlayerPunch(x, y);
+            spawnBlockPlaceEffect(x, y, item);
+          }
+          playSfx("pop", 0.95 + Math.random() * 0.15, 0.50);
         }
         return true;
       }
@@ -487,7 +489,9 @@
       function eraseTile(x, y) {
         const idx = getTileIndex(x, y);
         if (idx === -1) return false;
-        // Erase FG first if present, then BG
+        const hadTile = world.fg[idx] !== 0 || world.bg[idx] !== 0;
+        if (!hadTile) return false;
+
         if (player.active) {
           triggerPlayerPunch(x, y);
         }
@@ -497,6 +501,7 @@
         } else if (world.bg[idx] !== 0) {
           world.bg[idx] = 0;
         }
+        playSfx("tile_removed", 0.95 + Math.random() * 0.15, 0.70);
         return true;
       }
 
@@ -2386,7 +2391,7 @@
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
               spawnFootstepDust(footX, player.y + player.height, player.facing, true);
-              playSfx("footstep", 1.25 + Math.random() * 0.20, 0.45);
+              playSfx("footstep", 1.22 + Math.random() * 0.18, 0.75);
             }
           } else if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.8)) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
@@ -2394,7 +2399,7 @@
               player.stepParticleTimer = 0;
               const footX = player.facing > 0 ? (player.x + 3) : (player.x + player.width - 3);
               spawnFootstepDust(footX, player.y + player.height, player.facing, false);
-              playSfx("footstep", 0.92 + Math.random() * 0.16, 0.35);
+              playSfx("footstep", 0.94 + Math.random() * 0.14, 0.70);
             }
           } else {
             player.stepParticleTimer = 0;
