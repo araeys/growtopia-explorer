@@ -4,7 +4,7 @@
   <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌍 GT World Planner Studio</title>
+  <title>GT World Planner Studio</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="icon" type="image/png" href="logo.png">
@@ -1194,7 +1194,10 @@
 
 <!-- Loading overlay -->
 <div id="loading-overlay">
-  <div class="loading-logo">🌍 GT World Planner</div>
+  <div class="loading-logo">
+    <svg viewBox="0 0 24 24" width="22" height="22" stroke="#38bdf8" stroke-width="2.2" fill="none" style="vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    GT World Planner
+  </div>
   <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
   <div class="loading-status" id="loading-status">Loading item database...</div>
 </div>
@@ -1217,8 +1220,14 @@
     </div>
     <div class="spacer"></div>
     
-    <button class="tb-btn" id="world-about-btn" onclick="openWelcomeModal();" title="About & Updates" style="border-color:#fbbf24;color:#fde047;font-weight:700;cursor:pointer;">ℹ️ <span class="tb-btn-text">Updates</span></button>
-    <button class="tb-btn" id="world-skin-btn" onclick="openSkinModal();" title="Choose Character Style" style="cursor:pointer;">👤 <span class="tb-btn-text">Skin</span></button>
+    <button class="tb-btn" id="world-about-btn" onclick="openWelcomeModal();" title="About & Updates" style="border-color:#fbbf24;color:#fde047;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span class="tb-btn-text">Updates</span>
+    </button>
+    <button class="tb-btn" id="world-skin-btn" onclick="openSkinModal();" title="Choose Character Style" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="tb-btn-text">Skin</span>
+    </button>
     <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
 
@@ -1228,46 +1237,70 @@
     <div id="canvas-wrapper">
       <canvas id="world-canvas"></canvas>
 
-
-
       <!-- Desktop Only Developer Watermark (Hidden on Mobile to avoid blocking hotbar & tools) -->
       <div id="dev-watermark" class="desktop-only-watermark" style="position:fixed;bottom:10px;right:16px;z-index:100;display:flex;align-items:center;gap:8px;font-size:11px;background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid rgba(251,191,36,0.4);border-radius:8px;padding:4px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
-        <a href="https://instagram.com/aryhaan" target="_blank" rel="noopener noreferrer" style="color:#fde047;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:4px;">
-          📸 Developed by Raey (@aryhaan)
+        <a href="https://instagram.com/aryhaan" target="_blank" rel="noopener noreferrer" style="color:#fde047;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:5px;">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          Developed by Raey (@aryhaan)
         </a>
         <span style="color:#64748b;">|</span>
-        <a href="https://saweria.co/raeyz" target="_blank" rel="noopener noreferrer" style="color:#f59e0b;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:4px;">
-          💛 Support (Saweria)
+        <a href="https://saweria.co/raeyz" target="_blank" rel="noopener noreferrer" style="color:#f59e0b;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:5px;">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          Support (Saweria)
         </a>
       </div>
 
       <!-- Top Floating HUD Container (Prevents overlapping) -->
       <!-- Floating UI Hide/Show Toggle Button for Screenshots & Clean View -->
-      <button id="mobile-ui-toggle-btn" class="hidden" title="Toggle Clean Screen / Hide Buttons">👁️ <span id="ui-toggle-label">UI</span></button>
+      <button id="mobile-ui-toggle-btn" class="hidden" title="Toggle Clean Screen / Hide Buttons" style="display:inline-flex;align-items:center;gap:5px;">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span id="ui-toggle-label">UI</span>
+      </button>
 
       <!-- Mobile On-Screen Touch Controller for Game Mode -->
       <div id="mobile-touch-controller" class="hidden">
         <!-- Left Virtual D-Pad -->
         <div class="mobile-dpad">
-          <button class="dpad-btn dpad-up" data-key="up" aria-label="Fly Up">▲</button>
+          <button class="dpad-btn dpad-up" data-key="up" aria-label="Fly Up">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.6" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
           <div class="dpad-middle-row">
-            <button class="dpad-btn dpad-left" data-key="left" aria-label="Walk Left">◀</button>
-            <div class="dpad-center">🕹️</div>
-            <button class="dpad-btn dpad-right" data-key="right" aria-label="Walk Right">▶</button>
+            <button class="dpad-btn dpad-left" data-key="left" aria-label="Walk Left">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.6" fill="none"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="dpad-center">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <button class="dpad-btn dpad-right" data-key="right" aria-label="Walk Right">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.6" fill="none"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
-          <button class="dpad-btn dpad-down" data-key="down" aria-label="Drop Down">▼</button>
+          <button class="dpad-btn dpad-down" data-key="down" aria-label="Drop Down">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.6" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
 
         <!-- Right Action Cluster -->
         <div class="mobile-actions">
           <div class="mobile-action-subgroup">
-            <button class="action-btn-pill action-skin" id="mobile-skin-btn" title="Change Character Skin" style="background:rgba(2,132,199,0.85);border:1.5px solid #38bdf8;color:#e0f2fe;">👤 SKIN</button>
-            <button class="action-btn-pill action-mod" id="mobile-mod-btn" title="Toggle Moderator Mode">🛡️ MOD</button>
-            <button class="action-btn-pill action-res" id="mobile-respawn-btn" title="Respawn">🔄 RES</button>
-            <button class="action-btn-pill action-exit" id="mobile-exit-btn" title="Exit Play Mode">✕</button>
+            <button class="action-btn-pill action-skin" id="mobile-skin-btn" title="Change Character Skin" style="background:rgba(2,132,199,0.85);border:1.5px solid #38bdf8;color:#e0f2fe;display:flex;align-items:center;gap:5px;">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>SKIN</span>
+            </button>
+            <button class="action-btn-pill action-mod" id="mobile-mod-btn" title="Toggle Moderator Mode" style="display:flex;align-items:center;gap:5px;">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>MOD</span>
+            </button>
+            <button class="action-btn-pill action-res" id="mobile-respawn-btn" title="Respawn" style="display:flex;align-items:center;gap:5px;">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span>RES</span>
+            </button>
+            <button class="action-btn-pill action-exit" id="mobile-exit-btn" title="Exit Play Mode" style="display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.4" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
           <button class="action-btn-jump" id="mobile-jump-btn" data-key="jump" aria-label="Jump / Double Jump">
-            <span>🦘</span>
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.4" fill="none"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
             <small>JUMP</small>
           </button>
         </div>
@@ -1275,32 +1308,35 @@
 
       <div id="canvas-top-bars">
 
-
         <!-- Selection bar (shown when select tool active) -->
         <div id="world-selection-bar" class="hidden">
-          <span class="selection-label" style="font-weight:600;color:#38bdf8;">✂️ Selection</span>
-          <button class="btn-sm btn-primary" id="world-copy-selection-btn" title="Copy (Ctrl+C)">📋 Copy</button>
-          <button class="btn-sm btn-primary" id="world-cut-selection-btn" title="Cut (Ctrl+X)">✂️ Cut</button>
-          <button class="btn-sm btn-primary" id="world-paste-btn" title="Paste (Ctrl+V)">📑 Paste</button>
-          <button class="btn-sm btn-primary" id="world-flip-h-selection-btn" title="Flip Horizontal">🪞 Flip H</button>
-          <button class="btn-sm btn-primary" id="world-flip-v-selection-btn" title="Flip Vertical">🔃 Flip V</button>
-          <button class="btn-sm btn-green" id="world-fill-selection-btn" title="Fill Selection with Active Block">🪣 Fill</button>
-          <button class="btn-sm btn-primary" id="world-render-selection-btn" title="Render Selection PNG">📸 Render</button>
-          <button class="btn-sm btn-danger-lite" id="world-clear-selection-btn" title="Clear (Delete)">🧹 Clear</button>
+          <span class="selection-label" style="font-weight:600;color:#38bdf8;display:flex;align-items:center;gap:5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Selection
+          </span>
+          <button class="btn-sm btn-primary" id="world-copy-selection-btn" title="Copy (Ctrl+C)">Copy</button>
+          <button class="btn-sm btn-primary" id="world-cut-selection-btn" title="Cut (Ctrl+X)">Cut</button>
+          <button class="btn-sm btn-primary" id="world-paste-btn" title="Paste (Ctrl+V)">Paste</button>
+          <button class="btn-sm btn-primary" id="world-flip-h-selection-btn" title="Flip Horizontal">Flip H</button>
+          <button class="btn-sm btn-primary" id="world-flip-v-selection-btn" title="Flip Vertical">Flip V</button>
+          <button class="btn-sm btn-green" id="world-fill-selection-btn" title="Fill Selection with Active Block">Fill</button>
+          <button class="btn-sm btn-primary" id="world-render-selection-btn" title="Render Selection PNG">Render</button>
+          <button class="btn-sm btn-danger-lite" id="world-clear-selection-btn" title="Clear (Delete)">Clear</button>
           <button class="btn-sm btn-secondary" id="world-cancel-selection-btn">✕</button>
         </div>
       </div>
 
       <!-- Music Sequencer Bar -->
       <div id="music-sequencer-bar" class="hidden">
-        <span style="font-weight:600;color:#00e5ff;font-size:12px;">🎵 Music Sequencer</span>
-        <button class="btn-sm btn-primary" id="music-play-btn">▶ Play</button>
+        <span style="font-weight:600;color:#00e5ff;font-size:12px;display:flex;align-items:center;gap:5px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Music Sequencer
+        </span>
+        <button class="btn-sm btn-primary" id="music-play-btn">Play</button>
         <div style="display:flex;align-items:center;gap:6px;">
           <label for="music-bpm-slider" style="font-size:11px;color:#94a3b8;">BPM:</label>
           <input type="range" id="music-bpm-slider" min="60" max="240" value="100" style="width:70px;cursor:pointer;">
           <span id="music-bpm-val" style="font-size:11px;color:#f8fafc;font-weight:600;min-width:28px;">100</span>
         </div>
-        <button class="btn-sm btn-secondary" id="music-loop-btn" title="Loop Toggle">🔁 Loop</button>
+        <button class="btn-sm btn-secondary" id="music-loop-btn" title="Loop Toggle">Loop</button>
         <button class="btn-sm btn-secondary" id="music-close-btn">✕</button>
       </div>
     </div>
@@ -1343,7 +1379,7 @@
     </button>
     <div class="tool-separator"></div>
     <button class="world-tool-btn" id="world-playmode-btn" title="Enter Interactive Game Mode (P)" style="width:auto;min-width:44px;height:40px;padding:0 12px;background:linear-gradient(180deg,#0284c7 0%,#0369a1 100%);border:2px solid #38bdf8;box-shadow:inset 0 1px 0 #7dd3fc, 0 0 10px rgba(56,189,248,0.5);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-      <span style="font-size:17px;line-height:1;">🎮</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ffffff" stroke-width="2.2" fill="none"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="11" x2="15.01" y2="11"/><line x1="18" y1="13" x2="18.01" y2="13"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
       <span style="font-size:12px;font-weight:900;color:#ffffff;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;">PLAY</span>
     </button>
     <button class="world-tool-btn" id="world-music-btn" title="Music Sequencer (M)">
@@ -1366,18 +1402,17 @@
 <!-- World Settings Dropdown -->
 <div id="world-menu-dropdown" class="hidden">
   <div class="world-menu-header">World Management</div>
-  <button class="world-menu-item" id="world-menu-new-std">🌱 New Standard (100×60)</button>
-  <button class="world-menu-item" id="world-menu-new-flat">🧱 New Flat World</button>
-  <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
-  <button class="world-menu-item" id="world-menu-custom-size">📐 Custom World Size...</button>
+  <button class="world-menu-item" id="world-menu-new-std">New Standard (100×60)</button>
+  <button class="world-menu-item" id="world-menu-new-flat">New Flat World</button>
+  <button class="world-menu-item" id="world-menu-new-blank">New Blank World</button>
+  <button class="world-menu-item" id="world-menu-custom-size">Custom World Size...</button>
   <div class="world-menu-divider"></div>
-  <button class="world-menu-item" id="world-menu-open-file">📂 Open World (.DAT / .gtworld)</button>
+  <button class="world-menu-item" id="world-menu-open-file">Open World (.DAT / .gtworld)</button>
   <input type="file" id="world-file-input" accept=".dat,.json,.gtworld" style="display:none;">
-  <button class="world-menu-item" id="world-menu-save-dat">💾 Save World (.DAT)</button>
-  <button class="world-menu-item" id="world-menu-save-json">📦 Export .gtworld JSON</button>
+  <button class="world-menu-item" id="world-menu-save-dat">Save World (.DAT)</button>
+  <button class="world-menu-item" id="world-menu-save-json">Export .gtworld JSON</button>
   <div class="world-menu-divider"></div>
-  
-  <button class="world-menu-item" id="world-menu-render-png">📸 Render Full World PNG</button>
+  <button class="world-menu-item" id="world-menu-render-png">Render Full World PNG</button>
 </div>
 
 <!-- Character Skin Selection Modal (Authentic Growtopia Client Dialog) -->
@@ -1409,8 +1444,10 @@
         </div>
 
         <!-- Option 2: Cartoon Chibi -->
-        <div class="skin-card" data-skin="cartoon" style="background:#101923;border:2px solid #0a1017;box-shadow:inset 1px 1px 4px rgba(0,0,0,0.8);border-radius:4px;padding:12px 8px;text-align:center;cursor:pointer;">
-          <div style="font-size:36px;margin-bottom:4px;line-height:1.1;">🎨</div>
+        <div class="skin-card" data-skin="cartoon" style="background:#101923;border:2px solid #0a1017;box-shadow:inset 1px 1px 4px rgba(0,0,0,0.8);border-radius:4px;padding:12px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:rgba(56,189,248,0.1);border-radius:8px;">
+            <svg viewBox="0 0 24 24" width="26" height="26" stroke="#38bdf8" stroke-width="2" fill="none"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+          </div>
           <div style="font-size:12px;font-weight:900;color:#cbd5e1;text-shadow:1px 1px 0 #000;">Cartoon Chibi</div>
           <div style="font-size:10px;color:#64748b;">Illustrated HD</div>
         </div>
@@ -1437,7 +1474,9 @@
     <!-- Dialog Header -->
     <div class="welcome-top-bar">
       <div class="welcome-brand-wrap">
-        <span class="welcome-brand-icon">🌍</span>
+        <span class="welcome-brand-icon" style="display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="#38bdf8" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </span>
         <div>
           <h2 class="welcome-title">GT WORLD PLANNER STUDIO</h2>
           <div class="welcome-subtitle">Live Physics Simulator & Interactive World Builder</div>
@@ -1455,7 +1494,7 @@
       <div class="welcome-feature-grid">
         <div class="welcome-feature-card">
           <div class="welcome-feature-card-header">
-            <span style="font-size:16px;">🏃</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             <span class="welcome-feature-card-title">Platformer & Parkour</span>
           </div>
           <div class="welcome-feature-card-desc">
@@ -1465,7 +1504,7 @@
 
         <div class="welcome-feature-card">
           <div class="welcome-feature-card-header">
-            <span style="font-size:16px;">⚡</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c084fc" stroke-width="2.2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <span class="welcome-feature-card-title">Mod Noclip & Electro Aura</span>
           </div>
           <div class="welcome-feature-card-desc">
@@ -1475,7 +1514,7 @@
 
         <div class="welcome-feature-card">
           <div class="welcome-feature-card-header">
-            <span style="font-size:16px;">💬</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <span class="welcome-feature-card-title">Speech Chat & 5 Emotes</span>
           </div>
           <div class="welcome-feature-card-desc">
@@ -1485,11 +1524,11 @@
 
         <div class="welcome-feature-card">
           <div class="welcome-feature-card-header">
-            <span style="font-size:16px;">🎨</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#fbbf24" stroke-width="2.2" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
             <span class="welcome-feature-card-title">16,000+ Items & Autotile</span>
           </div>
           <div class="welcome-feature-card-desc">
-            Koneksi autotile presisi, background weather machines, item favorit ⭐, serta import/export file <code style="color:#fde047;">.dat</code>.
+            Koneksi autotile presisi, background weather machines, item favorit, serta import/export file <code style="color:#fde047;">.dat</code>.
           </div>
         </div>
       </div>
@@ -1498,14 +1537,16 @@
       <div class="welcome-credits-box">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:11px;font-weight:900;color:#94a3b8;">DEVELOPER:</span>
-          <a href="https://instagram.com/aryhaan" target="_blank" rel="noopener noreferrer" class="welcome-badge-btn" style="background:#0284c7;color:#ffffff;border:1px solid #38bdf8;">
-            📷 Raey (@aryhaan)
+          <a href="https://instagram.com/aryhaan" target="_blank" rel="noopener noreferrer" class="welcome-badge-btn" style="background:#0284c7;color:#ffffff;border:1px solid #38bdf8;display:inline-flex;align-items:center;gap:5px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            Raey (@aryhaan)
           </a>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:11px;font-weight:900;color:#94a3b8;">SUPPORT:</span>
-          <a href="https://saweria.co/raeyz" target="_blank" rel="noopener noreferrer" class="welcome-badge-btn" style="background:#ea580c;color:#ffffff;border:1px solid #fb923c;">
-            💛 saweria.co/raeyz
+          <a href="https://saweria.co/raeyz" target="_blank" rel="noopener noreferrer" class="welcome-badge-btn" style="background:#ea580c;color:#ffffff;border:1px solid #fb923c;display:inline-flex;align-items:center;gap:5px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            saweria.co/raeyz
           </a>
         </div>
       </div>
@@ -1517,8 +1558,9 @@
       <div style="font-size:11px;color:#64748b;font-weight:600;">
         Tekan <kbd style="background:#1e293b;padding:2px 5px;border-radius:3px;color:#e2e8f0;font-size:10px;">ESC</kbd> untuk tutup
       </div>
-      <button id="welcome-modal-ack-btn" class="welcome-cta-btn">
-        <span>🎮 LET'S PLAY / MASUK</span>
+      <button id="welcome-modal-ack-btn" class="welcome-cta-btn" style="display:inline-flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ffffff" stroke-width="2.2" fill="none"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="11" x2="15.01" y2="11"/><line x1="18" y1="13" x2="18.01" y2="13"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+        <span>LET'S PLAY / MASUK</span>
       </button>
     </div>
 
@@ -1528,19 +1570,19 @@
 <div id="world-size-modal" class="hidden">
   <div class="custom-size-modal-inner">
     <div class="picker-header" style="margin-bottom:8px;">
-      <h3 style="margin:0;font-size:16px;color:#f8fafc;">📐 Custom World Dimensions</h3>
+      <h3 style="margin:0;font-size:16px;color:#f8fafc;">Custom World Dimensions</h3>
       <button class="picker-close" id="world-size-close-btn" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
     </div>
 
     <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select a preset or enter custom tile dimensions:</div>
     
     <div class="size-presets-grid">
-      <button class="size-preset-btn active" data-w="100" data-h="60">🌱 Standard (100 × 60)</button>
-      <button class="size-preset-btn" data-w="60" data-h="60">⬜ Square (60 × 60)</button>
-      <button class="size-preset-btn" data-w="50" data-h="30">🔹 Small (50 × 30)</button>
-      <button class="size-preset-btn" data-w="25" data-h="15">🔸 Tiny (25 × 15)</button>
-      <button class="size-preset-btn" data-w="150" data-h="80">🏰 Large (150 × 80)</button>
-      <button class="size-preset-btn" data-w="200" data-h="100">👑 Epic (200 × 100)</button>
+      <button class="size-preset-btn active" data-w="100" data-h="60">Standard (100 × 60)</button>
+      <button class="size-preset-btn" data-w="60" data-h="60">Square (60 × 60)</button>
+      <button class="size-preset-btn" data-w="50" data-h="30">Small (50 × 30)</button>
+      <button class="size-preset-btn" data-w="25" data-h="15">Tiny (25 × 15)</button>
+      <button class="size-preset-btn" data-w="150" data-h="80">Large (150 × 80)</button>
+      <button class="size-preset-btn" data-w="200" data-h="100">Epic (200 × 100)</button>
     </div>
 
     <div class="custom-dimension-inputs">
@@ -1564,7 +1606,7 @@
 
     <div class="modal-actions-row">
       <button class="btn-cancel" id="world-size-cancel-btn">Cancel</button>
-      <button class="btn-create" id="world-size-apply-btn">✨ Create World</button>
+      <button class="btn-create" id="world-size-apply-btn">Create World</button>
     </div>
   </div>
 </div>
@@ -1573,7 +1615,7 @@
 <div id="render-export-modal" class="hidden">
   <div class="custom-size-modal-inner" style="max-width:440px;">
     <div class="picker-header" style="margin-bottom:8px;">
-      <h3 style="margin:0;font-size:16px;color:#f8fafc;" id="render-modal-title">📸 Render PNG Image</h3>
+      <h3 style="margin:0;font-size:16px;color:#f8fafc;" id="render-modal-title">Render PNG Image</h3>
       <button class="picker-close" id="render-modal-close-btn" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
     </div>
 
@@ -1607,7 +1649,7 @@
 
     <div class="modal-actions-row">
       <button class="btn-cancel" id="render-modal-cancel-btn">Cancel</button>
-      <button class="btn-create" id="render-modal-apply-btn">⬇️ Download PNG</button>
+      <button class="btn-create" id="render-modal-apply-btn">Download PNG</button>
     </div>
   </div>
 </div>
@@ -1615,7 +1657,7 @@
 <!-- Weather Modal -->
 <div id="weather-modal">
   <div class="weather-modal-inner" style="max-width:680px;">
-    <h3>🎨 Select Weather Background</h3>
+    <h3>Select Weather Background</h3>
     <div id="weather-grid"></div>
   </div>
 </div>
@@ -1624,11 +1666,14 @@
 <div id="item-picker-modal">
   <div class="picker-inner">
     <div class="picker-header">
-      <h3>🧱 Pick an Item</h3>
+      <h3>Pick an Item</h3>
       <button class="picker-close" id="picker-close-btn">×</button>
     </div>
     <div class="picker-filters" id="picker-filter-row">
-      <button class="picker-filter-btn" data-cat="favorite" style="color:#facc15;font-weight:800;">⭐ Favorites</button>
+      <button class="picker-filter-btn" data-cat="favorite" style="color:#facc15;font-weight:800;display:inline-flex;align-items:center;gap:4px;">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Favorites
+      </button>
       <button class="picker-filter-btn active" data-cat="all">All</button>
       <button class="picker-filter-btn" data-cat="fg">Blocks</button>
       <button class="picker-filter-btn" data-cat="bg">Backgrounds</button>
@@ -2022,10 +2067,10 @@
     });
 
     if (isSelection) {
-      if (renderModalTitle) renderModalTitle.textContent = '✂️ Render Selection PNG';
+      if (renderModalTitle) renderModalTitle.textContent = 'Render Selection PNG';
       if (renderModalDesc) renderModalDesc.textContent = 'Export selected area with optional upscale (1x, 2x, 3x, 4x):';
     } else {
-      if (renderModalTitle) renderModalTitle.textContent = '📸 Render Full World PNG';
+      if (renderModalTitle) renderModalTitle.textContent = 'Render Full World PNG';
       if (renderModalDesc) renderModalDesc.textContent = 'Export complete world map with optional upscale (1x, 2x, 3x, 4x):';
     }
 
@@ -2055,7 +2100,7 @@
     const btn = document.getElementById('render-modal-apply-btn');
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '⏳ Rendering...';
+      btn.textContent = 'Rendering...';
     }
     try {
       await engine.exportToPNG({ onlySelection: renderExportIsSelection, scale: renderExportScale });
@@ -2065,7 +2110,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = '⬇️ Download PNG';
+        btn.textContent = 'Download PNG';
       }
       renderModal?.classList.add('hidden');
     }
@@ -2150,7 +2195,7 @@
 
   musicPlayBtn?.addEventListener('click', () => {
     const isPlaying = engine.toggleMusic();
-    if (musicPlayBtn) musicPlayBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+    if (musicPlayBtn) musicPlayBtn.textContent = isPlaying ? 'Pause' : 'Play';
     if (musicPlayBtn) musicPlayBtn.classList.toggle('btn-green', isPlaying);
   });
 
@@ -2170,7 +2215,7 @@
   document.getElementById('music-close-btn')?.addEventListener('click', () => {
     engine.toggleMusic(false);
     if (musicPlayBtn) {
-      musicPlayBtn.textContent = '▶ Play';
+      musicPlayBtn.textContent = 'Play';
       musicPlayBtn.classList.remove('btn-green');
     }
     musicBar?.classList.add('hidden');
@@ -2335,15 +2380,15 @@
       if (pickerFilter === 'favorite') {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; color: var(--text-muted); gap: 10px;">
-            <div style="font-size: 36px; line-height: 1;">⭐</div>
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             <div style="font-size: 14px; font-weight: 700; color: #f8fafc;">No Favorite Items Yet</div>
-            <div style="font-size: 12px; color: #94a3b8; max-width: 320px; line-height: 1.5;">Click the star icon (★) in the top-right corner of any item in other categories to add it to your favorites list!</div>
+            <div style="font-size: 12px; color: #94a3b8; max-width: 320px; line-height: 1.5;">Click the star icon in the top-right corner of any item in other categories to add it to your favorites list!</div>
           </div>
         `;
       } else {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; color: var(--text-muted); gap: 10px;">
-            <div style="font-size: 32px; line-height: 1;">🔍</div>
+            <svg viewBox="0 0 24 24" width="32" height="32" stroke="#94a3b8" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <div style="font-size: 14px; font-weight: 600; color: #94a3b8;">No matching items found</div>
           </div>
         `;
@@ -2376,6 +2421,8 @@
     const itemsToAppend = currentMatchingItems.slice(startIdx, pickerVisibleLimit);
 
     const catObj = window.GTWorldCatalog;
+    const starSvgActive = '<svg viewBox="0 0 24 24" width="13" height="13" fill="#facc15" stroke="#facc15" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+    const starSvgInactive = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#64748b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 
     itemsToAppend.forEach(item => {
       const el = document.createElement('div');
@@ -2388,13 +2435,13 @@
       starBtn.className = `picker-star-btn ${isFav ? 'active' : ''}`;
       starBtn.type = 'button';
       starBtn.title = isFav ? 'Remove from favorites' : 'Add to favorites';
-      starBtn.textContent = isFav ? '★' : '☆';
+      starBtn.innerHTML = isFav ? starSvgActive : starSvgInactive;
       starBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleFavoriteItem(item.id);
         const nowFav = favoriteItemIds.has(Number(item.id));
         starBtn.className = `picker-star-btn ${nowFav ? 'active' : ''}`;
-        starBtn.textContent = nowFav ? '★' : '☆';
+        starBtn.innerHTML = nowFav ? starSvgActive : starSvgInactive;
         starBtn.title = nowFav ? 'Remove from favorites' : 'Add to favorites';
         
         if (pickerFilter === 'favorite') {
@@ -2552,7 +2599,9 @@
     const modBtn = document.getElementById('mobile-mod-btn');
     if (modBtn) {
       modBtn.classList.toggle('active', isMod);
-      modBtn.textContent = isMod ? "🛡️ MOD: ON" : "🛡️ MOD";
+      modBtn.innerHTML = isMod ?
+        '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD: ON</span>' :
+        '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD</span>';
     }
   });
 
@@ -2697,7 +2746,7 @@
     const label = document.getElementById('active-part-label');
     const disp = document.getElementById('active-part-offset-display');
     const partName = activeClothesPart === 'hair' ? 'Hair' : (activeClothesPart === 'shirt' ? 'Shirt' : 'Pants');
-    if (label) label.textContent = `📐 ${partName} Position Offset:`;
+    if (label) label.textContent = `${partName} Position Offset:`;
     if (disp) disp.textContent = `X: ${cur.x}px, Y: ${cur.y}px`;
     drawWardrobePreview();
   }

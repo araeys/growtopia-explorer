@@ -881,8 +881,17 @@
           transformShakeY = (Math.random() - 0.5) * maxShake * 2;
         }
 
+        let impactShakeX = 0;
+        let impactShakeY = 0;
+        if (player.impactShakeTimer > 0) {
+          const impactProg = player.impactShakeTimer / 0.38;
+          const impactMag = 8.0 * Math.pow(impactProg, 1.4);
+          impactShakeX = (Math.random() - 0.5) * impactMag * 2;
+          impactShakeY = (Math.random() - 0.5) * impactMag * 2;
+        }
+
         ctx.save();
-        ctx.translate(viewport.x + transformShakeX, viewport.y + transformShakeY);
+        ctx.translate(viewport.x + transformShakeX + impactShakeX, viewport.y + transformShakeY + impactShakeY);
         ctx.scale(viewport.zoom, viewport.zoom);
 
         // Mask tiles strictly inside World Rectangle (0, 0, worldW, worldH)
@@ -1124,6 +1133,24 @@
           // Soft cyan-violet chromatic flash on borders
           ctx.fillStyle = `rgba(168, 85, 247, ${0.04 * Math.sin(transProg * Math.PI)})`;
           ctx.fillRect(0, 0, viewW, viewH);
+          ctx.restore();
+        }
+
+        // 12. Lethal Hazard Hit Screen Flash & Red Shockwave Vignette
+        if (player.hitFlashTimer > 0) {
+          ctx.save();
+          const viewW = cw / dpr;
+          const viewH = ch / dpr;
+          const hitProg = player.hitFlashTimer / 0.30;
+          // Red Shockwave Overlay
+          ctx.fillStyle = `rgba(239, 68, 68, ${0.30 * hitProg})`;
+          ctx.fillRect(0, 0, viewW, viewH);
+          // Initial White Flash Impact
+          if (hitProg > 0.6) {
+            const whiteAlpha = 0.40 * ((hitProg - 0.6) / 0.4);
+            ctx.fillStyle = `rgba(255, 255, 255, ${whiteAlpha})`;
+            ctx.fillRect(0, 0, viewW, viewH);
+          }
           ctx.restore();
         }
 
@@ -2248,7 +2275,7 @@
         }
 
         clipboard.active = true;
-        onStatusMessage(`📋 Copied ${w} × ${h} selection to clipboard!`);
+        onStatusMessage(`Copied ${w} × ${h} selection to clipboard!`);
         return true;
       }
 
@@ -2260,7 +2287,7 @@
         copySelection();
         pushUndoSnapshot("Cut Selection");
         clearSelectionTiles();
-        onStatusMessage("✂️ Cut selection to clipboard!");
+        onStatusMessage("Cut selection to clipboard!");
         return true;
       }
 
@@ -2273,7 +2300,7 @@
         selection.active = false;
         onToolChange("paste");
         render();
-        onStatusMessage(`📑 Click on world map to paste (${clipboard.width} × ${clipboard.height})`);
+        onStatusMessage(`Click on world map to paste (${clipboard.width} × ${clipboard.height})`);
         return true;
       }
 
@@ -2325,7 +2352,7 @@
         clipboard.bg = newBg;
         clipboard.flags = newFlags;
         render();
-        onStatusMessage("🪞 Mirrored clipboard horizontally!");
+        onStatusMessage("Mirrored clipboard horizontally!");
       }
 
       function flipClipboardVertical() {
@@ -2350,7 +2377,7 @@
         clipboard.bg = newBg;
         clipboard.flags = newFlags;
         render();
-        onStatusMessage("🔃 Mirrored clipboard vertically!");
+        onStatusMessage("Mirrored clipboard vertically!");
       }
 
       function flipSelectionHorizontal() {
@@ -2412,13 +2439,18 @@
         if (player.isDead || player.moderatorMode || player.respawnInvincible > 0) return;
         player.isDead = true;
         player.deathTimer = 0.85; // 0.85s full cinematic death arc
-        player.vx = player.facing > 0 ? -2.4 : 2.4; // Launch knockback recoil
-        player.vy = -7.2; // Powerful upward death pop launch
+        player.vx = player.facing > 0 ? -2.8 : 2.8; // Launch knockback recoil
+        player.vy = -7.6; // Powerful upward death pop launch
+        
+        // Hazard Impact Hit Flash & Screen Shake
+        player.impactShakeTimer = 0.38;
+        player.hitFlashTimer = 0.30;
+        
         spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
         playSfx("boo_death", 1.0, 0.95);
         playSfx("hit", 1.15, 0.75);
         playSfx("splat", 1.0, 0.70);
-        onStatusMessage(`💀 ${reason}`);
+        onStatusMessage(reason);
       }
 
       function respawnPlayer(msg = "") {
@@ -2471,13 +2503,13 @@
             viewport.y = (viewH / 2) - (spawn.y + player.height / 2) * viewport.zoom;
           }
 
-          onStatusMessage("🎮 Game Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
+          onStatusMessage("Game Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
         } else {
           activeTool = "pencil";
           onToolChange("pencil");
           // Play Game Mode Exit Sound Effect
           playSfx("door_shut", 1.0, 0.8);
-          onStatusMessage("🛠️ Returned to Builder Mode.");
+          onStatusMessage("Returned to Builder Mode.");
         }
         render();
         return player.active;
@@ -2497,17 +2529,17 @@
             playSfx("boo_ghost_be_gone", 1.05, 0.80);
             playSfx("already_used", 1.30, 0.70);
           }
-          onStatusMessage("🛡️ Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
+          onStatusMessage("Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
         } else {
           player.modTransformTimer = 0;
           if (player.active) playSfx("switch", 1.1, 0.5);
-          onStatusMessage("🛡️ Moderator Mode Disabled. Solid block collisions restored.");
+          onStatusMessage("Moderator Mode Disabled. Solid block collisions restored.");
         }
 
         if (typeof document !== "undefined" && typeof document.getElementById === "function") {
           const modBtn = document.getElementById("playmode-mod-btn");
           if (modBtn) {
-            modBtn.textContent = player.moderatorMode ? "🛡️ Mod Mode: ON" : "🛡️ Mod Mode: OFF";
+            modBtn.textContent = player.moderatorMode ? "Mod Mode: ON" : "Mod Mode: OFF";
             modBtn.classList.toggle("active", player.moderatorMode);
             if (player.moderatorMode) {
               modBtn.style.borderColor = "#a855f7";
@@ -2560,6 +2592,8 @@
         player.animTimer += dt;
 
         // Timers
+        if (player.impactShakeTimer > 0) player.impactShakeTimer = Math.max(0, player.impactShakeTimer - dt);
+        if (player.hitFlashTimer > 0) player.hitFlashTimer = Math.max(0, player.hitFlashTimer - dt);
         if (player.modTransformTimer > 0) player.modTransformTimer = Math.max(0, player.modTransformTimer - dt);
         if (player.punchTimer > 0) player.punchTimer = Math.max(0, player.punchTimer - dt);
         if (player.jumpThrustTimer > 0) player.jumpThrustTimer = Math.max(0, player.jumpThrustTimer - dt);
@@ -4140,13 +4174,13 @@
           if (sequencer.timer) clearInterval(sequencer.timer);
           const intervalMs = Math.round(60000 / (sequencer.bpm * 2));
           sequencer.timer = setInterval(stepSequencer, intervalMs);
-          onStatusMessage(`🎵 Music Sequencer Playing at ${sequencer.bpm} BPM...`);
+          onStatusMessage(`Music Sequencer Playing at ${sequencer.bpm} BPM...`);
         } else {
           if (sequencer.timer) {
             clearInterval(sequencer.timer);
             sequencer.timer = null;
           }
-          onStatusMessage("⏹ Music Stopped.");
+          onStatusMessage("Music Stopped.");
         }
         render();
         return sequencer.isPlaying;
@@ -4478,13 +4512,13 @@
             render();
             if (minimapCanvas) renderMinimap();
             playSfx("magic", 1.0, 0.6);
-            onStatusMessage(`📥 Loaded "${worldName || 'World'}" as background blueprint!`);
+            onStatusMessage(`Loaded "${worldName || 'World'}" as background blueprint!`);
           };
           img.src = imageUrl;
         },
         convertBlueprintToBlocks: (options = {}) => {
           if (!world.renderOverlayImage || !world.renderOverlayImage.complete) {
-            onStatusMessage("⚠️ No active blueprint render image found to convert!");
+            onStatusMessage("No active blueprint render image found to convert!");
             return null;
           }
           if (typeof window !== "undefined" && window.GTRenderConverter) {
@@ -4504,14 +4538,14 @@
             render();
             if (minimapCanvas) renderMinimap();
             playSfx("magic", 1.0, 0.7);
-            onStatusMessage(`✨ Converted ${result.detectedCount.toLocaleString()} blocks into editable tiles!`);
+            onStatusMessage(`Converted ${result.detectedCount.toLocaleString()} blocks into editable tiles!`);
             return result;
           }
           return null;
         },
         importFromRender: async (worldNameOrUrl, options = {}) => {
           if (typeof window !== "undefined" && window.GTRenderConverter) {
-            onStatusMessage("⏳ Scanning & converting world render into blocks...");
+            onStatusMessage("Scanning & converting world render into blocks...");
             try {
               pushHistory();
               const result = await window.GTRenderConverter.convertFromUrl(worldNameOrUrl, {
@@ -4540,11 +4574,11 @@
               if (minimapCanvas) renderMinimap();
               onWorldChange(world);
               playSfx("magic", 1.0, 0.7);
-              onStatusMessage(`✨ Converted ${result.detectedCount.toLocaleString()} blocks into editable world!`);
+              onStatusMessage(`Converted ${result.detectedCount.toLocaleString()} blocks into editable world!`);
               return result;
             } catch (err) {
               console.error("importFromRender error:", err);
-              onStatusMessage("❌ Failed to convert render into blocks.");
+              onStatusMessage("Failed to convert render into blocks.");
             }
           }
         },
