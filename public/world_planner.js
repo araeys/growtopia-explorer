@@ -3102,64 +3102,31 @@
           ctx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + (isWalking ? -walkCycleSin * 0.05 : 0));
 
           if (player.moderatorMode) {
-            // ── Glowing Pure Radiant White Eyes (Intense Bloom & Divine Glow) ──
-            const eyePulse = 0.75 + 0.25 * Math.sin(t * 6.0);
-            if (!isBlinking) {
-              // 1. Solid Pure Blinding White Core Fill behind eye cutouts
+            // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
+            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
+            
+            // Layer A: Authentic White Sclera Base with soft glowing aura behind head mask
+            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
               ctx.save();
-              ctx.fillStyle = "#ffffff";
-              ctx.shadowColor = "#ffffff";
-              ctx.shadowBlur = 8 + 6 * eyePulse;
-              // Left Eye Socket Fill (under head mask cutout)
-              ctx.beginPath();
-              ctx.ellipse(2, -9.5, 3.2, 3.0, 0, 0, Math.PI * 2);
-              ctx.fill();
-              // Right Eye Socket Fill (under head mask cutout)
-              ctx.beginPath();
-              ctx.ellipse(10, -9.5, 3.2, 3.0, 0, 0, Math.PI * 2);
-              ctx.fill();
+              ctx.shadowColor = "#38bdf8";
+              ctx.shadowBlur = 6 + 6 * eyePulse;
+              ctx.drawImage(imgSclera, -16, -16, 32, 32);
               ctx.restore();
-
-              // 2. White Eyeball Sclera base with glowing cyan pulse
-              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-                ctx.save();
-                ctx.shadowColor = "#38bdf8";
-                ctx.shadowBlur = 8 + 8 * eyePulse;
-                ctx.drawImage(imgSclera, -16, -16, 32, 32);
-                ctx.restore();
-              }
             }
 
-            // Layer C: Head Mask with transparent eye cutouts (Frames the radiant eyes!)
+            // Layer B: Head Mask with transparent eye cutouts (Frames the white eyes naturally)
             if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
               ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
             }
 
-            // Layer D: Radiant Eye Bloom Flare & Subtle Divine Lens Flare Streaks
-            if (!isBlinking) {
+            // Layer C: Radiant Eye Aura radiating from the exact eyeball sprite pixels
+            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
               ctx.save();
               ctx.globalCompositeOperation = "screen";
-
-              // Multi-layer intense pure white & cyan core bloom
-              ctx.fillStyle = "#ffffff";
-              ctx.shadowColor = "#00e5ff";
-              ctx.shadowBlur = 14 * eyePulse;
-              ctx.beginPath();
-              ctx.arc(2, -9.5, 2.2, 0, Math.PI * 2);
-              ctx.arc(10, -9.5, 2.2, 0, Math.PI * 2);
-              ctx.fill();
-
-              // Horizontal Subtle Divine Lens Flare Streaks
-              ctx.fillStyle = "rgba(103, 232, 249, " + (0.55 * eyePulse) + ")";
-              ctx.shadowColor = "#38bdf8";
-              ctx.shadowBlur = 8;
-              ctx.fillRect(-2, -10.5, 8, 2);
-              ctx.fillRect(6, -10.5, 8, 2);
-
-              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-                ctx.globalAlpha = 0.70 * eyePulse;
-                ctx.drawImage(imgSclera, -16, -16, 32, 32);
-              }
+              ctx.globalAlpha = 0.65 * eyePulse;
+              ctx.shadowColor = "#ffffff";
+              ctx.shadowBlur = 8 * eyePulse;
+              ctx.drawImage(imgSclera, -16, -16, 32, 32);
               ctx.restore();
             }
           } else {
@@ -3184,7 +3151,7 @@
             }
           }
 
-          // Layer D: Hair / Hats Overlay with Physics Inertial Sway & Bend
+          // Layer D: Hair / Hats Overlay with Physics Inertial Sway & Bend (Subtle & Natural)
           const hairChoice = player.hairStyle || "red";
           if (hairChoice !== "none") {
             const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
@@ -3196,19 +3163,19 @@
               ctx.save();
               ctx.translate(hx, hy);
 
-              // Inertial Sway & Physics Bend Angles (responds to velocity, strides, jumps, and falls)
-              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.10) : 0;
-              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.024 * (player.facing || 1)) : 0;
-              const hairJumpSway = isJumping ? (-player.vy * 0.018) : 0;
-              const hairFallLift = isFalling ? (-player.vy * 0.022) : 0;
-              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.03) : 0;
+              // Inertial Sway & Physics Bend Angles (Subtle and smooth response)
+              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.045) : 0;
+              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.010 * (player.facing || 1)) : 0;
+              const hairJumpSway = isJumping ? (-player.vy * 0.008) : 0;
+              const hairFallLift = isFalling ? (-player.vy * 0.010) : 0;
+              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.015) : 0;
 
               const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
               ctx.rotate(totalHairBend);
 
               // Elastic vertical bounce / wind lift
-              const hairScaleY = 1.0 + (isJumping ? 0.08 : (isFalling ? -0.06 : (isWalking ? Math.sin(walkPhase) * 0.04 : 0)));
-              const hairScaleX = 1.0 + (isFalling ? 0.05 : 0);
+              const hairScaleY = 1.0 + (isJumping ? 0.03 : (isFalling ? -0.03 : (isWalking ? Math.sin(walkPhase) * 0.02 : 0)));
+              const hairScaleX = 1.0 + (isFalling ? 0.02 : 0);
               ctx.scale(hairScaleX, hairScaleY);
 
               ctx.drawImage(imgHair, -16, -16, 32, 32);
