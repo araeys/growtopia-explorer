@@ -2762,6 +2762,13 @@
         "particles/hearts/Heart_002.png"
       ];
 
+      // ── Crystal Orb 3D Orbit Sequence (16 Frames) ──
+      const crystalOrbFrames = [];
+      for (let i = 1; i <= 16; i++) {
+        const pad = String(i).padStart(3, "0");
+        crystalOrbFrames.push(`particles/crystal_orbs/CrystalOrbs_${pad}.png`);
+      }
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2790,6 +2797,9 @@
         deathHeartImages.forEach(path => {
           getSpriteImage(path);
         });
+        crystalOrbFrames.forEach(path => {
+          getSpriteImage(path);
+        });
       }
 
       const spriteImageCache = new Map();
@@ -2807,6 +2817,49 @@
           spriteImageCache.set(src, img);
         }
         return img;
+      }
+
+      function drawCrystalOrbs(ctx, px, py, pw, ph, layer) {
+        if (!player.moderatorMode || player.isDead) return;
+        const cx = px + pw / 2;
+        const cy = py + ph / 2 + 1;
+        const t = player.animTimer;
+        const rx = 30; // Horizontal elliptical span
+        const ry = 8.5; // Vertical orbit tilt
+        const orbitSpeed = 2.4; // 3D orbit speed
+        const orbCount = 3; // 3 Symmetrical orbiting crystal orbs
+
+        for (let i = 0; i < orbCount; i++) {
+          const ang = t * orbitSpeed + (i * ((Math.PI * 2) / orbCount));
+          const oz = Math.sin(ang); // < 0 is behind character, >= 0 is in front
+
+          if (layer === "behind" && oz >= 0) continue;
+          if (layer === "front" && oz < 0) continue;
+
+          const ox = cx + Math.cos(ang) * rx;
+          const oy = cy + Math.sin(ang) * ry;
+
+          // 16-frame looping crystal orb animation
+          const frameFps = 16;
+          const frameIdx = Math.floor((t * frameFps + i * 5) % 16);
+          const imgSrc = crystalOrbFrames[frameIdx];
+          const img = getSpriteImage(imgSrc);
+
+          if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            // Dynamic 3D depth scaling (larger and brighter in front, smaller in back)
+            const depthScale = 0.80 + (oz + 1.0) * 0.20;
+            const depthAlpha = 0.75 + (oz + 1.0) * 0.12;
+            ctx.globalAlpha = Math.max(0, Math.min(1, depthAlpha));
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 8 * depthScale;
+            ctx.translate(ox, oy);
+            ctx.scale(depthScale, depthScale);
+            ctx.drawImage(img, -12, -12, 24, 24);
+            ctx.restore();
+          }
+        }
       }
 
       function drawPlayerAvatar(ctx) {
@@ -2938,6 +2991,9 @@
           }
           ctx.restore();
         }
+
+        // ── 3D Crystal Orbs Orbit (Behind Character Layer) ──
+        drawCrystalOrbs(ctx, px, py, pw, ph, "behind");
 
         ctx.save();
         ctx.translate(px + pw / 2, py + ph / 2);
@@ -3426,7 +3482,22 @@
           ctx.restore();
         }
 
+        // Mod Mode Transformation Invert / White Strobe Flash (100% Zero-Lag Hardware Accelerated)
+        if (player.modTransformTimer > 0) {
+          const isWhiteStrobe = Math.sin((0.65 - player.modTransformTimer) * 48) > 0.0;
+          if (isWhiteStrobe) {
+            ctx.save();
+            ctx.globalCompositeOperation = "source-atop";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.fillRect(-24, -32, 48, 48);
+            ctx.restore();
+          }
+        }
+
         ctx.restore();
+
+        // ── 3D Crystal Orbs Orbit (Front Character Layer) ──
+        drawCrystalOrbs(ctx, px, py, pw, ph, "front");
 
         // ── Moderator Mode Front ElectroMagnet Electric Arcs (Foreground Overlay) ──
         if (player.moderatorMode && !player.isDead) {
