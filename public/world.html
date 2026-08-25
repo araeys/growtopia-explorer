@@ -1412,6 +1412,9 @@
   <button class="world-menu-item" id="world-menu-save-dat">Save World (.DAT)</button>
   <button class="world-menu-item" id="world-menu-save-json">Export .gtworld JSON</button>
   <div class="world-menu-divider"></div>
+  <button class="world-menu-item" id="world-menu-camera-shake">
+    <span id="camera-shake-status-text">Camera Shake: ON</span>
+  </button>
   <button class="world-menu-item" id="world-menu-render-png">Render Full World PNG</button>
 </div>
 
@@ -2029,6 +2032,30 @@
   // Restore autosaved world if available
   engine.loadFromLocalStorage();
   window.addEventListener('beforeunload', () => engine.saveToLocalStorage());
+
+  // ── Camera Shake Settings Toggle ──
+  const shakeMenuItem = document.getElementById('world-menu-camera-shake');
+  const shakeStatusText = document.getElementById('camera-shake-status-text');
+
+  function updateCameraShakeMenu() {
+    if (typeof engine.getCameraShake === 'function') {
+      const isShake = engine.getCameraShake();
+      if (shakeStatusText) shakeStatusText.textContent = isShake ? "Camera Shake: ON" : "Camera Shake: OFF";
+      if (shakeMenuItem) shakeMenuItem.style.color = isShake ? "#38bdf8" : "#94a3b8";
+    }
+  }
+
+  shakeMenuItem?.addEventListener('click', () => {
+    if (typeof engine.getCameraShake === 'function') {
+      const next = !engine.getCameraShake();
+      engine.setCameraShake(next);
+      updateCameraShakeMenu();
+    }
+  });
+
+  document.getElementById('world-settings-btn')?.addEventListener('click', () => {
+    updateCameraShakeMenu();
+  });
 
   // ── Render / Export PNG Upscale Modal Handlers ──
   const renderModal = document.getElementById('render-export-modal');

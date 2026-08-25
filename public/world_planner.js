@@ -122,6 +122,13 @@
       const audioBufferCache = new Map();
       let audioContext = null;
 
+      // Settings State
+      let cameraShakeEnabled = true;
+      try {
+        const savedShake = localStorage.getItem("gt_camera_shake_enabled");
+        if (savedShake !== null) cameraShakeEnabled = (savedShake === "true");
+      } catch(e) {}
+
       // Interaction State
       let isPanning = false;
       let panStartX = 0;
@@ -582,33 +589,31 @@
           if (p.type === "wind_streak") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vx *= 0.96;
-            p.vy *= 0.96;
+            p.vx *= 0.97;
+            p.vy *= 0.97;
             const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = Math.sin(progress * Math.PI) * (p.baseAlpha || 0.65);
-            if (alpha > 0.01) {
+            const alpha = Math.sin(progress * Math.PI) * (p.baseAlpha || 0.22);
+            if (alpha > 0.005) {
               ctx.save();
               const dir = p.dir || 1;
-              const tailLen = p.length * (0.7 + 0.3 * Math.sin(progress * Math.PI));
+              const tailLen = p.length * (0.6 + 0.4 * Math.sin(progress * Math.PI));
               const headX = p.x;
               const tailX = p.x - tailLen * dir;
               const headY = p.y;
-              const tailY = p.y + (p.vy * 4);
+              const tailY = p.y + (p.vy * 3);
 
               const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
               grad.addColorStop(0, "rgba(240, 249, 255, 0)");
-              grad.addColorStop(0.7, p.color || "rgba(224, 242, 254, 0.85)");
-              grad.addColorStop(1, "rgba(255, 255, 255, 0.95)");
+              grad.addColorStop(0.5, p.color || "rgba(224, 242, 254, 0.55)");
+              grad.addColorStop(1, "rgba(255, 255, 255, 0.75)");
 
               ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
               ctx.strokeStyle = grad;
-              ctx.lineWidth = p.lineWidth || 1.3;
+              ctx.lineWidth = p.lineWidth || 1.1;
               ctx.lineCap = "round";
-              ctx.shadowColor = "rgba(186, 230, 253, 0.4)";
-              ctx.shadowBlur = 3;
               ctx.beginPath();
               const midX = (tailX + headX) / 2;
-              const midY = (tailY + headY) / 2 + Math.sin((p.waveOffset || 0) + progress * Math.PI * 2) * 1.5;
+              const midY = (tailY + headY) / 2 + Math.sin((p.waveOffset || 0) + progress * Math.PI * 1.5) * 1.0;
               ctx.moveTo(tailX, tailY);
               ctx.quadraticCurveTo(midX, midY, headX, headY);
               ctx.stroke();
@@ -912,24 +917,40 @@
         // 2. Apply Viewport Matrix (pan + zoom) for World Tiles & Grid
         let transformShakeX = 0;
         let transformShakeY = 0;
-        if (player.modTransformTimer > 0) {
-          const shakeFactor = player.modTransformTimer / 0.65;
-          const maxShake = 3.5 * shakeFactor;
-          transformShakeX = (Math.random() - 0.5) * maxShake * 2;
-          transformShakeY = (Math.random() - 0.5) * maxShake * 2;
-        }
-
         let impactShakeX = 0;
         let impactShakeY = 0;
-        if (player.impactShakeTimer > 0) {
-          const impactProg = player.impactShakeTimer / 0.35;
-          const impactMag = 7.5 * Math.pow(impactProg, 1.2);
-          impactShakeX = (Math.random() - 0.5) * impactMag * 2;
-          impactShakeY = (Math.random() - 0.5) * impactMag * 2;
+        let runShakeX = 0;
+        let runShakeY = 0;
+
+        if (cameraShakeEnabled) {
+          if (player.modTransformTimer > 0) {
+            const shakeFactor = player.modTransformTimer / 0.65;
+            const maxShake = 3.5 * shakeFactor;
+            transformShakeX = (Math.random() - 0.5) * maxShake * 2;
+            transformShakeY = (Math.random() - 0.5) * maxShake * 2;
+          }
+
+          if (player.impactShakeTimer > 0) {
+            const impactProg = player.impactShakeTimer / 0.35;
+            const impactMag = 7.5 * Math.pow(impactProg, 1.2);
+            impactShakeX = (Math.random() - 0.5) * impactMag * 2;
+            impactShakeY = (Math.random() - 0.5) * impactMag * 2;
+          }
+
+          // Smooth rhythmic running camera bob / micro-shake when sprinting
+          if (player.active && player.isGrounded && Math.abs(player.vx) > 0.6 && player.state === "walk") {
+            const walkBlend = player.walkBlend !== undefined ? player.walkBlend : 1.0;
+            const shakeIntensity = Math.min(1.0, Math.abs(player.vx) / 3.2);
+            runShakeX = Math.cos(player.walkPhase * 2) * 0.45 * shakeIntensity * walkBlend;
+            runShakeY = Math.abs(Math.sin(player.walkPhase)) * 0.80 * shakeIntensity * walkBlend;
+          }
         }
 
         ctx.save();
-        ctx.translate(viewport.x + transformShakeX + impactShakeX, viewport.y + transformShakeY + impactShakeY);
+        ctx.translate(
+          viewport.x + transformShakeX + impactShakeX + runShakeX,
+          viewport.y + transformShakeY + impactShakeY + runShakeY
+        );
         ctx.scale(viewport.zoom, viewport.zoom);
 
         // Mask tiles strictly inside World Rectangle (0, 0, worldW, worldH)
@@ -1174,23 +1195,7 @@
           ctx.restore();
         }
 
-        // 12. Lethal Hazard Hit Screen Flash & Red Shockwave Overlay
-        if (player.hitFlashTimer > 0) {
-          ctx.save();
-          const viewW = cw / dpr;
-          const viewH = ch / dpr;
-          const hitProg = player.hitFlashTimer / 0.25;
-          // Clean red shockwave overlay that fades out quickly
-          ctx.fillStyle = `rgba(220, 38, 38, ${0.26 * hitProg})`;
-          ctx.fillRect(0, 0, viewW, viewH);
-          // Initial crisp white impact flash
-          if (hitProg > 0.65) {
-            const whiteAlpha = 0.35 * ((hitProg - 0.65) / 0.35);
-            ctx.fillStyle = `rgba(255, 255, 255, ${whiteAlpha})`;
-            ctx.fillRect(0, 0, viewW, viewH);
-          }
-          ctx.restore();
-        }
+
 
         ctx.restore(); // Restore dpr scale
       }
@@ -2850,7 +2855,7 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Continuous Movement Tracking (Wind only activates after moving for at least 1.0 second!)
+        // Continuous Movement & Running Tracking
         const playerSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
         const isPlayerMoving = (playerSpeed > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump) && !player.isDead;
         if (isPlayerMoving) {
@@ -2859,17 +2864,25 @@
           player.continuousMoveTimer = 0;
         }
 
+        // Running timer for serious face expression (active after >= 1.5s running on ground)
+        const isRunningOnGround = (player.state === "walk" && player.isGrounded && Math.abs(player.vx) > 0.8) && !player.isDead;
+        if (isRunningOnGround) {
+          player.continuousRunTimer = (player.continuousRunTimer || 0) + dt;
+        } else {
+          player.continuousRunTimer = Math.max(0, (player.continuousRunTimer || 0) - dt * 3.0);
+        }
+
         // ONLY spawn wind effects when the character has moved continuously for >= 1.0 second
         if (isPlayerMoving && player.continuousMoveTimer >= 1.0) {
           player.windTrailTimer = (player.windTrailTimer || 0) + dt;
-          if (player.windTrailTimer >= 0.09) {
+          if (player.windTrailTimer >= 0.10) {
             player.windTrailTimer = 0;
             const facing = player.facing || 1;
             const backOffset = facing > 0 ? -4 : (player.width + 4);
             const spawnX = player.x + backOffset + (Math.random() - 0.5) * 4;
             const spawnY = player.y + player.height - 12 + (Math.random() - 0.5) * 8;
-            const driftVx = -player.vx * 0.15 + (Math.random() - 0.5) * 0.20;
-            const driftVy = -player.vy * 0.10 - (0.15 + Math.random() * 0.20);
+            const driftVx = -player.vx * 0.12 + (Math.random() - 0.5) * 0.15;
+            const driftVy = -player.vy * 0.08 - (0.12 + Math.random() * 0.15);
 
             gameParticles.push({
               type: "wind_breeze",
@@ -2877,18 +2890,18 @@
               y: spawnY,
               vx: driftVx,
               vy: driftVy,
-              scale: 0.60 + Math.random() * 0.30,
+              scale: 0.55 + Math.random() * 0.25,
               rot: (Math.random() - 0.5) * 0.4,
-              rotSpeed: (Math.random() - 0.5) * 1.5,
-              life: 0.40 + Math.random() * 0.10,
-              maxLife: 0.40 + Math.random() * 0.10
+              rotSpeed: (Math.random() - 0.5) * 1.2,
+              life: 0.45 + Math.random() * 0.12,
+              maxLife: 0.45 + Math.random() * 0.12
             });
           }
 
           // Dynamic Speed Wind Streak Lines (Streamline speed ribbons)
           if (playerSpeed > 0.6) {
             player.speedStreakTimer = (player.speedStreakTimer || 0) + dt;
-            const streakInterval = playerSpeed > 2.5 ? 0.045 : 0.070;
+            const streakInterval = playerSpeed > 2.5 ? 0.060 : 0.090;
             if (player.speedStreakTimer >= streakInterval) {
               player.speedStreakTimer = 0;
               const streakDir = player.vx !== 0 ? (player.vx > 0 ? 1 : -1) : (player.facing || 1);
@@ -2896,21 +2909,21 @@
               for (let i = 0; i < streakCount; i++) {
                 const sX = player.x + (streakDir > 0 ? -2 : player.width + 2) + (Math.random() - 0.5) * 4;
                 const sY = player.y + 4 + Math.random() * (player.height - 8);
-                const sLen = 25 + Math.random() * 30 + Math.min(25, playerSpeed * 4.5);
+                const sLen = 22 + Math.random() * 26 + Math.min(20, playerSpeed * 3.5);
                 gameParticles.push({
                   type: "wind_streak",
                   x: sX,
                   y: sY,
-                  vx: -player.vx * 0.30 + (Math.random() - 0.5) * 0.25,
-                  vy: -player.vy * 0.06 + (Math.random() - 0.5) * 0.12,
+                  vx: -player.vx * 0.18 + (Math.random() - 0.5) * 0.15,
+                  vy: -player.vy * 0.04 + (Math.random() - 0.5) * 0.08,
                   dir: streakDir,
                   length: sLen,
-                  lineWidth: 1.2 + Math.random() * 0.6,
+                  lineWidth: 1.0 + Math.random() * 0.4,
                   waveOffset: Math.random() * Math.PI * 2,
-                  baseAlpha: 0.65 + Math.random() * 0.25,
-                  color: Math.random() < 0.4 ? "rgba(186, 230, 253, 0.9)" : "rgba(240, 249, 255, 0.85)",
-                  life: 0.26 + Math.random() * 0.08,
-                  maxLife: 0.26 + Math.random() * 0.08
+                  baseAlpha: 0.22 + Math.random() * 0.08,
+                  color: Math.random() < 0.4 ? "rgba(186, 230, 253, 0.65)" : "rgba(240, 249, 255, 0.55)",
+                  life: 0.48 + Math.random() * 0.12,
+                  maxLife: 0.48 + Math.random() * 0.12
                 });
               }
             }
@@ -3523,7 +3536,12 @@
             const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
-            const imgHeadMask = isBlinking ? getSpriteImage("character_base_assets/gt_parts/head_blink.png") : getSpriteImage("character_base_assets/gt_parts/head_mask.png");
+            const isSeriousFace = (player.continuousRunTimer >= 1.5) && player.isGrounded && !player.moderatorMode;
+            const imgHeadMask = isBlinking ?
+              getSpriteImage("character_base_assets/gt_parts/head_blink.png") :
+              (isSeriousFace ?
+                getSpriteImage("character_base_assets/gt_parts/head_serious.png") :
+                getSpriteImage("character_base_assets/gt_parts/head_mask.png"));
 
             const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
 
@@ -4614,6 +4632,13 @@
         toggleMusic,
         setMusicBpm,
         getMusicState: () => ({ ...sequencer }),
+        setCameraShake: (enabled) => {
+          cameraShakeEnabled = Boolean(enabled);
+          try { localStorage.setItem("gt_camera_shake_enabled", cameraShakeEnabled ? "true" : "false"); } catch(e) {}
+          onStatusMessage(cameraShakeEnabled ? "Camera Shake: ON" : "Camera Shake: OFF");
+          render();
+        },
+        getCameraShake: () => cameraShakeEnabled,
         loadPreset,
         createCustomWorld,
         saveToLocalStorage,
