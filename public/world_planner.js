@@ -1567,23 +1567,26 @@
         let smoothAnchorY = 0;
         let isZoomAnimating = false;
 
+        let zoomAnchorWorldX = 0;
+        let zoomAnchorWorldY = 0;
+        let zoomScreenX = 0;
+        let zoomScreenY = 0;
+
         function stepSmoothZoom() {
           const diff = smoothZoomTarget - viewport.zoom;
-          if (Math.abs(diff) < 0.002) {
-            const finalZoom = smoothZoomTarget;
-            viewport.x = smoothAnchorX - (smoothAnchorX - viewport.x) * (finalZoom / viewport.zoom);
-            viewport.y = smoothAnchorY - (smoothAnchorY - viewport.y) * (finalZoom / viewport.zoom);
-            viewport.zoom = finalZoom;
+          if (Math.abs(diff) < 0.001) {
+            viewport.zoom = smoothZoomTarget;
+            viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
+            viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
             isZoomAnimating = false;
             render();
             return;
           }
 
-          const currentZoom = viewport.zoom;
-          const nextZoom = currentZoom + diff * 0.70;
-          viewport.x = smoothAnchorX - (smoothAnchorX - viewport.x) * (nextZoom / currentZoom);
-          viewport.y = smoothAnchorY - (smoothAnchorY - viewport.y) * (nextZoom / currentZoom);
-          viewport.zoom = nextZoom;
+          // Smooth exponential easing (0.22 per frame) - silky, responsive, zero jitter
+          viewport.zoom += diff * 0.22;
+          viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
+          viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
 
           render();
           if (typeof requestAnimationFrame !== "undefined") {
@@ -1594,10 +1597,16 @@
         canvas.addEventListener("wheel", event => {
           event.preventDefault();
           const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
-          smoothAnchorX = event.clientX - rect.left;
-          smoothAnchorY = event.clientY - rect.top;
+          const sx = event.clientX - rect.left;
+          const sy = event.clientY - rect.top;
 
-          const zoomFactor = event.deltaY < 0 ? 1.30 : 0.75;
+          // Compute world space coordinate under cursor once on wheel tick
+          zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
+          zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
+          zoomScreenX = sx;
+          zoomScreenY = sy;
+
+          const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
           smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
 
           if (!isZoomAnimating) {
@@ -2371,40 +2380,100 @@
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Moderator Mode Rotating Sunburst Aura with Pulsing Opacity & Cosmic Sparkles
+        // ── Enhanced Legendary Moderator Celestial Aura & Orbital Energy Rings ──
         if (player.moderatorMode) {
           ctx.save();
-          const auraImg = getSpriteImage("character_base_assets/mod_sunburst_aura.png");
-          if (auraImg && auraImg.complete && auraImg.naturalWidth > 0) {
+          const centerX = px + pw / 2;
+          const centerY = py + ph / 2;
+          const t = player.animTimer;
+
+          // 1. Soft Radiant Radial Core Glow
+          const radialGlow = ctx.createRadialGradient(centerX, centerY, 4, centerX, centerY, 38);
+          radialGlow.addColorStop(0, "rgba(168, 85, 247, 0.45)");
+          radialGlow.addColorStop(0.5, "rgba(56, 189, 248, 0.20)");
+          radialGlow.addColorStop(1, "rgba(168, 85, 247, 0)");
+          ctx.fillStyle = radialGlow;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 2. Rotating Diamond Flare Starburst Rays
+          ctx.save();
+          ctx.translate(centerX, centerY);
+          ctx.rotate(t * 0.6);
+          const rayCount = 8;
+          for (let r = 0; r < rayCount; r++) {
             ctx.save();
-            ctx.translate(px + pw / 2, py + ph / 2);
-            // Smoothly pulsing opacity between 0.35 and 0.65!
-            const auraPulse = 0.35 + 0.3 * Math.sin(player.animTimer * 4);
-            ctx.globalAlpha = auraPulse;
-            ctx.globalCompositeOperation = "screen";
-            ctx.rotate(player.animTimer * 0.8);
-            ctx.drawImage(auraImg, -38, -38, 76, 76);
+            ctx.rotate((r * Math.PI * 2) / rayCount);
+            const rayLen = (r % 2 === 0 ? 30 : 22) + Math.sin(t * 4 + r) * 3;
+            const rayGrad = ctx.createLinearGradient(0, 0, 0, -rayLen);
+            rayGrad.addColorStop(0, "rgba(255, 255, 255, 0.65)");
+            rayGrad.addColorStop(0.4, r % 2 === 0 ? "rgba(0, 229, 255, 0.45)" : "rgba(192, 132, 252, 0.45)");
+            rayGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+            ctx.fillStyle = rayGrad;
+            ctx.beginPath();
+            ctx.moveTo(-2.2, 0);
+            ctx.lineTo(0, -rayLen);
+            ctx.lineTo(2.2, 0);
+            ctx.closePath();
+            ctx.fill();
             ctx.restore();
           }
+          ctx.restore();
 
-          const pulse = 0.6 + 0.3 * Math.sin(player.animTimer * 6);
-          ctx.shadowColor = "#c084fc";
-          ctx.shadowBlur = 12 * pulse;
-          ctx.strokeStyle = "rgba(168, 85, 247, " + pulse + ")";
-          ctx.lineWidth = 2.0 / viewport.zoom;
+          // 3. Primary Celestial Orbital Ring (Tilted at 18 degrees with glowing cyan/purple sheen)
+          ctx.save();
+          ctx.translate(centerX, centerY);
+          ctx.rotate(0.32);
+          const ringPulse = 0.75 + 0.25 * Math.sin(t * 3.5);
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 10 * ringPulse;
+          ctx.strokeStyle = "rgba(56, 189, 248, " + ringPulse + ")";
+          ctx.lineWidth = 1.8;
           ctx.beginPath();
-          ctx.ellipse(px + pw / 2, py + ph / 2, pw * 0.85, ph * 0.7, 0, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, pw * 0.95, ph * 0.72, 0, 0, Math.PI * 2);
           ctx.stroke();
 
-          const sparkleCount = 4;
-          for (let s = 0; s < sparkleCount; s++) {
-            const sAngle = player.animTimer * 3 + (s * Math.PI * 2) / sparkleCount;
-            const sx = px + pw / 2 + Math.cos(sAngle) * (pw * 0.9);
-            const sy = py + ph / 2 + Math.sin(sAngle) * (ph * 0.65);
-            ctx.fillStyle = s % 2 === 0 ? "#fde047" : "#00e5ff";
+          // Secondary Counter-Rotating Celestial Ring
+          ctx.rotate(-0.64);
+          ctx.shadowColor = "#c084fc";
+          ctx.shadowBlur = 8 * ringPulse;
+          ctx.strokeStyle = "rgba(192, 132, 252, " + (ringPulse * 0.85) + ")";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, pw * 0.88, ph * 0.68, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          // 4. Orbiting Celestial Gems (Gold Sun Gem & Neon Cyan Astral Spheres with specular glint)
+          const orbCount = 4;
+          for (let o = 0; o < orbCount; o++) {
+            const orbAngle = t * 2.2 + (o * Math.PI * 2) / orbCount;
+            const ox = centerX + Math.cos(orbAngle) * (pw * 0.96);
+            const oy = centerY + Math.sin(orbAngle) * (ph * 0.70);
+            const isGold = o % 2 === 0;
+
+            // Outer Glow Halo
+            ctx.save();
+            ctx.shadowColor = isGold ? "#fbbf24" : "#00e5ff";
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = isGold ? "#f59e0b" : "#0284c7";
             ctx.beginPath();
-            ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
+            ctx.arc(ox, oy, 3.2, 0, Math.PI * 2);
             ctx.fill();
+
+            // Core Solid Color
+            ctx.fillStyle = isGold ? "#fef08a" : "#67e8f9";
+            ctx.beginPath();
+            ctx.arc(ox, oy, 2.0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Specular Highlight Spark
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(ox - 0.7, oy - 0.7, 0.9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
           }
           ctx.restore();
         }
@@ -2412,7 +2481,7 @@
         ctx.save();
         ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
         if (player.facing < 0) ctx.scale(-1, 1);
-        if (player.moderatorMode) ctx.globalAlpha = 0.94;
+        if (player.moderatorMode) ctx.globalAlpha = 0.96;
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
@@ -2423,9 +2492,12 @@
         const isBlinking = (player.animTimer % 3.8) < 0.14;
 
         // Mod Flying Hover Float Wave
-        const floatBob = isFloating ? Math.sin(player.animTimer * 5) * 2.2 : 0;
-        const breatheBob = player.isGrounded ? Math.sin(player.animTimer * 4) * 0.75 : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
-        const stepBob = isWalking ? Math.abs(Math.sin(player.animTimer * 14)) * 0.8 : 0;
+        const floatBob = isFloating ? Math.sin(player.animTimer * 4.5) * 2.2 : 0;
+        
+        // Rhythmic walking step bounce (Only active when walking on solid ground blocks, disabled when floating!)
+        const walkStepBob = (isWalking && player.isGrounded && !isFloating) ? Math.abs(Math.sin(player.animTimer * 16)) * 2.2 : 0;
+
+        const breatheBob = player.isGrounded ? (Math.sin(player.animTimer * 4) * 0.75 - walkStepBob) : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
         const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
 
         // Dynamic walking leg step lift (alternating up & down naturally during walking!)
@@ -2439,6 +2511,9 @@
         const isPunching = player.punchTimer > 0;
         const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
         const punchSpinAngle = isPunching ? -punchProgress * Math.PI * 2 : 0;
+
+        // Opposing gentle vertical slow hover wave for floating legs (opposite directions!)
+        const legHoverWave = Math.sin(player.animTimer * 4.0) * 1.8;
 
         const skin = player.skinStyle || "classic";
 
@@ -2458,7 +2533,6 @@
           const imgHead = getSpriteImage(headSrc);
 
           // 1. Back Arm (Tangan Kanan - Shoulder at 8, 4)
-          // Reference Flight Pose: Back arm raised backwards/upwards (-0.75 rad)
           let backArmAngle = 0;
           if (isFloating) backArmAngle = -0.75 + Math.sin(player.animTimer * 5) * 0.1;
           else if (isFalling) backArmAngle = -1.1;
@@ -2467,20 +2541,20 @@
           else backArmAngle = -idleArmWiggle;
 
           ctx.save();
-          ctx.translate(8, 4 + breatheBob - stepBob);
+          ctx.translate(8, 4 + breatheBob);
           ctx.rotate(backArmAngle);
           if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
             ctx.drawImage(imgArmR, -24, -20, 32, 32);
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Standard y: 8 during idle/walk, lowered to y: 10 ONLY during floating!)
+          // 2. Back Leg (Kaki Kanan - Standard y: 8, opposing hover wave in float mode)
           let legRAngle = 0;
-          if (isFloating) legRAngle = 0.35 + Math.sin(player.animTimer * 5) * 0.08;
+          if (isFloating) legRAngle = 0.40 + Math.sin(player.animTimer * 4) * 0.08;
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
-          const legRY = isFloating ? (10 + floatBob) : (8 - legRLift);
+          const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift);
           ctx.save();
           ctx.translate(8, legRY);
           ctx.rotate(legRAngle);
@@ -2489,14 +2563,14 @@
           }
           ctx.restore();
 
-          // 3. Front Leg (Kaki Kiri - Standard y: 8 during idle/walk, lowered to y: 10 ONLY during floating!)
+          // 3. Front Leg (Kaki Kiri - Rotated DOWNWARDS during jump/float, opposing hover wave!)
           let legLAngle = 0;
-          if (isFloating) legLAngle = -0.35 - Math.sin(player.animTimer * 5) * 0.08;
-          else if (isFalling) legLAngle = -0.3;
-          else if (isJumping) legLAngle = -0.25;
+          if (isFloating) legLAngle = 0.30 - Math.sin(player.animTimer * 4) * 0.08; // Downwards angle!
+          else if (isFalling) legLAngle = 0.30; // Downwards angle!
+          else if (isJumping) legLAngle = 0.25; // Downwards angle!
           else if (isWalking) legLAngle = -walkCycle * 0.4;
 
-          const legLY = isFloating ? (10 + floatBob) : (8 - legLLift);
+          const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift);
           ctx.save();
           ctx.translate(-4, legLY);
           ctx.rotate(legLAngle);
@@ -2507,7 +2581,7 @@
 
           // 4. Torso & Body (Bobbing with breathing & step bounce - Upright, no hunch)
           ctx.save();
-          ctx.translate(0, breatheBob - stepBob);
+          ctx.translate(0, breatheBob);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
@@ -2519,8 +2593,6 @@
           ctx.restore();
 
           // 6. Front Arm (Tangan Kiri - Shoulder at -7, 4, DRAWN ON TOP of shirt!)
-          // Reference Flight Pose: Front arm angled backwards/downwards (0.45 rad)
-          // Placing/Punch: Rapid 360-degree spin throw!
           let frontArmAngle = 0;
           if (isPunching) {
             frontArmAngle = punchSpinAngle;
@@ -2537,7 +2609,7 @@
           }
 
           ctx.save();
-          ctx.translate(-7, 4 + breatheBob - stepBob);
+          ctx.translate(-7, 4 + breatheBob);
           ctx.rotate(frontArmAngle);
           if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
             ctx.drawImage(imgArmL, -9, -20, 32, 32);
@@ -2549,10 +2621,10 @@
           const darkSkin = "#d88b56";
           const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
 
-          // 1. Back Leg
+          // 1. Back Leg (Opposing hover wave)
           const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
           ctx.save();
-          ctx.translate(0, isFloating ? (floatBob + 2) : 0);
+          ctx.translate(0, isFloating ? (floatBob + 2 + legHoverWave) : 0);
           ctx.rotate(cLegRAngle);
           ctx.fillStyle = "#1e3a8a";
           ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
@@ -2562,10 +2634,10 @@
           ctx.fillRect(-7, 13, 6, 1);
           ctx.restore();
 
-          // 2. Front Leg
-          const cLegLAngle = isFloating ? -0.35 : (isFalling ? -0.3 : 0);
+          // 2. Front Leg (Rotated DOWNWARDS, opposing hover wave)
+          const cLegLAngle = isFloating ? 0.30 : (isFalling ? 0.25 : (isJumping ? 0.20 : 0));
           ctx.save();
-          ctx.translate(0, isFloating ? (floatBob + 2) : 0);
+          ctx.translate(0, isFloating ? (floatBob + 2 - legHoverWave) : 0);
           ctx.rotate(cLegLAngle);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
@@ -2577,7 +2649,7 @@
 
           // 3. Torso
           ctx.save();
-          ctx.translate(0, breatheBob - stepBob);
+          ctx.translate(0, breatheBob);
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-8, -6, 16, 10);
           ctx.fillStyle = "#38bdf8";
