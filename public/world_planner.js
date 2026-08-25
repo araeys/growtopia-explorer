@@ -505,6 +505,10 @@
             p.vx *= 0.95; // air drag
             p.rotation += (p.rotSpeed || 0) * dt;
 
+            // Rapid Strobe / Flicker Animation
+            const isFlickerOn = Math.sin((p.maxLife - p.life) * 42) > -0.2;
+            if (!isFlickerOn) continue;
+
             const progress = 1.0 - (p.life / p.maxLife);
             const alpha = Math.max(0, 1.0 - Math.pow(progress, 2.0));
             const img = getSpriteImage(p.src);
@@ -518,6 +522,29 @@
               const popScale = p.scale * (progress < 0.2 ? (0.5 + (progress / 0.2) * 0.7) : (1.2 - (progress - 0.2) * 0.4));
               ctx.scale(popScale, popScale);
               ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(img, -10, -10, 20, 20);
+              ctx.restore();
+            }
+            continue;
+          }
+
+          if (p.type === "purple_sparkle") {
+            p.x += p.vx;
+            p.y += p.vy;
+            const progress = 1.0 - (p.life / p.maxLife);
+            const frameIdx = Math.min(5, Math.max(0, Math.floor(progress * 6)));
+            const frameSrc = purpleSparkleFrames[frameIdx];
+            const img = getSpriteImage(frameSrc);
+
+            if (img && img.complete && img.naturalWidth > 0) {
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              const alpha = progress < 0.2 ? (progress / 0.2) : Math.max(0, 1.0 - (progress - 0.2) / 0.8);
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+              ctx.shadowColor = "#c084fc";
+              ctx.shadowBlur = 8 * p.scale;
+              ctx.translate(p.x, p.y);
+              ctx.scale(p.scale, p.scale);
               ctx.drawImage(img, -10, -10, 20, 20);
               ctx.restore();
             }
@@ -2508,6 +2535,30 @@
 
         // Moderator Mode: Ultra-Fast Free 8-Way Flight & Noclip
         if (player.moderatorMode) {
+          player.sparkleTimer = (player.sparkleTimer || 0) + dt;
+          const nextInterval = player.nextSparkleInterval || 2.2;
+          if (player.sparkleTimer >= nextInterval) {
+            player.sparkleTimer = 0;
+            player.nextSparkleInterval = 2.0 + Math.random() * 1.0; // 2 to 3 seconds
+            const spawnCount = 2; // spawn 2 sparkles
+            for (let s = 0; s < spawnCount; s++) {
+              const offsetX = (Math.random() - 0.5) * 36;
+              const offsetY = (Math.random() - 0.5) * 38 - 4;
+              const lifeTime = 0.55 + Math.random() * 0.20;
+              gameParticles.push({
+                type: "purple_sparkle",
+                x: (player.x + player.width / 2) + offsetX,
+                y: (player.y + player.height / 2) + offsetY,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: -(0.3 + Math.random() * 0.4),
+                scale: 0.80 + Math.random() * 0.40,
+                life: lifeTime,
+                maxLife: lifeTime
+              });
+            }
+            requestRender();
+          }
+
           const modSpeed = 8.5;
           if (player.keys.left) {
             player.vx = -modSpeed;
@@ -2775,6 +2826,13 @@
         modPortalFrames.push(`particles/mod_portal/ModPortal_${pad}.png`);
       }
 
+      // ── Mod Sparkle Particle Sequence (6 Frames) ──
+      const purpleSparkleFrames = [];
+      for (let i = 1; i <= 6; i++) {
+        const pad = String(i).padStart(3, "0");
+        purpleSparkleFrames.push(`particles/sparkles/PurpleStar_${pad}.png`);
+      }
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2807,6 +2865,9 @@
           getSpriteImage(path);
         });
         modPortalFrames.forEach(path => {
+          getSpriteImage(path);
+        });
+        purpleSparkleFrames.forEach(path => {
           getSpriteImage(path);
         });
       }
@@ -2923,10 +2984,10 @@
           if (portalImg && portalImg.complete && portalImg.naturalWidth > 0) {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-            const portalSize = 74;
+            const portalSize = 54;
             ctx.globalAlpha = 0.88;
-            ctx.shadowColor = "#a855f7";
-            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#692ff6";
+            ctx.shadowBlur = 8;
             ctx.drawImage(portalImg, centerX - portalSize / 2, centerY - portalSize / 2 + 1, portalSize, portalSize);
             ctx.restore();
           }
@@ -3612,25 +3673,10 @@
         ctx.save();
         const isMod = player.moderatorMode;
         const isTransforming = player.modTransformTimer > 0;
+        const transProg = isTransforming ? (1.0 - (player.modTransformTimer / 0.65)) : 1.0;
         
-        let nameText = isMod ? "[MOD] Raey" : "Raey";
-        let textJitterX = 0;
-        let textJitterY = 0;
-        let isGlitching = false;
-
-        // Cyber Holographic Text Glitch Animation on Transformation
-        if (isTransforming) {
-          isGlitching = true;
-          textJitterX = (Math.random() - 0.5) * 3.5;
-          textJitterY = (Math.random() - 0.5) * 2.0;
-          const glitchChars = "!@#$%^&*<>/?~01R43Y_+-=";
-          if (Math.random() < 0.70) {
-            nameText = (Math.random() < 0.4 ? "[MOD] " : "") + nameText.split("").map(ch => {
-              if (ch === " " || ch === "[" || ch === "]") return ch;
-              return Math.random() < 0.45 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch;
-            }).join("");
-          }
-        }
+        // Sleek and stylish name transition without chaotic text scrambling
+        const nameText = isMod ? "[MOD] Raey" : "Raey";
 
         ctx.font = "bold 10px 'Outfit', 'Inter', sans-serif";
         const textMetrics = ctx.measureText ? ctx.measureText(nameText) : { width: 30 };
@@ -3640,11 +3686,11 @@
         const paddingH = 6;
         const boxW = flagSize + 5 + textW + paddingH * 2;
         const boxH = 18;
-        const boxX = centerX - boxW / 2 + textJitterX;
-        const boxY = topY - boxH + textJitterY;
+        const boxX = centerX - boxW / 2;
+        const boxY = topY - boxH;
 
         // Pill background
-        ctx.fillStyle = isGlitching ? (Math.random() < 0.5 ? "rgba(147, 51, 234, 0.92)" : "rgba(14, 165, 233, 0.92)") : "rgba(9, 13, 26, 0.88)";
+        ctx.fillStyle = "rgba(9, 13, 26, 0.88)";
         ctx.beginPath();
         if (typeof ctx.roundRect === "function") {
           ctx.roundRect(boxX, boxY, boxW, boxH, 5);
@@ -3653,16 +3699,35 @@
         }
         ctx.fill();
 
-        // Border
-        ctx.strokeStyle = isGlitching ? "#ffffff" : (isMod ? "#a855f7" : "rgba(56, 189, 248, 0.5)");
+        // Border with elegant neon pulse on transform
+        ctx.strokeStyle = isMod ? "#a855f7" : "rgba(56, 189, 248, 0.5)";
         ctx.lineWidth = 1.2 / viewport.zoom;
-        if (isMod || isGlitching) {
-          ctx.shadowColor = isGlitching ? "#38bdf8" : "#a855f7";
-          ctx.shadowBlur = isGlitching ? 10 : 6;
+        if (isMod || isTransforming) {
+          ctx.shadowColor = isTransforming ? "#38bdf8" : "#a855f7";
+          ctx.shadowBlur = isTransforming ? (6 + 6 * Math.sin(transProg * Math.PI)) : 6;
         }
         ctx.stroke();
 
-        // Flag Logo (from photo 1)
+        // Sleek Holographic Light Sweep Across Pill on Transformation
+        if (isTransforming) {
+          const sweepX = boxX + (boxW + 24) * transProg - 12;
+          const sweepGrad = ctx.createLinearGradient(sweepX - 10, boxY, sweepX + 10, boxY);
+          sweepGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
+          sweepGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.40)");
+          sweepGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+          ctx.save();
+          ctx.fillStyle = sweepGrad;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(boxX, boxY, boxW, boxH, 5);
+          } else {
+            ctx.rect(boxX, boxY, boxW, boxH);
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Flag Logo
         const flagX = boxX + paddingH;
         const flagY = boxY + (boxH - flagSize) / 2;
         if (flagLogoImg && flagLogoImg.complete && flagLogoImg.naturalWidth > 0) {
@@ -3677,34 +3742,26 @@
           ctx.fillRect(flagX + flagSize / 2 - 1, flagY + flagSize / 2 - 1, 2, 2);
         }
 
-        // Glitch Chromatic Aberration RGB split & Main Text
+        // Nametag Text with subtle futuristic chromatic neon edge on transform
         const textPosX = flagX + flagSize + 4;
         const textPosY = boxY + boxH - 5;
         if (typeof ctx.fillText === "function") {
-          if (isGlitching) {
-            // Cyan Aberration Pass
+          if (isTransforming) {
+            // Subtle 0.8px cyan and violet edge glow
             ctx.save();
-            ctx.fillStyle = "#38bdf8";
-            ctx.fillText(nameText, textPosX - 1.5, textPosY);
+            ctx.fillStyle = "rgba(56, 189, 248, 0.65)";
+            ctx.fillText(nameText, textPosX - 0.8, textPosY);
+            ctx.fillStyle = "rgba(192, 132, 252, 0.65)";
+            ctx.fillText(nameText, textPosX + 0.8, textPosY);
             ctx.restore();
-            // Red/Magenta Aberration Pass
-            ctx.save();
-            ctx.fillStyle = "#f43f5e";
-            ctx.fillText(nameText, textPosX + 1.5, textPosY);
-            ctx.restore();
-            // Main Glitch Text Pass
-            ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = "#c084fc";
-            ctx.shadowBlur = 6;
-            ctx.fillText(nameText, textPosX, textPosY);
-          } else {
-            ctx.fillStyle = isMod ? "#c084fc" : "#ffffff";
-            ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-            ctx.shadowBlur = 3;
-            ctx.shadowOffsetX = 1;
-            ctx.shadowOffsetY = 1;
-            ctx.fillText(nameText, textPosX, textPosY);
           }
+
+          ctx.fillStyle = isMod ? "#c084fc" : "#ffffff";
+          ctx.shadowColor = isTransforming ? "#c084fc" : "rgba(0, 0, 0, 0.8)";
+          ctx.shadowBlur = isTransforming ? 6 : 3;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+          ctx.fillText(nameText, textPosX, textPosY);
         }
 
         ctx.restore();
