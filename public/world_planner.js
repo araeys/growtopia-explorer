@@ -1628,7 +1628,6 @@
         let smoothAnchorX = 0;
         let smoothAnchorY = 0;
         let isZoomAnimating = false;
-
         let zoomAnchorWorldX = 0;
         let zoomAnchorWorldY = 0;
         let zoomScreenX = 0;
@@ -1636,7 +1635,7 @@
 
         function stepSmoothZoom() {
           const diff = smoothZoomTarget - viewport.zoom;
-          if (Math.abs(diff) < 0.001) {
+          if (Math.abs(diff) < 0.0008) {
             viewport.zoom = smoothZoomTarget;
             if (player.active) {
               const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
@@ -1653,8 +1652,8 @@
             return;
           }
 
-          // Silky smooth exponential decay easing
-          viewport.zoom += diff * 0.22;
+          // Smooth exponential easing (zero jitter)
+          viewport.zoom += diff * 0.25;
           if (player.active) {
             const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
             const viewW = canvas.width / dpr;
@@ -1687,12 +1686,10 @@
           const zoomFactor = event.deltaY < 0 ? 1.18 : 0.84;
           smoothZoomTarget = Math.max(minZ, Math.min(maxZ, smoothZoomTarget * zoomFactor));
 
-          if (!player.active) {
-            if (!isZoomAnimating) {
-              isZoomAnimating = true;
-              if (typeof requestAnimationFrame !== "undefined") {
-                requestAnimationFrame(stepSmoothZoom);
-              }
+          if (!isZoomAnimating) {
+            isZoomAnimating = true;
+            if (typeof requestAnimationFrame !== "undefined") {
+              requestAnimationFrame(stepSmoothZoom);
             }
           }
         }, { passive: false });
@@ -2228,13 +2225,7 @@
       function updatePlayerPhysics(dt) {
         if (!player.active) return;
 
-        // Rock-Solid Zoom Interpolation in Physics Frame (Zero jitter, single-source of truth)
-        const zDiff = smoothZoomTarget - viewport.zoom;
-        if (Math.abs(zDiff) > 0.0005) {
-          viewport.zoom += zDiff * Math.min(1.0, 12.0 * dt);
-        } else {
-          viewport.zoom = smoothZoomTarget;
-        }
+
 
         // Death state handling
         if (player.isDead) {
@@ -2746,18 +2737,15 @@
         // ── Ultra-Subtle Pupil Gaze Vector & 100% Strict Lock Forward Support ──
         let pupilOffsetX = 0;
         let pupilOffsetY = 0;
-        const eyeMode = (player.eyeTrackingMode === "forward") ? "forward" : "cursor";
-        if (eyeMode === "cursor" && player.isDesktopCursor) {
+        const eyeMode = player.eyeTrackingMode || "cursor";
+        if (eyeMode !== "forward" && player.isDesktopCursor) {
           const eyeWorldX = px + pw / 2 + player.facing * 4;
           const eyeWorldY = py + 6;
           const dx = player.cursorWorldX - eyeWorldX;
           const dy = player.cursorWorldY - eyeWorldY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          // Ultra-small, crisp natural eye glance (strictly <= 0.6px)
-          const maxGazeX = 0.55;
-          const maxGazeY = 0.28;
-          pupilOffsetX = player.facing * Math.max(-maxGazeX, Math.min(maxGazeX, (dx / dist) * 0.7));
-          pupilOffsetY = Math.max(-maxGazeY, Math.min(maxGazeY, (dy / dist) * 0.35));
+          pupilOffsetX = player.facing * Math.max(-0.4, Math.min(0.4, (dx / dist) * 0.5));
+          pupilOffsetY = Math.max(-0.25, Math.min(0.25, (dy / dist) * 0.3));
         } else {
           pupilOffsetX = 0;
           pupilOffsetY = 0;
@@ -3656,6 +3644,21 @@
           render();
         },
         getPlayerSkin: () => player.skinStyle || "classic",
+        setEyeTrackingMode: (m) => {
+          player.eyeTrackingMode = m;
+          if (typeof localStorage !== "undefined") {
+            try { localStorage.setItem("gt_eye_tracking_mode", m); } catch(e) {}
+          }
+          render();
+        },
+        getEyeTrackingMode: () => player.eyeTrackingMode || "cursor",
+        sendChatMessage: (msg) => {
+          if (!msg) return;
+          player.chatMessage = msg.slice(0, 60);
+          player.chatTimer = 5.5;
+          playSfx("magic", 1.0, 0.5);
+          render();
+        },
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);

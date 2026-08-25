@@ -975,6 +975,7 @@
     </div>
     <div class="spacer"></div>
     
+    <button class="tb-btn" id="world-about-btn" title="About & Updates" style="border-color:#fbbf24;color:#fde047;font-weight:700;">ℹ️ <span class="tb-btn-text">Updates</span></button>
     <button class="tb-btn" id="world-skin-btn" title="Choose Character Style">👤 <span class="tb-btn-text">Skin</span></button>
     <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
@@ -984,6 +985,24 @@
     <!-- Canvas Area -->
     <div id="canvas-wrapper">
       <canvas id="world-canvas"></canvas>
+
+      <!-- Floating Growtopia Speech Bubble Chat Bar (Bottom-Left) -->
+      <div id="game-chat-bar" style="position:fixed;bottom:24px;left:24px;z-index:999999;display:none;align-items:center;background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:2px solid #00e5ff;border-radius:14px;padding:6px 10px;box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+        <span style="font-size:16px;margin-right:8px;">💬</span>
+        <input id="game-chat-input" type="text" placeholder="Type a message (Press Enter)..." maxlength="60" style="background:transparent;border:none;outline:none;color:#ffffff;font-size:13px;font-weight:700;width:240px;">
+        <button id="game-chat-send-btn" style="background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#ffffff;font-weight:700;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;margin-left:8px;">Send</button>
+      </div>
+
+      <!-- Permanent Developer Watermark (Bottom-Right) -->
+      <div id="dev-watermark" style="position:fixed;bottom:14px;right:18px;z-index:99999;display:flex;align-items:center;gap:8px;font-size:11px;background:rgba(15,23,42,0.90);backdrop-filter:blur(10px);border:1.5px solid rgba(251,191,36,0.4);border-radius:10px;padding:6px 12px;box-shadow:0 6px 20px rgba(0,0,0,0.6);">
+        <a href="https://instagram.com/aryhaan" target="_blank" rel="noopener noreferrer" style="color:#fde047;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:4px;">
+          📸 Developed by Raey (@aryhaan)
+        </a>
+        <span style="color:#64748b;">|</span>
+        <a href="https://trakteer.id/revzy" target="_blank" rel="noopener noreferrer" style="color:#f472b6;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:4px;">
+          💖 Support (Trakteer)
+        </a>
+      </div>
 
       <!-- Top Floating HUD Container (Prevents overlapping) -->
       <!-- Floating UI Hide/Show Toggle Button for Screenshots & Clean View -->
@@ -1172,7 +1191,7 @@
 </div>
 
 <!-- Authentic Growtopia Style Welcome & Developer Credentials Modal -->
-<div id="welcome-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;">
+<div id="welcome-modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;">
   <div style="max-width:540px;width:100%;background:#0b1329;border:3px solid #fbbf24;border-radius:16px;box-shadow:inset 0 0 20px rgba(0,0,0,0.9), 0 20px 50px rgba(0,0,0,0.9);overflow:hidden;animation:popIn 0.2s ease-out;">
     <!-- Dialog Header -->
     <div style="background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);border-bottom:2px solid #fbbf24;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
