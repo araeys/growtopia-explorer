@@ -3026,14 +3026,16 @@
           const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
           const imgHeadMask = isBlinking ? getSpriteImage("character_base_assets/gt_parts/head_blink.png") : getSpriteImage("character_base_assets/gt_parts/head_mask.png");
 
+          const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
+
           // 1. Back Arm (Tangan Kanan) - Dynamic swing & pose
           let backArmAngle = 0;
           if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
           else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
           else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
           else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
-          else if (isJumping) backArmAngle = -1.15;
-          else if (isWalking) backArmAngle = -walkCycleCos * 0.70;
+          else if (isJumping) backArmAngle = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
+          else if (isWalking) backArmAngle = -walkCycleCos * 0.85;
           else backArmAngle = -idleArmWiggle;
 
           ctx.save();
@@ -3048,8 +3050,8 @@
           let legRAngle = 0;
           if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
           else if (isFalling) legRAngle = -0.15 + Math.sin(t * 16) * 0.10;
-          else if (isJumping) legRAngle = -0.35;
-          else if (isWalking) legRAngle = walkCycleSin * 0.52;
+          else if (isJumping) legRAngle = -0.45 - jumpIntensity * 0.20;
+          else if (isWalking) legRAngle = walkCycleSin * 0.65;
 
           const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
           const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -3067,8 +3069,8 @@
           let legLAngle = 0;
           if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
           else if (isFalling) legLAngle = 0.40 + Math.cos(t * 16) * 0.10;
-          else if (isJumping) legLAngle = 0.45;
-          else if (isWalking) legLAngle = -walkCycleSin * 0.52;
+          else if (isJumping) legLAngle = 0.55 + jumpIntensity * 0.20;
+          else if (isWalking) legLAngle = -walkCycleSin * 0.65;
 
           const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
           ctx.save();
@@ -3079,23 +3081,25 @@
           }
           ctx.restore();
 
-          // 4. Torso & Shirt with Forward Run Lean
+          // 4. Torso & Shirt with Forward Run Lean & Walk Twist
           const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
           const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
+          const torsoTwist = isWalking ? Math.sin(walkPhase) * 0.04 : (isJumping ? -0.06 * jumpIntensity : 0);
 
           ctx.save();
           ctx.translate(afkTorsoX + sxShirt, breatheBob + syShirt);
-          ctx.rotate(afkTorsoAngle + runLean);
+          ctx.rotate(afkTorsoAngle + runLean + torsoTwist);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
           // 5. Head Layering with Eyeballs & Pupils UNDER Head Mask
           ctx.save();
-          const headBobLag = isWalking ? (Math.sin(walkPhase - 0.4) * 0.6) : 0;
+          const headBobLag = isWalking ? (Math.sin(walkPhase - 0.5) * 0.85) : 0;
           const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
+          const jumpHeadTilt = isJumping ? (-0.10 * jumpIntensity) : 0;
           ctx.translate(afkHeadX - sxShirt, afkHeadY - syShirt + headBobLag);
-          ctx.rotate(afkHeadAngle + fallHeadTilt + (isWalking ? -walkCycleSin * 0.04 : 0));
+          ctx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + (isWalking ? -walkCycleSin * 0.05 : 0));
 
           if (player.moderatorMode) {
             // ── Glowing Pure Radiant White Eyes (Intense Bloom & Divine Glow) ──
@@ -3180,7 +3184,7 @@
             }
           }
 
-          // Layer D: Hair / Hats Overlay with Reposition Offset
+          // Layer D: Hair / Hats Overlay with Physics Inertial Sway & Bend
           const hairChoice = player.hairStyle || "red";
           if (hairChoice !== "none") {
             const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
@@ -3188,7 +3192,27 @@
             if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
               const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
               const hy = (cOffsets.hair ? cOffsets.hair.y : -6) || -6;
-              ctx.drawImage(imgHair, -16 + hx, -16 + hy, 32, 32);
+
+              ctx.save();
+              ctx.translate(hx, hy);
+
+              // Inertial Sway & Physics Bend Angles (responds to velocity, strides, jumps, and falls)
+              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.10) : 0;
+              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.024 * (player.facing || 1)) : 0;
+              const hairJumpSway = isJumping ? (-player.vy * 0.018) : 0;
+              const hairFallLift = isFalling ? (-player.vy * 0.022) : 0;
+              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.03) : 0;
+
+              const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
+              ctx.rotate(totalHairBend);
+
+              // Elastic vertical bounce / wind lift
+              const hairScaleY = 1.0 + (isJumping ? 0.08 : (isFalling ? -0.06 : (isWalking ? Math.sin(walkPhase) * 0.04 : 0)));
+              const hairScaleX = 1.0 + (isFalling ? 0.05 : 0);
+              ctx.scale(hairScaleX, hairScaleY);
+
+              ctx.drawImage(imgHair, -16, -16, 32, 32);
+              ctx.restore();
             }
           }
           ctx.restore();
@@ -3207,9 +3231,9 @@
           } else if (isFalling) {
             frontArmAngle = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
           } else if (isJumping) {
-            frontArmAngle = -0.80;
+            frontArmAngle = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
           } else if (isWalking) {
-            frontArmAngle = walkCycleCos * 0.70;
+            frontArmAngle = walkCycleCos * 0.85;
           } else {
             frontArmAngle = idleArmWiggle;
           }
