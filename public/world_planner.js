@@ -2843,10 +2843,10 @@
           // Layer B: Eye Pupils (UNDER Head Mask, positioned forward in eye sockets!)
           if (!isBlinking) {
             ctx.fillStyle = "#0f172a";
-            // Left Eye Pupil (socket x: 13..17, front position at x = 0)
-            ctx.fillRect(0 + pupilOffsetX, -10 + pupilOffsetY, 2.0, 2.0);
-            // Right Eye Pupil (socket x: 21..25, front position at x = 8)
-            ctx.fillRect(8 + pupilOffsetX, -10 + pupilOffsetY, 2.0, 2.0);
+            // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
+            ctx.fillRect(0 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
+            // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
+            ctx.fillRect(8 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
           }
 
           // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
@@ -3012,54 +3012,6 @@
           ctx.beginPath();
           ctx.arc(px + pw / 2, py + ph / 2, player.respawnRingRadius, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.restore();
-        }
-
-        // ── Authentic Growtopia Speech Bubble Chat ──
-        if (player.chatMessage && player.chatTimer > 0 && !player.isDead) {
-          ctx.save();
-          const chatFade = Math.min(1.0, player.chatTimer);
-          ctx.globalAlpha = chatFade;
-          const bubbleX = px + pw / 2;
-          const bubbleY = py - 32;
-
-          ctx.font = "bold 11px sans-serif";
-          const text = player.chatMessage;
-          const textMetrics = ctx.measureText(text);
-          const bubbleW = Math.max(60, textMetrics.width + 16);
-          const bubbleH = 22;
-          const bLeft = bubbleX - bubbleW / 2;
-          const bTop = bubbleY - bubbleH;
-
-          // Bubble box with rounded corners
-          ctx.fillStyle = "#ffffff";
-          ctx.strokeStyle = "#1e293b";
-          ctx.lineWidth = 2.0;
-          ctx.beginPath();
-          ctx.roundRect ? ctx.roundRect(bLeft, bTop, bubbleW, bubbleH, 6) : ctx.rect(bLeft, bTop, bubbleW, bubbleH);
-          ctx.fill();
-          ctx.stroke();
-
-          // Bubble downward pointer tail
-          ctx.fillStyle = "#ffffff";
-          ctx.beginPath();
-          ctx.moveTo(bubbleX - 4, bubbleY);
-          ctx.lineTo(bubbleX, bubbleY + 5);
-          ctx.lineTo(bubbleX + 4, bubbleY);
-          ctx.closePath();
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(bubbleX - 4, bubbleY);
-          ctx.lineTo(bubbleX, bubbleY + 5);
-          ctx.lineTo(bubbleX + 4, bubbleY);
-          ctx.strokeStyle = "#1e293b";
-          ctx.stroke();
-
-          // Message Text
-          ctx.fillStyle = "#0f172a";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(text, bubbleX, bTop + bubbleH / 2);
           ctx.restore();
         }
 
