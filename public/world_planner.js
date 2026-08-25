@@ -921,6 +921,8 @@
         let impactShakeY = 0;
         let runShakeX = 0;
         let runShakeY = 0;
+        let fallShakeX = 0;
+        let fallShakeY = 0;
 
         if (cameraShakeEnabled) {
           if (player.modTransformTimer > 0) {
@@ -937,19 +939,29 @@
             impactShakeY = (Math.random() - 0.5) * impactMag * 2;
           }
 
-          // Smooth rhythmic running camera bob / micro-shake when sprinting
-          if (player.active && player.isGrounded && Math.abs(player.vx) > 0.6 && player.state === "walk") {
+          // Smooth rhythmic running camera shake (pronounced kinetic stride bob)
+          if (player.active && player.isGrounded && Math.abs(player.vx) > 0.5 && player.state === "walk") {
             const walkBlend = player.walkBlend !== undefined ? player.walkBlend : 1.0;
-            const shakeIntensity = Math.min(1.0, Math.abs(player.vx) / 3.2);
-            runShakeX = Math.cos(player.walkPhase * 2) * 0.45 * shakeIntensity * walkBlend;
-            runShakeY = Math.abs(Math.sin(player.walkPhase)) * 0.80 * shakeIntensity * walkBlend;
+            const runIntensity = Math.min(1.0, Math.abs(player.vx) / 3.0);
+            runShakeX = Math.sin(player.walkPhase) * 1.5 * runIntensity * walkBlend;
+            runShakeY = Math.abs(Math.sin(player.walkPhase)) * 2.2 * runIntensity * walkBlend;
+          }
+
+          // Dynamic falling air turbulence camera shake (active after falling >= 1.0s)
+          if (player.active && (player.continuousFallTimer || 0) >= 1.0 && !player.moderatorMode && !player.isDead) {
+            const fallTime = player.continuousFallTimer - 1.0;
+            const fallProgress = Math.min(1.0, fallTime / 1.5);
+            // Magnitude smoothly scales up the longer and faster the fall
+            const fallMag = 1.4 + fallProgress * 4.2 + Math.min(3.0, (player.vy - 1.5) * 0.35);
+            fallShakeX = Math.sin(player.animTimer * 26) * fallMag;
+            fallShakeY = Math.cos(player.animTimer * 30) * (fallMag * 0.65);
           }
         }
 
         ctx.save();
         ctx.translate(
-          viewport.x + transformShakeX + impactShakeX + runShakeX,
-          viewport.y + transformShakeY + impactShakeY + runShakeY
+          viewport.x + transformShakeX + impactShakeX + runShakeX + fallShakeX,
+          viewport.y + transformShakeY + impactShakeY + runShakeY + fallShakeY
         );
         ctx.scale(viewport.zoom, viewport.zoom);
 
@@ -2855,7 +2867,7 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Continuous Movement & Running Tracking
+        // Continuous Movement, Running & Falling Tracking
         const playerSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
         const isPlayerMoving = (playerSpeed > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump) && !player.isDead;
         if (isPlayerMoving) {
@@ -2864,12 +2876,22 @@
           player.continuousMoveTimer = 0;
         }
 
-        // Running timer for serious face expression (active after >= 1.5s running on ground)
-        const isRunningOnGround = (player.state === "walk" && player.isGrounded && Math.abs(player.vx) > 0.8) && !player.isDead;
-        if (isRunningOnGround) {
+        // Running timer for serious face expression (active after >= 1.5s running horizontally, stays until stopped)
+        const isRunningHoriz = (Math.abs(player.vx) > 0.45 || (player.state === "walk" && (player.keys.left || player.keys.right))) && !player.isDead;
+        if (isRunningHoriz && player.isGrounded) {
           player.continuousRunTimer = (player.continuousRunTimer || 0) + dt;
+        } else if (isRunningHoriz && !player.isGrounded) {
+          // preserve timer mid-air if sprinting
         } else {
-          player.continuousRunTimer = Math.max(0, (player.continuousRunTimer || 0) - dt * 3.0);
+          player.continuousRunTimer = 0;
+        }
+
+        // Falling timer for falling camera rumble shake (active after falling >= 1.0s)
+        const isFallingInAir = !player.isGrounded && player.vy > 1.2 && !player.moderatorMode && !player.isDead;
+        if (isFallingInAir) {
+          player.continuousFallTimer = (player.continuousFallTimer || 0) + dt;
+        } else {
+          player.continuousFallTimer = 0;
         }
 
         // ONLY spawn wind effects when the character has moved continuously for >= 1.0 second
@@ -3536,12 +3558,23 @@
             const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
-            const isSeriousFace = (player.continuousRunTimer >= 1.5) && player.isGrounded && !player.moderatorMode;
-            const imgHeadMask = isBlinking ?
-              getSpriteImage("character_base_assets/gt_parts/head_blink.png") :
-              (isSeriousFace ?
-                getSpriteImage("character_base_assets/gt_parts/head_serious.png") :
-                getSpriteImage("character_base_assets/gt_parts/head_mask.png"));
+            const isSeriousFace = (player.continuousRunTimer >= 1.5) && !player.moderatorMode;
+            const isJumpFace = isJumping && !player.moderatorMode;
+
+            let imgHeadMask = null;
+            if (isJumpFace) {
+              imgHeadMask = isBlinking ?
+                getSpriteImage("character_base_assets/gt_parts/head_jump_blink.png") :
+                getSpriteImage("character_base_assets/gt_parts/head_jump.png");
+            } else if (isSeriousFace) {
+              imgHeadMask = isBlinking ?
+                getSpriteImage("character_base_assets/gt_parts/head_serious_blink.png") :
+                getSpriteImage("character_base_assets/gt_parts/head_serious.png");
+            } else {
+              imgHeadMask = isBlinking ?
+                getSpriteImage("character_base_assets/gt_parts/head_blink.png") :
+                getSpriteImage("character_base_assets/gt_parts/head_mask.png");
+            }
 
             const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
 
