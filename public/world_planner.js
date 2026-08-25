@@ -462,7 +462,7 @@
           }
         }
 
-        const lifeTime = 0.24; // 0.24s total duration for 10 frames (~42 FPS sequence)
+        const lifeTime = 0.42; // 0.42s total duration for 10 frames (~42ms per frame)
         gameParticles.push({
           type: "break_seq",
           x: worldX,
@@ -492,7 +492,7 @@
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
               ctx.imageSmoothingEnabled = false;
-              ctx.drawImage(img, p.x - 16, p.y - 16, 32, 32);
+              ctx.drawImage(img, p.x - 21, p.y - 21, 42, 42);
               ctx.restore();
             }
             continue;
@@ -2443,7 +2443,14 @@
 
       function triggerPlayerPunch(targetTileX, targetTileY) {
         if (!player.active) return;
-        player.punchTimer = 0.22;
+        player.punchTimer = 0.28;
+        player.punchTargetX = targetTileX;
+        player.punchTargetY = targetTileY;
+        if (typeof targetTileX === "number") {
+          const playerTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+          if (targetTileX > playerTileX) player.facing = 1;
+          else if (targetTileX < playerTileX) player.facing = -1;
+        }
       }
 
       function updatePlayerPhysics(dt) {
@@ -3000,10 +3007,14 @@
         const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 2;   // 1x 360-degree forward spin
         const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 2; // 1x 360-degree INVERTED spin
 
-        // Placing / Punch Spin Throw Animation
+        // Placing / Punch Dynamic Thrust & Snap Kinematics
         const isPunching = player.punchTimer > 0;
-        const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
-        const punchSpinAngle = isPunching ? punchProgress * Math.PI * 2 : 0;
+        const punchProg = isPunching ? (1.0 - (player.punchTimer / 0.28)) : 0;
+        const punchThrustX = isPunching ? Math.sin(punchProg * Math.PI) * 7.5 : 0;
+        const punchSnapAngle = isPunching ? (-0.35 - Math.sin(punchProg * Math.PI) * 1.45 + (1.0 - punchProg) * 0.3) : 0;
+        const punchTorsoLean = isPunching ? Math.sin(punchProg * Math.PI) * 0.14 : 0;
+        const punchHeadDip = isPunching ? Math.sin(punchProg * Math.PI) * 0.08 : 0;
+        const punchStepX = isPunching ? Math.sin(punchProg * Math.PI) * 2.5 : 0;
 
         // Jump Thrust Leg Extension
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
@@ -3116,6 +3127,7 @@
           // 1. Back Arm (Tangan Kanan) - Dynamic swing & pose
           let backArmAngle = 0;
           if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
+          else if (isPunching) backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
           else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
           else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
           else if (isFalling) backArmAngle = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
@@ -3166,14 +3178,14 @@
           }
           ctx.restore();
 
-          // 4. Torso & Shirt with Forward Run Lean & Walk Twist
+          // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Punch Lunge
           const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
           const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
           const torsoTwist = isWalking ? Math.sin(walkPhase) * 0.04 : (isJumping ? -0.06 * jumpIntensity : 0);
 
           ctx.save();
-          ctx.translate(afkTorsoX + sxShirt, breatheBob + syShirt);
-          ctx.rotate(afkTorsoAngle + runLean + torsoTwist);
+          ctx.translate(afkTorsoX + sxShirt + punchStepX, breatheBob + syShirt);
+          ctx.rotate(afkTorsoAngle + runLean + torsoTwist + punchTorsoLean);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
@@ -3183,8 +3195,8 @@
           const headBobLag = isWalking ? (Math.sin(walkPhase - 0.5) * 0.85) : 0;
           const fallHeadTilt = isFalling ? (0.12 + fallIntensity * 0.10) : 0;
           const jumpHeadTilt = isJumping ? (-0.10 * jumpIntensity) : 0;
-          ctx.translate(afkHeadX - sxShirt, afkHeadY - syShirt + headBobLag);
-          ctx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + (isWalking ? -walkCycleSin * 0.05 : 0));
+          ctx.translate(afkHeadX - sxShirt + punchStepX * 0.5, afkHeadY - syShirt + headBobLag);
+          ctx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (isWalking ? -walkCycleSin * 0.05 : 0));
 
           if (player.moderatorMode) {
             // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -3270,12 +3282,12 @@
           ctx.restore();
           ctx.restore();
 
-          // 6. Front Arm (Tangan Kiri - Dynamic opposing swing)
+          // 6. Front Arm (Tangan Kiri - Dynamic opposing swing & Punch Jab Thrust)
           let frontArmAngle = 0;
           if (isJumpSpinning) {
             frontArmAngle = jumpSpinAngleFront;
           } else if (isPunching) {
-            frontArmAngle = punchSpinAngle;
+            frontArmAngle = punchSnapAngle;
           } else if (afkFrontArmAngle !== null) {
             frontArmAngle = afkFrontArmAngle;
           } else if (isFloating) {
@@ -3291,7 +3303,7 @@
           }
 
           ctx.save();
-          ctx.translate(-7 + afkTorsoX, 4 + breatheBob);
+          ctx.translate(-7 + afkTorsoX + punchThrustX, 4 + breatheBob);
           ctx.rotate(frontArmAngle);
           if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
             ctx.drawImage(imgArmL, -9, -20, 32, 32);
