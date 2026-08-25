@@ -555,7 +555,7 @@
           if (p.type === "wind_breeze") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vx *= 0.94; // air drag
+            p.vx *= 0.94;
             p.vy *= 0.96;
             p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
 
@@ -566,13 +566,12 @@
 
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
-              ctx.imageSmoothingEnabled = false;
-              // Soft, subtle airy opacity
-              const alpha = (progress < 0.25 ? (progress / 0.25) : Math.max(0, 1.0 - (progress - 0.25) / 0.75)) * 0.22;
+              ctx.imageSmoothingEnabled = true;
+              const alpha = Math.sin(progress * Math.PI) * 0.16;
               ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
               ctx.translate(p.x, p.y);
               ctx.rotate(p.rot);
-              const curScale = p.scale * (0.85 + progress * 0.45);
+              const curScale = p.scale * (0.80 + progress * 0.40);
               ctx.scale(curScale, curScale);
               ctx.drawImage(img, -14, -14, 28, 28);
               ctx.restore();
@@ -583,20 +582,38 @@
           if (p.type === "wind_streak") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vx *= 0.95;
+            p.vx *= 0.96;
+            p.vy *= 0.96;
             const progress = 1.0 - (p.life / p.maxLife);
-            const fade = Math.sin(progress * Math.PI);
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, fade * (p.baseAlpha || 0.65));
-            ctx.strokeStyle = p.color || "rgba(255, 255, 255, 0.75)";
-            ctx.lineWidth = p.lineWidth || 1.4;
-            ctx.lineCap = "round";
-            ctx.beginPath();
-            const tailLen = p.length * (0.6 + 0.4 * (1.0 - progress));
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x - tailLen * (p.dir || 1), p.y - (p.vy * 4));
-            ctx.stroke();
-            ctx.restore();
+            const alpha = Math.sin(progress * Math.PI) * (p.baseAlpha || 0.65);
+            if (alpha > 0.01) {
+              ctx.save();
+              const dir = p.dir || 1;
+              const tailLen = p.length * (0.7 + 0.3 * Math.sin(progress * Math.PI));
+              const headX = p.x;
+              const tailX = p.x - tailLen * dir;
+              const headY = p.y;
+              const tailY = p.y + (p.vy * 4);
+
+              const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+              grad.addColorStop(0, "rgba(240, 249, 255, 0)");
+              grad.addColorStop(0.7, p.color || "rgba(224, 242, 254, 0.85)");
+              grad.addColorStop(1, "rgba(255, 255, 255, 0.95)");
+
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+              ctx.strokeStyle = grad;
+              ctx.lineWidth = p.lineWidth || 1.3;
+              ctx.lineCap = "round";
+              ctx.shadowColor = "rgba(186, 230, 253, 0.4)";
+              ctx.shadowBlur = 3;
+              ctx.beginPath();
+              const midX = (tailX + headX) / 2;
+              const midY = (tailY + headY) / 2 + Math.sin((p.waveOffset || 0) + progress * Math.PI * 2) * 1.5;
+              ctx.moveTo(tailX, tailY);
+              ctx.quadraticCurveTo(midX, midY, headX, headY);
+              ctx.stroke();
+              ctx.restore();
+            }
             continue;
           }
 
@@ -905,11 +922,10 @@
         let impactShakeX = 0;
         let impactShakeY = 0;
         if (player.impactShakeTimer > 0) {
-          const impactProg = player.impactShakeTimer / 0.12;
-          const impactMag = 4.5 * impactProg;
-          const kickDir = Math.sin((0.12 - player.impactShakeTimer) * 45);
-          impactShakeX = kickDir * impactMag;
-          impactShakeY = -Math.abs(kickDir) * impactMag * 0.7;
+          const impactProg = player.impactShakeTimer / 0.35;
+          const impactMag = 7.5 * Math.pow(impactProg, 1.2);
+          impactShakeX = (Math.random() - 0.5) * impactMag * 2;
+          impactShakeY = (Math.random() - 0.5) * impactMag * 2;
         }
 
         ctx.save();
@@ -1158,18 +1174,18 @@
           ctx.restore();
         }
 
-        // 12. Lethal Hazard Hit Screen Flash & Red Shockwave Vignette
+        // 12. Lethal Hazard Hit Screen Flash & Red Shockwave Overlay
         if (player.hitFlashTimer > 0) {
           ctx.save();
           const viewW = cw / dpr;
           const viewH = ch / dpr;
-          const hitProg = player.hitFlashTimer / 0.12;
-          // Soft subtle red edge flash (non-dominating)
-          ctx.fillStyle = `rgba(239, 68, 68, ${0.10 * hitProg})`;
+          const hitProg = player.hitFlashTimer / 0.25;
+          // Clean red shockwave overlay that fades out quickly
+          ctx.fillStyle = `rgba(220, 38, 38, ${0.26 * hitProg})`;
           ctx.fillRect(0, 0, viewW, viewH);
-          // Quick crisp white impact flash
-          if (hitProg > 0.6) {
-            const whiteAlpha = 0.20 * ((hitProg - 0.6) / 0.4);
+          // Initial crisp white impact flash
+          if (hitProg > 0.65) {
+            const whiteAlpha = 0.35 * ((hitProg - 0.65) / 0.35);
             ctx.fillStyle = `rgba(255, 255, 255, ${whiteAlpha})`;
             ctx.fillRect(0, 0, viewW, viewH);
           }
@@ -2465,8 +2481,8 @@
         player.vy = -7.6; // Powerful upward death pop launch
         
         // Hazard Impact Hit Flash & Screen Shake
-        player.impactShakeTimer = 0.12;
-        player.hitFlashTimer = 0.12;
+        player.impactShakeTimer = 0.35;
+        player.hitFlashTimer = 0.25;
         
         spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
         playSfx("boo_death", 1.0, 0.95);
@@ -2834,19 +2850,26 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Continuous Breezy Wind Trail & Speed Wind Streak Lines
+        // Continuous Movement Tracking (Wind only activates after moving for at least 1.0 second!)
         const playerSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
-        const isPlayerMoving = playerSpeed > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump;
-        if (isPlayerMoving && !player.isDead) {
+        const isPlayerMoving = (playerSpeed > 0.45 || player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump) && !player.isDead;
+        if (isPlayerMoving) {
+          player.continuousMoveTimer = (player.continuousMoveTimer || 0) + dt;
+        } else {
+          player.continuousMoveTimer = 0;
+        }
+
+        // ONLY spawn wind effects when the character has moved continuously for >= 1.0 second
+        if (isPlayerMoving && player.continuousMoveTimer >= 1.0) {
           player.windTrailTimer = (player.windTrailTimer || 0) + dt;
-          if (player.windTrailTimer >= 0.085) {
+          if (player.windTrailTimer >= 0.09) {
             player.windTrailTimer = 0;
             const facing = player.facing || 1;
             const backOffset = facing > 0 ? -4 : (player.width + 4);
-            const spawnX = player.x + backOffset + (Math.random() - 0.5) * 6;
-            const spawnY = player.y + player.height - 12 + (Math.random() - 0.5) * 10;
-            const driftVx = -player.vx * 0.15 + (Math.random() - 0.5) * 0.25;
-            const driftVy = -player.vy * 0.10 - (0.18 + Math.random() * 0.25);
+            const spawnX = player.x + backOffset + (Math.random() - 0.5) * 4;
+            const spawnY = player.y + player.height - 12 + (Math.random() - 0.5) * 8;
+            const driftVx = -player.vx * 0.15 + (Math.random() - 0.5) * 0.20;
+            const driftVy = -player.vy * 0.10 - (0.15 + Math.random() * 0.20);
 
             gameParticles.push({
               type: "wind_breeze",
@@ -2854,18 +2877,18 @@
               y: spawnY,
               vx: driftVx,
               vy: driftVy,
-              scale: 0.65 + Math.random() * 0.35,
-              rot: (Math.random() - 0.5) * 0.5,
-              rotSpeed: (Math.random() - 0.5) * 2.0,
-              life: 0.35 + Math.random() * 0.10,
-              maxLife: 0.35 + Math.random() * 0.10
+              scale: 0.60 + Math.random() * 0.30,
+              rot: (Math.random() - 0.5) * 0.4,
+              rotSpeed: (Math.random() - 0.5) * 1.5,
+              life: 0.40 + Math.random() * 0.10,
+              maxLife: 0.40 + Math.random() * 0.10
             });
           }
 
-          // Dynamic Speed Wind Streak Lines (Speed lines rush when running or flying)
+          // Dynamic Speed Wind Streak Lines (Streamline speed ribbons)
           if (playerSpeed > 0.6) {
             player.speedStreakTimer = (player.speedStreakTimer || 0) + dt;
-            const streakInterval = playerSpeed > 2.5 ? 0.035 : 0.055;
+            const streakInterval = playerSpeed > 2.5 ? 0.045 : 0.070;
             if (player.speedStreakTimer >= streakInterval) {
               player.speedStreakTimer = 0;
               const streakDir = player.vx !== 0 ? (player.vx > 0 ? 1 : -1) : (player.facing || 1);
@@ -2873,20 +2896,21 @@
               for (let i = 0; i < streakCount; i++) {
                 const sX = player.x + (streakDir > 0 ? -2 : player.width + 2) + (Math.random() - 0.5) * 4;
                 const sY = player.y + 4 + Math.random() * (player.height - 8);
-                const sLen = 20 + Math.random() * 25 + Math.min(22, playerSpeed * 4.5);
+                const sLen = 25 + Math.random() * 30 + Math.min(25, playerSpeed * 4.5);
                 gameParticles.push({
                   type: "wind_streak",
                   x: sX,
                   y: sY,
-                  vx: -player.vx * 0.28 + (Math.random() - 0.5) * 0.3,
-                  vy: -player.vy * 0.08 + (Math.random() - 0.5) * 0.15,
+                  vx: -player.vx * 0.30 + (Math.random() - 0.5) * 0.25,
+                  vy: -player.vy * 0.06 + (Math.random() - 0.5) * 0.12,
                   dir: streakDir,
                   length: sLen,
-                  lineWidth: 1.2 + Math.random() * 0.8,
-                  baseAlpha: 0.55 + Math.random() * 0.25,
-                  color: Math.random() < 0.4 ? "rgba(224, 242, 254, 0.85)" : "rgba(255, 255, 255, 0.75)",
-                  life: 0.20 + Math.random() * 0.08,
-                  maxLife: 0.20 + Math.random() * 0.08
+                  lineWidth: 1.2 + Math.random() * 0.6,
+                  waveOffset: Math.random() * Math.PI * 2,
+                  baseAlpha: 0.65 + Math.random() * 0.25,
+                  color: Math.random() < 0.4 ? "rgba(186, 230, 253, 0.9)" : "rgba(240, 249, 255, 0.85)",
+                  life: 0.26 + Math.random() * 0.08,
+                  maxLife: 0.26 + Math.random() * 0.08
                 });
               }
             }
@@ -4558,24 +4582,29 @@
         setPlayerKey: (key, isPressed) => {
           if (player.keys[key] !== undefined) {
             player.keys[key] = Boolean(isPressed);
-            if (key === "jump" && isPressed) {
+            const isJumpKey = (key === "jump" || key === "up");
+            if (isJumpKey && isPressed) {
               if (!player.jumpConsumed) {
                 if (player.isGrounded || player.jumpCount === 0) {
                   player.vy = -10.5;
                   player.isGrounded = false;
                   player.jumpCount = 1;
                   player.jumpConsumed = true;
+                  player.jumpThrustTimer = 0.22;
+                  player.jumpSpinTimer = 0.28;
                   player.state = "jump";
                   playJumpSound(false);
                 } else if (player.jumpCount === 1) {
                   player.vy = -9.2;
                   player.jumpCount = 2;
                   player.jumpConsumed = true;
+                  player.jumpThrustTimer = 0.22;
+                  player.jumpSpinTimer = 0.28;
                   player.state = "jump";
                   playJumpSound(true);
                 }
               }
-            } else if (key === "jump" && !isPressed) {
+            } else if (isJumpKey && !isPressed) {
               player.jumpConsumed = false;
             }
           }
