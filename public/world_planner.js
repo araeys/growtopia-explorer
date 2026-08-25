@@ -2247,28 +2247,21 @@
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
 
-        // AFK Idle Detection: If player is actively moving, cancel AFK immediately!
+        // Continuous 10-Second AFK Loop (Runs continuously until player moves)
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
         if (isUserMoving || player.moderatorMode || !player.isGrounded) {
           player.afkTimer = 0;
           player.afkAction = null;
-          player.afkActionTimer = 0;
         } else {
           player.afkTimer += dt;
-          if (player.afkTimer >= 10.0 && !player.afkAction) {
+          if (player.afkTimer >= 10.0) {
+            player.afkTimer = 0; // Reset for the NEXT 10-second cycle
             const afkList = ["sleep", "dance", "think", "cheer", "angry"];
-            player.afkAction = afkList[Math.floor(Math.random() * afkList.length)];
-            player.afkActionTimer = 3.6; // Runs for 3.6 seconds
-            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.6);
-            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.6);
-          }
-        }
-
-        if (player.afkActionTimer > 0) {
-          player.afkActionTimer -= dt;
-          if (player.afkActionTimer <= 0) {
-            player.afkAction = null;
-            player.afkTimer = 0; // Wait another 10s for next cute animation
+            // Pick a different animation from current
+            const available = afkList.filter(a => a !== player.afkAction);
+            player.afkAction = available[Math.floor(Math.random() * available.length)];
+            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.5);
+            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.5);
           }
         }
 
@@ -2380,15 +2373,13 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Rock-Solid Center on Player in Game Mode
+        // Direct, Rock-Solid Center on Player in Game Mode (Zero vibration)
         if (canvas && player.active) {
           const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
           const viewW = canvas.width / dpr;
           const viewH = canvas.height / dpr;
-          const targetX = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
-          const targetY = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
-          viewport.x = targetX;
-          viewport.y = targetY;
+          viewport.x = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
+          viewport.y = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
         }
       }
 
@@ -3015,16 +3006,17 @@
           ctx.restore();
         }
 
-        // AFK Sleeping "Zzz..." animated floating text
+        // AFK Sleeping "Zzz..." animated floating text (repositioned lower just above head)
         if (player.afkAction === "sleep" && !player.isDead) {
           ctx.save();
-          const zProgress = (t * 1.5) % 1.6;
-          ctx.fillStyle = "#93c5fd";
-          ctx.font = "bold 13px sans-serif";
-          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 3) * 4, py - 20 - zProgress * 16);
-          ctx.font = "bold 10px sans-serif";
-          ctx.fillText("z", px + pw / 2 + 8 + Math.sin(t * 3 + 1) * 3, py - 14 - zProgress * 16);
-          ctx.fillText("z", px + pw / 2 + 14 + Math.sin(t * 3 + 2) * 2, py - 8 - zProgress * 16);
+          const zProgress = (t * 1.4) % 1.4;
+          ctx.fillStyle = "#67e8f9";
+          ctx.font = "bold 11px sans-serif";
+          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 3) * 3, py - 10 - zProgress * 12);
+          ctx.font = "bold 9px sans-serif";
+          ctx.fillText("z", px + pw / 2 + 6 + Math.sin(t * 3 + 1) * 2, py - 6 - zProgress * 12);
+          ctx.font = "bold 8px sans-serif";
+          ctx.fillText("z", px + pw / 2 + 11 + Math.sin(t * 3 + 2) * 2, py - 2 - zProgress * 12);
           ctx.restore();
         }
 

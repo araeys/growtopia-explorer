@@ -946,7 +946,27 @@
       .picker-item { height: 64px; }
     }
 
-  </style>
+  
+    .picker-item { position: relative; }
+    .picker-star-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(10, 15, 25, 0.75);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1;
+      padding: 2px 4px;
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.15s ease;
+    }
+    .picker-star-btn:hover { color: #fde047; transform: scale(1.15); background: rgba(10,15,25,0.95); }
+    .picker-star-btn.active { color: #facc15; border-color: #facc15; }
+
+</style>
 <style>
   @media (max-width: 900px) {
     #dev-watermark, .desktop-only-watermark {
@@ -982,8 +1002,8 @@
     </div>
     <div class="spacer"></div>
     
-    <button class="tb-btn" id="world-about-btn" title="About & Updates" style="border-color:#fbbf24;color:#fde047;font-weight:700;">ℹ️ <span class="tb-btn-text">Updates</span></button>
-    <button class="tb-btn" id="world-skin-btn" title="Choose Character Style">👤 <span class="tb-btn-text">Skin</span></button>
+    <button class="tb-btn" id="world-about-btn" onclick="openWelcomeModal();" title="About & Updates" style="border-color:#fbbf24;color:#fde047;font-weight:700;cursor:pointer;">ℹ️ <span class="tb-btn-text">Updates</span></button>
+    <button class="tb-btn" id="world-skin-btn" onclick="openSkinModal();" title="Choose Character Style" style="cursor:pointer;">👤 <span class="tb-btn-text">Skin</span></button>
     <button class="tb-btn" onclick="window.close()">← Back</button>
   </div>
 
@@ -1039,15 +1059,7 @@
       </div>
 
       <div id="canvas-top-bars">
-        <!-- Play Mode HUD -->
-        <div id="playmode-hud" class="hidden">
-          <span style="font-weight:600;color:#38bdf8;font-size:12px;">🎮 Game Mode</span>
-          <span style="font-size:11px;color:#94a3b8;">Controls: <strong>WASD / Arrows</strong> run & jump | <strong>R</strong> Respawn</span>
-          
-          <button class="btn-sm btn-secondary" id="playmode-mod-btn" title="Toggle Moderator Fly/Noclip Mode (M)">🛡️ Mod Mode: OFF</button>
-          <button class="btn-sm btn-danger-lite" id="playmode-respawn-btn">🔄 Respawn</button>
-          <button class="btn-sm btn-secondary" id="playmode-exit-btn">✕ Exit</button>
-        </div>
+
 
         <!-- Selection bar (shown when select tool active) -->
         <div id="world-selection-bar" class="hidden">
@@ -1115,9 +1127,9 @@
       <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
     </button>
     <div class="tool-separator"></div>
-    <button class="world-tool-btn" id="world-playmode-btn" title="Enter Interactive Game Mode (P)" style="background:linear-gradient(135deg, #0284c7 0%, #00e5ff 50%, #a855f7 100%);border:2px solid #38bdf8;box-shadow:0 0 12px rgba(0,229,255,0.6), inset 0 1px 0 rgba(255,255,255,0.5);color:#ffffff;padding:4px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
-      <span style="font-size:15px;line-height:1;">🎮</span>
-      <span style="font-size:11px;font-weight:900;letter-spacing:0.5px;text-shadow:1px 1px 2px rgba(0,0,0,0.8);">PLAY</span>
+    <button class="world-tool-btn" id="world-playmode-btn" title="Enter Interactive Game Mode (P)" style="width:auto;min-width:44px;height:40px;padding:0 12px;background:linear-gradient(180deg,#0284c7 0%,#0369a1 100%);border:2px solid #38bdf8;box-shadow:inset 0 1px 0 #7dd3fc, 0 0 10px rgba(56,189,248,0.5);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+      <span style="font-size:17px;line-height:1;">🎮</span>
+      <span style="font-size:12px;font-weight:900;color:#ffffff;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;">PLAY</span>
     </button>
     <button class="world-tool-btn" id="world-music-btn" title="Music Sequencer (M)">
       <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -1375,6 +1387,7 @@
       <button class="picker-close" id="picker-close-btn">×</button>
     </div>
     <div class="picker-filters" id="picker-filter-row">
+      <button class="picker-filter-btn" data-cat="favorite" style="color:#facc15;font-weight:800;">⭐ Favorites</button>
       <button class="picker-filter-btn active" data-cat="all">All</button>
       <button class="picker-filter-btn" data-cat="fg">Blocks</button>
       <button class="picker-filter-btn" data-cat="bg">Backgrounds</button>
