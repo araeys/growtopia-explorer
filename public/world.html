@@ -962,10 +962,24 @@
       cursor: pointer;
       z-index: 5;
       transition: all 0.15s ease;
+      user-select: none;
     }
-    .picker-star-btn:hover { color: #fde047; transform: scale(1.15); background: rgba(10,15,25,0.95); }
-    .picker-star-btn.active { color: #facc15; border-color: #facc15; }
-
+    .picker-item:hover .picker-star-btn {
+      color: #94a3b8;
+      border-color: rgba(255,255,255,0.3);
+    }
+    .picker-star-btn:hover {
+      color: #fde047 !important;
+      border-color: #fde047 !important;
+      transform: scale(1.18);
+      background: rgba(10,15,25,0.95);
+    }
+    .picker-star-btn.active {
+      color: #facc15 !important;
+      border-color: #facc15 !important;
+      background: rgba(250, 204, 21, 0.18);
+      text-shadow: 0 0 6px rgba(250, 204, 21, 0.7);
+    }
 </style>
 <style>
   @media (max-width: 900px) {
@@ -1939,6 +1953,39 @@
   // ── Add Block Button ──
   document.getElementById('world-add-block-btn')?.addEventListener('click', () => openPickerForSlot(engine.getActiveHotbarIndex()));
 
+  // ── Item Favorites Storage (localStorage) ──
+  const FAVORITES_STORAGE_KEY = 'gt_world_favorite_items';
+  let favoriteItemIds = new Set();
+  try {
+    const rawFavs = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (rawFavs) {
+      const parsed = JSON.parse(rawFavs);
+      if (Array.isArray(parsed)) {
+        favoriteItemIds = new Set(parsed.map(Number));
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load favorite items from localStorage', e);
+  }
+
+  function saveFavoriteItems() {
+    try {
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favoriteItemIds)));
+    } catch (e) {
+      console.warn('Failed to save favorite items', e);
+    }
+  }
+
+  function toggleFavoriteItem(itemId) {
+    const numId = Number(itemId);
+    if (favoriteItemIds.has(numId)) {
+      favoriteItemIds.delete(numId);
+    } else {
+      favoriteItemIds.add(numId);
+    }
+    saveFavoriteItems();
+  }
+
   // ── Item Picker Modal with Scroll Preservation & Strict Filtering ──
   let pickerTargetSlot = 0;
   let pickerFilter = 'all';
@@ -2013,7 +2060,9 @@
       const isBg = catObj.isBackgroundItem(item);
       const isSeed = nameLow.endsWith("seed") || nameLow.includes(" seed") || item.action === 19 || cat === "Seeds";
 
-      if (pickerFilter === 'seed') {
+      if (pickerFilter === 'favorite') {
+        if (!favoriteItemIds.has(Number(item.id))) return false;
+      } else if (pickerFilter === 'seed') {
         if (!isSeed || !item.texture || nameLow.startsWith("item #")) return false;
       } else {
         if (!catObj.isPlaceableItem(item)) return false;
@@ -2055,8 +2104,35 @@
       return true;
     });
 
+    if (currentMatchingItems.length === 0) {
+      if (pickerFilter === 'favorite') {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; color: var(--text-muted); gap: 10px;">
+            <div style="font-size: 36px; line-height: 1;">⭐</div>
+            <div style="font-size: 14px; font-weight: 700; color: #f8fafc;">No Favorite Items Yet</div>
+            <div style="font-size: 12px; color: #94a3b8; max-width: 320px; line-height: 1.5;">Click the star icon (★) in the top-right corner of any item in other categories to add it to your favorites list!</div>
+          </div>
+        `;
+      } else {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; color: var(--text-muted); gap: 10px;">
+            <div style="font-size: 32px; line-height: 1;">🔍</div>
+            <div style="font-size: 14px; font-weight: 600; color: #94a3b8;">No matching items found</div>
+          </div>
+        `;
+      }
+      if (countEl) {
+        countEl.textContent = pickerFilter === 'favorite' ? '0 favorite items' : 'Showing 0 of 0 placeable items';
+      }
+      return;
+    }
+
     if (countEl) {
-      countEl.textContent = `Showing ${Math.min(pickerVisibleLimit, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+      if (pickerFilter === 'favorite') {
+        countEl.textContent = `Showing ${Math.min(pickerVisibleLimit, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} favorite items`;
+      } else {
+        countEl.textContent = `Showing ${Math.min(pickerVisibleLimit, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+      }
     }
 
     appendPickerItems();
@@ -2079,6 +2155,27 @@
       el.className = 'picker-item';
       el.title = `#${item.id} ${item.name} (${catObj.isBackgroundItem(item) ? 'Background' : 'Block'})`;
 
+      // Star favorite button
+      const isFav = favoriteItemIds.has(Number(item.id));
+      const starBtn = document.createElement('button');
+      starBtn.className = `picker-star-btn ${isFav ? 'active' : ''}`;
+      starBtn.type = 'button';
+      starBtn.title = isFav ? 'Remove from favorites' : 'Add to favorites';
+      starBtn.textContent = isFav ? '★' : '☆';
+      starBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFavoriteItem(item.id);
+        const nowFav = favoriteItemIds.has(Number(item.id));
+        starBtn.className = `picker-star-btn ${nowFav ? 'active' : ''}`;
+        starBtn.textContent = nowFav ? '★' : '☆';
+        starBtn.title = nowFav ? 'Remove from favorites' : 'Add to favorites';
+        
+        if (pickerFilter === 'favorite') {
+          renderPickerGrid();
+        }
+      });
+      el.appendChild(starBtn);
+
       const c = document.createElement('canvas');
       c.width = 32; c.height = 32;
       c.style.width = '36px'; c.style.height = '36px';
@@ -2099,7 +2196,11 @@
     });
 
     if (countEl) {
-      countEl.textContent = `Showing ${Math.min(grid.children.length, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+      if (pickerFilter === 'favorite') {
+        countEl.textContent = `Showing ${Math.min(grid.children.length, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} favorite items`;
+      } else {
+        countEl.textContent = `Showing ${Math.min(grid.children.length, currentMatchingItems.length).toLocaleString()} of ${currentMatchingItems.length.toLocaleString()} placeable items`;
+      }
     }
   }
 
