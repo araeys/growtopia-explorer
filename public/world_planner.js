@@ -939,22 +939,21 @@
             impactShakeY = (Math.random() - 0.5) * impactMag * 2;
           }
 
-          // Smooth rhythmic running camera shake (pronounced kinetic stride bob)
+          // Smooth rhythmic running camera shake (natural heavy step cadence)
           if (player.active && player.isGrounded && Math.abs(player.vx) > 0.5 && player.state === "walk") {
             const walkBlend = player.walkBlend !== undefined ? player.walkBlend : 1.0;
             const runIntensity = Math.min(1.0, Math.abs(player.vx) / 3.0);
-            runShakeX = Math.sin(player.walkPhase) * 1.5 * runIntensity * walkBlend;
-            runShakeY = Math.abs(Math.sin(player.walkPhase)) * 2.2 * runIntensity * walkBlend;
+            runShakeX = Math.sin(player.walkPhase * 0.5) * 0.75 * runIntensity * walkBlend;
+            runShakeY = Math.sin(player.walkPhase) * 1.35 * runIntensity * walkBlend;
           }
 
-          // Dynamic falling air turbulence camera shake (active after falling >= 1.0s)
-          if (player.active && (player.continuousFallTimer || 0) >= 1.0 && !player.moderatorMode && !player.isDead) {
-            const fallTime = player.continuousFallTimer - 1.0;
-            const fallProgress = Math.min(1.0, fallTime / 1.5);
-            // Magnitude smoothly scales up the longer and faster the fall
-            const fallMag = 1.4 + fallProgress * 4.2 + Math.min(3.0, (player.vy - 1.5) * 0.35);
-            fallShakeX = Math.sin(player.animTimer * 26) * fallMag;
-            fallShakeY = Math.cos(player.animTimer * 30) * (fallMag * 0.65);
+          // Dynamic falling air turbulence camera shake (starts at >= 0.5s, ramps smoothly from small to large)
+          if (player.active && (player.continuousFallTimer || 0) >= 0.5 && !player.moderatorMode && !player.isDead) {
+            const fallTime = player.continuousFallTimer - 0.5;
+            const fallProgress = Math.min(1.0, fallTime / 2.0);
+            const fallMag = (fallProgress * 0.4 + Math.pow(fallProgress, 1.8) * 3.4) * Math.min(1.0, Math.max(0.1, (player.vy - 1.0) / 4.0));
+            fallShakeX = Math.sin(player.animTimer * 16) * fallMag;
+            fallShakeY = Math.cos(player.animTimer * 18) * (fallMag * 0.75);
           }
         }
 
@@ -2886,8 +2885,8 @@
           player.continuousRunTimer = 0;
         }
 
-        // Falling timer for falling camera rumble shake (active after falling >= 1.0s)
-        const isFallingInAir = !player.isGrounded && player.vy > 1.2 && !player.moderatorMode && !player.isDead;
+        // Falling timer for falling camera rumble shake (active after falling >= 0.5s)
+        const isFallingInAir = !player.isGrounded && player.vy > 1.0 && !player.moderatorMode && !player.isDead;
         if (isFallingInAir) {
           player.continuousFallTimer = (player.continuousFallTimer || 0) + dt;
         } else {
