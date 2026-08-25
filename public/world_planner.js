@@ -104,6 +104,7 @@
         punchTimer: 0,
         punchTargetX: 0,
         punchTargetY: 0,
+        stepParticleTimer: 0,
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -310,18 +311,36 @@
       const gameParticles = [];
 
       function spawnFootstepDust(x, y, facing) {
-        const colors = ["#8d5524", "#a16207", "#d97706", "#78716c", "#cbd5e1"];
-        for (let i = 0; i < 4; i++) {
+        const colors = ["#f8fafc", "#e2e8f0", "#cbd5e1", "#94a3b8", "#a8a29e", "#d6d3d1"];
+        for (let i = 0; i < 3; i++) {
           gameParticles.push({
-            x: x + (Math.random() - 0.5) * 8,
-            y: y + (Math.random() - 0.5) * 3,
-            vx: -facing * (1.2 + Math.random() * 2.2),
-            vy: -(0.8 + Math.random() * 1.5),
-            radius: 2.5 + Math.random() * 2.2,
+            x: x + (Math.random() - 0.5) * 6,
+            y: y - 1 + Math.random() * 2,
+            vx: -facing * (0.8 + Math.random() * 1.6),
+            vy: -(0.4 + Math.random() * 1.0),
+            radius: 1.8 + Math.random() * 1.8,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 0.85,
+            life: 0.30,
+            maxLife: 0.30
+          });
+        }
+      }
+
+      function spawnLandingDust(x, y) {
+        const colors = ["#ffffff", "#f8fafc", "#e2e8f0", "#cbd5e1", "#94a3b8"];
+        for (let i = 0; i < 6; i++) {
+          const side = (i % 2 === 0) ? 1 : -1;
+          gameParticles.push({
+            x: x + side * (Math.random() * 6),
+            y: y - 1,
+            vx: side * (1.0 + Math.random() * 2.2),
+            vy: -(0.5 + Math.random() * 1.2),
+            radius: 2.0 + Math.random() * 2.0,
             color: colors[Math.floor(Math.random() * colors.length)],
             alpha: 0.9,
-            life: 0.42,
-            maxLife: 0.42
+            life: 0.35,
+            maxLife: 0.35
           });
         }
       }
@@ -354,14 +373,14 @@
           }
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.15; // gravity on dust
-          p.alpha = p.life / p.maxLife;
+          p.vy += 0.08; // soft floating gravity on dust
+          p.alpha = Math.max(0, p.life / p.maxLife);
 
           ctx.save();
           ctx.globalAlpha = p.alpha;
           ctx.fillStyle = p.color;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius * (p.life / p.maxLife), 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, Math.max(0.5, p.radius * (p.life / p.maxLife)), 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }
@@ -787,10 +806,10 @@
           ctx.restore();
         }
 
-        // 8. Player Avatar (Play Mode)
-        if (player.active) {
+        // 8. Player Avatar & Dynamic Particles (Play Mode)
+        if (player.active || gameParticles.length > 0) {
           updateAndDrawParticles(ctx, 0.016);
-          drawPlayerAvatar(ctx);
+          if (player.active) drawPlayerAvatar(ctx);
         }
 
         // 9. Hover Indicator (in Build/Erase mode)
@@ -2319,12 +2338,15 @@
           player.vx = Math.max(-6.2, Math.min(6.2, player.vx));
 
           // Footstep Dust Particles when running on ground
-          if (player.isGrounded && Math.abs(player.vx) > 1.2) {
-            player.stepParticleTimer += dt;
-            if (player.stepParticleTimer > 0.10) {
+          if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.8)) {
+            player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
+            if (player.stepParticleTimer >= 0.08) {
               player.stepParticleTimer = 0;
-              spawnFootstepDust(player.x + (player.facing > 0 ? 4 : player.width - 4), player.y + player.height, player.facing);
+              const footX = player.facing > 0 ? (player.x + 3) : (player.x + player.width - 3);
+              spawnFootstepDust(footX, player.y + player.height, player.facing);
             }
+          } else {
+            player.stepParticleTimer = 0;
           }
 
           // Jump & Double Jump
@@ -2359,9 +2381,15 @@
           resolvePlayerCollisionX();
 
           // Apply Y movement and check collision
+          const wasGrounded = player.isGrounded;
           player.y += player.vy * timeScale;
           player.isGrounded = false;
           resolvePlayerCollisionY();
+
+          // Landing Dust Puff Burst
+          if (!wasGrounded && player.isGrounded) {
+            spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+          }
         }
 
         // World Bounds Check
