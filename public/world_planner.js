@@ -354,22 +354,22 @@
       }
 
       function spawnDeathParticles(x, y) {
-        // 1. Popping & Floating Heart Particles (Replacing generic circles with authentic randomized heart assets)
-        for (let i = 0; i < 14; i++) {
+        // 1. Popping & Floating Heart Particles (Smooth Fountain Burst)
+        for (let i = 0; i < 16; i++) {
           const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 1.5;
-          const speed = 2.2 + Math.random() * 5.2;
-          const lifeTime = 0.65 + Math.random() * 0.35;
+          const speed = 2.0 + Math.random() * 4.2;
+          const lifeTime = 0.75 + Math.random() * 0.35;
           const randImg = deathHeartImages[Math.floor(Math.random() * deathHeartImages.length)];
           gameParticles.push({
             type: "heart",
             src: randImg,
-            x: x + (Math.random() - 0.5) * 8,
-            y: y + (Math.random() - 0.5) * 8,
+            x: x + (Math.random() - 0.5) * 6,
+            y: y + (Math.random() - 0.5) * 6,
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 1.8,
-            rotation: (Math.random() - 0.5) * 0.6,
-            rotSpeed: (Math.random() - 0.5) * 4.5,
-            scale: 0.85 + Math.random() * 0.40,
+            vy: Math.sin(angle) * speed - 1.2,
+            rot: (Math.random() - 0.5) * 0.6,
+            rotSpeed: (Math.random() - 0.5) * 3.5,
+            scale: 0.75 + Math.random() * 0.40,
             life: lifeTime,
             maxLife: lifeTime
           });
@@ -501,27 +501,28 @@
           if (p.type === "heart") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.20; // gentle gravity
-            p.vx *= 0.95; // air drag
-            p.rotation += (p.rotSpeed || 0) * dt;
-
-            // Rapid Strobe / Flicker Animation
-            const isFlickerOn = Math.sin((p.maxLife - p.life) * 42) > -0.2;
-            if (!isFlickerOn) continue;
+            // Smooth buoyant physics (burst outward, decelerate, and gently float upwards)
+            p.vx *= 0.93;
+            p.vy = p.vy * 0.92 - 0.06;
+            p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
 
             const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = Math.max(0, 1.0 - Math.pow(progress, 2.0));
-            const img = getSpriteImage(p.src);
+            // Smooth pop in and fade out
+            const baseAlpha = progress < 0.15 ? (progress / 0.15) : Math.max(0, 1.0 - Math.pow((progress - 0.15) / 0.85, 1.6));
+            // Silky smooth sinusoidal strobe flicker (Never drops frames!)
+            const flicker = 0.60 + 0.40 * Math.sin((p.maxLife - p.life) * 26);
+            const alpha = Math.max(0, Math.min(1, baseAlpha * flicker));
 
+            const img = getSpriteImage(p.src);
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
-              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-              ctx.translate(p.x, p.y);
-              ctx.rotate(p.rotation);
-              // Pop scale curve
-              const popScale = p.scale * (progress < 0.2 ? (0.5 + (progress / 0.2) * 0.7) : (1.2 - (progress - 0.2) * 0.4));
-              ctx.scale(popScale, popScale);
               ctx.imageSmoothingEnabled = false;
+              ctx.globalAlpha = alpha;
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.rot);
+              // Pop scale curve
+              const popScale = p.scale * (progress < 0.2 ? (0.4 + (progress / 0.2) * 0.7) : (1.1 - (progress - 0.2) * 0.3));
+              ctx.scale(popScale, popScale);
               ctx.drawImage(img, -10, -10, 20, 20);
               ctx.restore();
             }
@@ -2892,10 +2893,10 @@
 
       // ── Death Heart Particles ──
       const deathHeartImages = [
-        "particles/hearts/heart_1.png",
-        "particles/hearts/heart_2.png",
         "particles/hearts/Heart_001.png",
-        "particles/hearts/Heart_002.png"
+        "particles/hearts/Heart_002.png",
+        "particles/hearts/HeartGlow_001.png",
+        "particles/hearts/HeartGlow_002.png"
       ];
 
       // ── Crystal Orb 3D Orbit Sequence (16 Frames) ──

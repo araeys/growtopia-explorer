@@ -2776,6 +2776,9 @@
     if (charModal) charModal.classList.add('hidden');
   }
 
+  window.openSkinModal = openSkinModal;
+  window.closeSkinModal = closeSkinModal;
+
   skinBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     openSkinModal();
@@ -2836,6 +2839,8 @@
     }
   }
 
+  window.openGameChat = openGameChat;
+
   document.getElementById('hud-chat-btn')?.addEventListener('click', openGameChat);
   document.getElementById('mobile-chat-btn')?.addEventListener('click', openGameChat);
 
@@ -2847,10 +2852,14 @@
       engine.setPlayerHair(selectedHairTemp);
     }
     if (engine && typeof engine.setClothesOffset === 'function') {
-      engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+      engine.setClothesOffset('hair', clothesOffsets.hair.x, clothesOffsets.hair.y);
+      engine.setClothesOffset('shirt', clothesOffsets.shirt.x, clothesOffsets.shirt.y);
+      engine.setClothesOffset('pants', clothesOffsets.pants.x, clothesOffsets.pants.y);
     }
     try {
-      localStorage.setItem('gt_clothes_offsets', JSON.stringify({ hair: { x: hairOffsetX, y: hairOffsetY } }));
+      localStorage.setItem('gt_clothes_offsets', JSON.stringify(clothesOffsets));
+      localStorage.setItem('gt_world_player_skin', selectedSkinTemp);
+      localStorage.setItem('gt_world_player_hair', selectedHairTemp);
     } catch(err) {}
     closeSkinModal();
   });
