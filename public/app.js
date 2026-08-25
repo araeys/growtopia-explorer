@@ -4333,6 +4333,26 @@ function initImportStudio() {
       }
     });
   }
+  // Play startup piano SFX
+  function playStartupPianoSfx() {
+    try {
+      const audio = new Audio("audio/piano_nice.wav");
+      audio.volume = 0.70;
+      const p = audio.play();
+      if (p !== undefined) {
+        p.catch(() => {
+          const onFirstInteraction = () => {
+            audio.play().catch(() => {});
+            window.removeEventListener("pointerdown", onFirstInteraction);
+            window.removeEventListener("keydown", onFirstInteraction);
+          };
+          window.addEventListener("pointerdown", onFirstInteraction, { once: true });
+          window.addEventListener("keydown", onFirstInteraction, { once: true });
+        });
+      }
+    } catch (e) {}
+  }
+  playStartupPianoSfx();
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
