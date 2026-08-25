@@ -2192,8 +2192,8 @@
         player.respawnInvincible = 1.8; // 1.8s invincibility shield
         player.respawnRingRadius = 4;
         player.state = "idle";
-        playSfx("door_shut", 1.0, 0.9);
-        playSfx("already_used", 1.0, 0.75);
+        playSfx("teleport", 1.0, 0.85);
+        playSfx("door_shut", 1.0, 0.70);
         if (msg) onStatusMessage(msg);
       }
 
@@ -2215,8 +2215,8 @@
           selection.active = false;
           onToolChange("preview");
 
-          // Play Game Mode Enter Sound Effect & Zoom in to Player
-          playSfx("already_used", 1.0, 0.75);
+          // Play Game Mode Enter Sound Effect (success.wav) & Zoom in to Player
+          playSfx("success", 1.0, 0.75);
           viewport.zoom = 2.2;
           smoothZoomTarget = 2.2;
           if (canvas) {
@@ -2378,21 +2378,23 @@
           // Max walk speed: 6.2 px/frame
           player.vx = Math.max(-6.2, Math.min(6.2, player.vx));
 
-          // Dynamic Footstep & Skid Particles
+          // Dynamic Footstep & Skid Particles + Sound Effects
           const isSkidding = player.isGrounded && Math.abs(player.vx) > 1.8 && ((player.vx > 0 && player.keys.left) || (player.vx < 0 && player.keys.right));
           if (isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.05) {
+            if (player.stepParticleTimer >= 0.06) {
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
               spawnFootstepDust(footX, player.y + player.height, player.facing, true);
+              playSfx("footstep", 1.25 + Math.random() * 0.20, 0.45);
             }
           } else if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.8)) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.08) {
+            if (player.stepParticleTimer >= 0.16) {
               player.stepParticleTimer = 0;
               const footX = player.facing > 0 ? (player.x + 3) : (player.x + player.width - 3);
               spawnFootstepDust(footX, player.y + player.height, player.facing, false);
+              playSfx("footstep", 0.92 + Math.random() * 0.16, 0.35);
             }
           } else {
             player.stepParticleTimer = 0;
@@ -2435,10 +2437,11 @@
           player.isGrounded = false;
           resolvePlayerCollisionY();
 
-          // Landing Dust Puff Burst & Squash
+          // Landing Dust Puff Burst & Squash + rock_hit.wav Impact SFX
           if (!wasGrounded && player.isGrounded) {
             player.landingSquashTimer = 0.14;
             spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+            playSfx("rock_hit", 0.95 + Math.random() * 0.15, 0.65);
           }
         }
 
