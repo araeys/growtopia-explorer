@@ -1191,7 +1191,7 @@
 </div>
 
 <!-- Authentic Growtopia Dialog Window: Welcome & Info -->
-<div id="welcome-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999999;display:flex;align-items:center;justify-content:center;padding:12px;font-family:'Century Gothic',Arial,sans-serif;">
+<div id="welcome-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;padding:12px;font-family:'Century Gothic',Arial,sans-serif;">
   <div style="max-width:520px;width:100%;background:#1c2836;border:2px solid #0a1017;box-shadow:inset 0 0 0 2px #3d566e, 0 10px 30px rgba(0,0,0,0.9);border-radius:4px;overflow:hidden;">
     
     <!-- Dialog Header -->
@@ -1199,7 +1199,7 @@
       <span style="font-size:14px;font-weight:900;color:#f9d342;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;letter-spacing:0.5px;">
         GROWTOPIA WORLD PLANNER STUDIO
       </span>
-      <button id="welcome-modal-close" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;width:22px;height:22px;line-height:18px;text-align:center;cursor:pointer;padding:0;">
+      <button id="welcome-modal-close" onclick="document.getElementById('welcome-modal').style.display='none';" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;width:22px;height:22px;line-height:18px;text-align:center;cursor:pointer;padding:0;">
         X
       </button>
     </div>
@@ -1251,7 +1251,7 @@
 
     <!-- Dialog Actions Footer -->
     <div style="background:#132639;border-top:2px solid #0a1017;padding:10px 14px;display:flex;justify-content:flex-end;">
-      <button id="welcome-modal-ack-btn" style="background:#27ae60;border-top:2px solid #58d68d;border-left:2px solid #58d68d;border-bottom:3px solid #196f3d;border-right:3px solid #196f3d;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;padding:6px 20px;cursor:pointer;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;border-radius:2px;">
+      <button id="welcome-modal-ack-btn" onclick="document.getElementById('welcome-modal').style.display='none';" style="background:#27ae60;border-top:2px solid #58d68d;border-left:2px solid #58d68d;border-bottom:3px solid #196f3d;border-right:3px solid #196f3d;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;padding:6px 20px;cursor:pointer;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;border-radius:2px;">
         LET'S PLAY
       </button>
     </div>
@@ -2553,16 +2553,21 @@
   });
 })();
 
-  // ── Welcome Feature Guide Modal Logic ──
-  const welcomeModal = document.getElementById('world-welcome-modal');
-  const welcomeCloseBtn = document.getElementById('world-welcome-close-btn');
-  const welcomeStartBtn = document.getElementById('world-welcome-start-btn');
+  // ── Welcome Modal Event Wiring ──
+  const wModal = document.getElementById('welcome-modal');
+  const wClose = document.getElementById('welcome-modal-close');
+  const wAck = document.getElementById('welcome-modal-ack-btn');
 
-  function closeWelcomeModal() {
-    if (welcomeModal) welcomeModal.style.display = 'none';
+  function hideWelcomeDialog() {
+    if (wModal) wModal.style.display = 'none';
   }
 
-  if (welcomeCloseBtn) welcomeCloseBtn.addEventListener('click', closeWelcomeModal);
-  if (welcomeStartBtn) welcomeStartBtn.addEventListener('click', closeWelcomeModal);
+  if (wClose) wClose.addEventListener('click', hideWelcomeDialog);
+  if (wAck) wAck.addEventListener('click', hideWelcomeDialog);
+  if (wModal) {
+    wModal.addEventListener('click', (e) => {
+      if (e.target === wModal) hideWelcomeDialog();
+    });
+  }
 
 </script>
