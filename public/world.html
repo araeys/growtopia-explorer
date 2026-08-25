@@ -2127,7 +2127,7 @@
   const charModal = document.getElementById('character-modal');
   const skinBtn = document.getElementById('world-skin-btn');
   const mobileSkinBtn = document.getElementById('mobile-skin-btn');
-  let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
+  let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
 
   function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
@@ -2138,7 +2138,7 @@
   }
 
   function openSkinModal() {
-    selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'cartoon';
+    selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
     updateSkinCards(selectedSkinTemp);
     if (charModal) charModal.classList.remove('hidden');
   }

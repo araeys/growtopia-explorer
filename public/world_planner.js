@@ -306,6 +306,66 @@
         return y * world.width + x;
       }
 
+            // Dynamic World Particle System (Footstep dust, block hits, death burst, respawn rings)
+      const gameParticles = [];
+
+      function spawnFootstepDust(x, y, facing) {
+        for (let i = 0; i < 2; i++) {
+          gameParticles.push({
+            x: x + (Math.random() - 0.5) * 6,
+            y: y + (Math.random() - 0.5) * 2,
+            vx: -facing * (0.8 + Math.random() * 1.6),
+            vy: -(0.6 + Math.random() * 1.2),
+            radius: 2.0 + Math.random() * 1.5,
+            color: Math.random() > 0.5 ? "#8d5524" : "#a16207",
+            alpha: 0.85,
+            life: 0.35,
+            maxLife: 0.35
+          });
+        }
+      }
+
+      function spawnDeathParticles(x, y) {
+        for (let i = 0; i < 18; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2.0 + Math.random() * 4.5;
+          gameParticles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1.5,
+            radius: 2.5 + Math.random() * 2.5,
+            color: Math.random() > 0.4 ? "#f87171" : (Math.random() > 0.5 ? "#fbbf24" : "#ffffff"),
+            alpha: 1.0,
+            life: 0.55,
+            maxLife: 0.55
+          });
+        }
+      }
+
+      function updateAndDrawParticles(ctx, dt) {
+        for (let i = gameParticles.length - 1; i >= 0; i--) {
+          const p = gameParticles[i];
+          p.life -= dt;
+          if (p.life <= 0) {
+            gameParticles.splice(i, 1);
+            continue;
+          }
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.15; // gravity on dust
+          p.alpha = p.life / p.maxLife;
+
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * (p.life / p.maxLife), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
       function spawnBlockPlaceEffect(tx, ty, item) {
         if (!item || !player.active || typeof performance === "undefined") return;
         const now = performance.now();
@@ -728,6 +788,7 @@
 
         // 8. Player Avatar (Play Mode)
         if (player.active) {
+          updateAndDrawParticles(ctx, 0.016);
           drawPlayerAvatar(ctx);
         }
 
@@ -1596,15 +1657,24 @@
 
         canvas.addEventListener("wheel", event => {
           event.preventDefault();
-          const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+          const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 800, height: 600 };
           const sx = event.clientX - rect.left;
           const sy = event.clientY - rect.top;
 
-          // Compute world space coordinate under cursor once on wheel tick
-          zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
-          zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
-          zoomScreenX = sx;
-          zoomScreenY = sy;
+          if (player.active) {
+            // In Game Mode: anchor zoom strictly to the player character center!
+            zoomAnchorWorldX = player.x + player.width / 2;
+            zoomAnchorWorldY = player.y + player.height / 2;
+            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+            zoomScreenX = (rect.width || 800) / 2;
+            zoomScreenY = (rect.height || 600) / 2;
+          } else {
+            // In Builder Mode: anchor zoom to the mouse cursor
+            zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
+            zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
+            zoomScreenX = sx;
+            zoomScreenY = sy;
+          }
 
           const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
           smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
@@ -2120,15 +2190,51 @@
 
       function updatePlayerPhysics(dt) {
         if (!player.active) return;
+
+        // Death state handling
+        if (player.isDead) {
+          player.deathTimer -= dt;
+          if (player.deathTimer <= 0) {
+            player.isDead = false;
+            respawnPlayer("Respawned at spawn door!");
+          }
+          return;
+        }
+
         player.animTimer += dt;
 
-        // Decrement placing/punch animation timer so arm doesn't freeze
-        if (player.punchTimer > 0) {
-          player.punchTimer = Math.max(0, player.punchTimer - dt);
+        // Timers
+        if (player.punchTimer > 0) player.punchTimer = Math.max(0, player.punchTimer - dt);
+        if (player.jumpThrustTimer > 0) player.jumpThrustTimer = Math.max(0, player.jumpThrustTimer - dt);
+        if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
+        if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
+
+        // AFK Idle Detection: If player is actively moving, cancel AFK immediately!
+        const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
+        if (isUserMoving || player.moderatorMode || !player.isGrounded) {
+          player.afkTimer = 0;
+          player.afkAction = null;
+          player.afkActionTimer = 0;
+        } else {
+          player.afkTimer += dt;
+          if (player.afkTimer >= 10.0 && !player.afkAction) {
+            const afkList = ["sleep", "dance", "think", "cheer", "angry"];
+            player.afkAction = afkList[Math.floor(Math.random() * afkList.length)];
+            player.afkActionTimer = 3.6; // Runs for 3.6 seconds
+            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.6);
+            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.6);
+          }
+        }
+
+        if (player.afkActionTimer > 0) {
+          player.afkActionTimer -= dt;
+          if (player.afkActionTimer <= 0) {
+            player.afkAction = null;
+            player.afkTimer = 0; // Wait another 10s for next cute animation
+          }
         }
 
         // Delta-time normalization: base is 60fps (dt = 0.0166s -> timeScale = 1.0)
-        // This guarantees IDENTICAL fast physics regardless of screen refresh rate (60Hz, 144Hz, 240Hz)
         const timeScale = Math.max(0.5, Math.min(2.5, (dt || 0.0166) * 60));
 
         // Moderator Mode: Ultra-Fast Free 8-Way Flight & Noclip
@@ -2161,7 +2267,7 @@
           player.y += player.vy * timeScale;
           player.isGrounded = false;
         } else {
-          // Normal Game Mode Physics: Snappy, Fast, Authentic Growtopia Platformer Physics
+          // Normal Game Mode Physics
 
           // Horizontal Movement
           if (player.keys.left) {
@@ -2178,8 +2284,17 @@
             if (player.isGrounded) player.state = "idle";
           }
 
-          // Max walk speed: 6.2 px/frame (Fast, snappy Growtopia arcade run)
+          // Max walk speed: 6.2 px/frame
           player.vx = Math.max(-6.2, Math.min(6.2, player.vx));
+
+          // Footstep Dust Particles when running on ground
+          if (player.isGrounded && Math.abs(player.vx) > 1.2) {
+            player.stepParticleTimer += dt;
+            if (player.stepParticleTimer > 0.10) {
+              player.stepParticleTimer = 0;
+              spawnFootstepDust(player.x + (player.facing > 0 ? 4 : player.width - 4), player.y + player.height, player.facing);
+            }
+          }
 
           // Jump & Double Jump
           const wantsJump = player.keys.jump || player.keys.up;
@@ -2189,18 +2304,20 @@
               player.isGrounded = false;
               player.jumpCount = 1;
               player.jumpConsumed = true;
+              player.jumpThrustTimer = 0.22; // Power jump kick!
               player.state = "jump";
               playJumpSound(false);
             } else if (player.jumpCount === 1) {
               player.vy = -9.2;
               player.jumpCount = 2;
               player.jumpConsumed = true;
+              player.jumpThrustTimer = 0.22; // Power jump kick!
               player.state = "jump";
               playJumpSound(true);
             }
           }
 
-          // Snappy, Crisp Gravity (0.58 per 60fps frame, terminal velocity: 11.5)
+          // Snappy, Crisp Gravity
           player.vy += 0.58 * timeScale;
           if (player.vy > 11.5) player.vy = 11.5;
 
@@ -2251,7 +2368,7 @@
             if (!item) continue;
 
             if (isHazardItem(item)) {
-              respawnPlayer(`Ouch! Hit ${item.name}!`);
+              killPlayer(`Ouch! Hit ${item.name}!`);
               return;
             }
 
@@ -2284,7 +2401,7 @@
             if (!item) continue;
 
             if (isHazardItem(item)) {
-              respawnPlayer(`Ouch! Hit ${item.name}!`);
+              killPlayer(`Ouch! Hit ${item.name}!`);
               return;
             }
 
@@ -2507,10 +2624,14 @@
         // Subtle gentle idle breathing arm sway/wiggle (Low frequency, 0.08 rad)
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(player.animTimer * 2.5) * 0.08 : 0;
 
-        // Placing / Punch Spin Throw Animation
+        // Placing / Punch Spin Throw Animation (Inverted forward rotation)
         const isPunching = player.punchTimer > 0;
         const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
-        const punchSpinAngle = isPunching ? -punchProgress * Math.PI * 2 : 0;
+        const punchSpinAngle = isPunching ? punchProgress * Math.PI * 2 : 0;
+
+        // Jump Thrust Leg Extension (extends downwards with power for first 0.22s, then returns)
+        const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
+        const jumpThrustAngle = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 0.45 : 0;
 
         // Opposing gentle vertical slow hover wave for floating legs (opposite directions!)
         const legHoverWave = Math.sin(player.animTimer * 4.0) * 1.8;
@@ -2554,7 +2675,7 @@
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
-          const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift);
+          const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
           ctx.save();
           ctx.translate(8, legRY);
           ctx.rotate(legRAngle);
@@ -2570,7 +2691,7 @@
           else if (isJumping) legLAngle = 0.25; // Downwards angle!
           else if (isWalking) legLAngle = -walkCycle * 0.4;
 
-          const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift);
+          const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
           ctx.save();
           ctx.translate(-4, legLY);
           ctx.rotate(legLAngle);
@@ -2589,6 +2710,12 @@
           // 5. Head with Face & Permanent Dark Smile Line
           if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
             ctx.drawImage(imgHead, -16, -16, 32, 32);
+          }
+
+          // Red Hair (#44) Layer positioned precisely over skull
+          const imgRedHair = getSpriteImage("character_base_assets/gt_parts/red_hair.png");
+          if (imgRedHair && imgRedHair.complete && imgRedHair.naturalWidth > 0) {
+            ctx.drawImage(imgRedHair, -16, -18, 32, 32);
           }
           ctx.restore();
 
@@ -2718,6 +2845,56 @@
         ctx.restore(); // Restore sprite transform
 
         // Growtopia Nametag ("Raey" with Flag Logo)
+        // Draw Respawn Expanding Cyan Halo Ring
+        if (player.respawnRingRadius > 0 && player.respawnRingRadius < 55) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(0, 229, 255, " + Math.max(0, 1 - player.respawnRingRadius / 55) + ")";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(px + pw / 2, py + ph / 2, player.respawnRingRadius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Draw AFK Cute Animated Emotes (Sleep, Dance, Think, Cheer, Angry)
+        if (player.afkAction && player.isGrounded) {
+          ctx.save();
+          const afkX = px + pw / 2;
+          const afkY = py - 26;
+          const t = player.animTimer;
+
+          if (player.afkAction === "sleep") {
+            // Floating Z z z... bubbles rising
+            const zProgress = (t * 2) % 1.5;
+            ctx.fillStyle = "#93c5fd";
+            ctx.font = "bold 13px sans-serif";
+            ctx.fillText("Z", afkX + Math.sin(t * 3) * 4, afkY - zProgress * 18);
+            ctx.font = "bold 10px sans-serif";
+            ctx.fillText("z", afkX + 8 + Math.sin(t * 3 + 1) * 3, afkY + 6 - zProgress * 18);
+          } else if (player.afkAction === "dance") {
+            // Floating music notes
+            ctx.font = "14px sans-serif";
+            ctx.fillText("🎵", afkX - 10 + Math.sin(t * 5) * 4, afkY - 2);
+            ctx.fillText("🎶", afkX + 4 - Math.sin(t * 5) * 4, afkY - 6);
+          } else if (player.afkAction === "think") {
+            // Glowing thought bubble with question mark
+            ctx.fillStyle = "#fef08a";
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText("❓", afkX - 5, afkY + Math.sin(t * 4) * 3);
+          } else if (player.afkAction === "cheer") {
+            // Celebration stars
+            ctx.font = "13px sans-serif";
+            ctx.fillText("✨", afkX - 12, afkY - 4);
+            ctx.fillText("🎉", afkX + 2, afkY - 2);
+          } else if (player.afkAction === "angry") {
+            // Angry steam puffs
+            ctx.fillStyle = "#f87171";
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText("💢", afkX - 6, afkY + Math.sin(t * 8) * 2);
+          }
+          ctx.restore();
+        }
+
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
 
         ctx.restore();
