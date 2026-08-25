@@ -1155,8 +1155,8 @@
       </div>
     </div>
 
-    <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;gap:6px;">💇 Hairstyle / Hair Color:</div>
-    <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:8px;margin-bottom:18px;" id="hair-grid">
+    <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;gap:6px;">💇 Hairstyle / Hair Model:</div>
+    <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:8px;margin-bottom:14px;" id="hair-grid">
       <div class="hair-card active" data-hair="red" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
         <div style="font-size:20px;margin-bottom:2px;">🔴</div>
         <div style="font-size:10px;font-weight:700;color:#f8fafc;">Red Hair</div>
@@ -1176,6 +1176,21 @@
       <div class="hair-card" data-hair="none" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
         <div style="font-size:20px;margin-bottom:2px;">⚪</div>
         <div style="font-size:10px;font-weight:700;color:#f8fafc;">Bald</div>
+      </div>
+    </div>
+
+    <!-- Clothes & Hair Position Repositioning Tool -->
+    <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:11px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:5px;">📐 Reposition Hair / Clothes Height:</span>
+        <span id="hair-offset-display" style="font-size:11px;color:#00e5ff;font-family:monospace;font-weight:700;">X: 0px, Y: -5px</span>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+        <button type="button" id="hair-nudge-up" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬆ Naik (-Y)</button>
+        <button type="button" id="hair-nudge-down" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬇ Turun (+Y)</button>
+        <button type="button" id="hair-nudge-left" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬅ Kiri (-X)</button>
+        <button type="button" id="hair-nudge-right" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f8fafc;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">➡ Kanan (+X)</button>
+        <button type="button" id="hair-nudge-reset" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">🔄 Reset</button>
       </div>
     </div>
 
@@ -2153,6 +2168,53 @@
   const mobileSkinBtn = document.getElementById('mobile-skin-btn');
   let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
   let selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
+  let hairOffsetX = 0;
+  let hairOffsetY = -5;
+
+  // Load saved clothes offsets
+  try {
+    const savedOffsets = JSON.parse(localStorage.getItem('gt_clothes_offsets') || '{}');
+    if (savedOffsets.hair) {
+      hairOffsetX = Number(savedOffsets.hair.x) || 0;
+      hairOffsetY = Number(savedOffsets.hair.y) || -5;
+    }
+  } catch(err) {}
+
+  if (engine && typeof engine.setClothesOffset === 'function') {
+    engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  }
+
+  function updateOffsetUI() {
+    const disp = document.getElementById('hair-offset-display');
+    if (disp) disp.textContent = `X: ${hairOffsetX}px, Y: ${hairOffsetY}px`;
+  }
+
+  document.getElementById('hair-nudge-up')?.addEventListener('click', () => {
+    hairOffsetY -= 1;
+    updateOffsetUI();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  });
+  document.getElementById('hair-nudge-down')?.addEventListener('click', () => {
+    hairOffsetY += 1;
+    updateOffsetUI();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  });
+  document.getElementById('hair-nudge-left')?.addEventListener('click', () => {
+    hairOffsetX -= 1;
+    updateOffsetUI();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  });
+  document.getElementById('hair-nudge-right')?.addEventListener('click', () => {
+    hairOffsetX += 1;
+    updateOffsetUI();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  });
+  document.getElementById('hair-nudge-reset')?.addEventListener('click', () => {
+    hairOffsetX = 0;
+    hairOffsetY = -5;
+    updateOffsetUI();
+    if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+  });
 
   function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
@@ -2175,6 +2237,7 @@
     selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
     updateSkinCards(selectedSkinTemp);
     updateHairCards(selectedHairTemp);
+    updateOffsetUI();
     if (charModal) charModal.classList.remove('hidden');
   }
 
@@ -2213,6 +2276,12 @@
     if (engine && typeof engine.setPlayerHair === 'function') {
       engine.setPlayerHair(selectedHairTemp);
     }
+    if (engine && typeof engine.setClothesOffset === 'function') {
+      engine.setClothesOffset('hair', hairOffsetX, hairOffsetY);
+    }
+    try {
+      localStorage.setItem('gt_clothes_offsets', JSON.stringify({ hair: { x: hairOffsetX, y: hairOffsetY } }));
+    } catch(err) {}
     closeSkinModal();
   });
 

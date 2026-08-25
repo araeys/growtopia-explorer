@@ -1665,15 +1665,8 @@
           const sx = event.clientX - rect.left;
           const sy = event.clientY - rect.top;
 
-          if (player.active) {
-            // In Game Mode: anchor zoom strictly to the player character center!
-            zoomAnchorWorldX = player.x + player.width / 2;
-            zoomAnchorWorldY = player.y + player.height / 2;
-            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
-            zoomScreenX = (rect.width || 800) / 2;
-            zoomScreenY = (rect.height || 600) / 2;
-          } else {
-            // In Builder Mode: anchor zoom to the mouse cursor
+          if (!player.active) {
+            // Builder Mode: anchor to cursor
             zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
             zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
             zoomScreenX = sx;
@@ -2096,7 +2089,7 @@
         for (let y = 0; y < world.height; y++) {
           for (let x = 0; x < world.width; x++) {
             const idx = y * world.width + x;
-            if (world.fg[idx] === 6) { // Main Door
+            if (world.fg[idx] === 6 || world.fg[idx] === 8) { // Main Door or White Door
               return { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
             }
           }
@@ -2104,16 +2097,32 @@
         return { x: Math.floor(world.width / 2) * TILE_SIZE + 6, y: 32 };
       }
 
-      function respawnPlayer(msg) {
-        player.x = player.respawnX;
-        player.y = player.respawnY;
+      function killPlayer(reason = "Ouch! Hit a lethal hazard!") {
+        if (player.isDead || player.moderatorMode || player.respawnInvincible > 0) return;
+        player.isDead = true;
+        player.deathTimer = 0.65;
+        player.vx = 0;
+        player.vy = -3.8; // Upward death pop
+        spawnDeathParticles(player.x + player.width / 2, player.y + player.height / 2);
+        playSfx("grunt", 1.0, 0.7);
+        onStatusMessage(`💀 ${reason}`);
+      }
+
+      function respawnPlayer(msg = "") {
+        const spawn = findSpawnPosition();
+        player.x = spawn.x;
+        player.y = spawn.y;
         player.vx = 0;
         player.vy = 0;
+        player.isDead = false;
+        player.deathTimer = 0;
         player.isGrounded = false;
         player.jumpCount = 0;
         player.jumpConsumed = false;
+        player.respawnInvincible = 1.6; // 1.6s invincibility shield
+        player.respawnRingRadius = 4;
         player.state = "idle";
-        if (player.active) playSfx("punch", 1.0, 0.5);
+        playSfx("door_shut", 1.0, 0.7);
         if (msg) onStatusMessage(msg);
       }
 
@@ -2355,15 +2364,15 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Snappy Camera Follow in Play Mode
-        if (canvas) {
+        // Butter-Smooth Camera Center on Player in Game Mode
+        if (canvas && player.active) {
           const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
           const viewW = canvas.width / dpr;
           const viewH = canvas.height / dpr;
           const targetX = viewW / 2 - (player.x + player.width / 2) * viewport.zoom;
           const targetY = viewH / 2 - (player.y + player.height / 2) * viewport.zoom;
-          viewport.x += (targetX - viewport.x) * Math.min(1.0, 0.40 * timeScale);
-          viewport.y += (targetY - viewport.y) * Math.min(1.0, 0.40 * timeScale);
+          viewport.x += (targetX - viewport.x) * Math.min(1.0, 0.35 * (timeScale || 1.0));
+          viewport.y += (targetY - viewport.y) * Math.min(1.0, 0.35 * (timeScale || 1.0));
         }
       }
 
@@ -2506,14 +2515,16 @@
         const pw = player.width;
         const ph = player.height;
 
-        // Shadow beneath player
-        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-        ctx.beginPath();
-        ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
+        // Shadow beneath player (Ground contact shadow)
+        if (!player.isDead) {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+          ctx.beginPath();
+          ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // ── Enhanced Legendary Moderator Celestial Aura & Orbital Energy Rings ──
-        if (player.moderatorMode) {
+        if (player.moderatorMode && !player.isDead) {
           ctx.save();
           const centerX = px + pw / 2;
           const centerY = py + ph / 2;
@@ -2610,7 +2621,19 @@
         ctx.save();
         ctx.translate(Math.round(px + pw / 2), Math.round(py + ph / 2));
         if (player.facing < 0) ctx.scale(-1, 1);
-        if (player.moderatorMode) ctx.globalAlpha = 0.96;
+
+        // Death Tumble Animation & Ghost Fade
+        if (player.isDead) {
+          const deathProgress = 1.0 - Math.max(0, player.deathTimer / 0.65);
+          ctx.globalAlpha = Math.max(0, 1.0 - deathProgress * 0.8);
+          ctx.rotate(deathProgress * Math.PI * 2);
+          ctx.scale(Math.max(0.2, 1.0 - deathProgress * 0.5), Math.max(0.2, 1.0 - deathProgress * 0.5));
+        } else if (player.respawnInvincible > 0) {
+          // Invincible flashing shield
+          ctx.globalAlpha = (player.animTimer % 0.2 < 0.1) ? 0.45 : 1.0;
+        } else if (player.moderatorMode) {
+          ctx.globalAlpha = 0.96;
+        }
 
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
@@ -2621,11 +2644,13 @@
         // Dynamic Facial Expression State
         let isBlinking = (t % 3.8) < 0.14;
 
-        // 360-Degree Jump Spin Throw Animation
+        // 360-Degree Jump Double Spin Throw (2 full rotations = 720 degrees, opposing arm directions!)
         const isJumpSpinning = player.jumpSpinTimer > 0;
-        const jumpSpinAngle = isJumpSpinning ? (1.0 - player.jumpSpinTimer / 0.28) * Math.PI * 2 : 0;
+        const jumpSpinProgress = isJumpSpinning ? (1.0 - player.jumpSpinTimer / 0.28) : 0;
+        const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 4;   // 2x forward spin for back arm
+        const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 4; // 2x INVERTED spin for front arm!
 
-        // Placing / Punch Spin Throw Animation (Inverted forward rotation)
+        // Placing / Punch Spin Throw Animation
         const isPunching = player.punchTimer > 0;
         const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
         const punchSpinAngle = isPunching ? punchProgress * Math.PI * 2 : 0;
@@ -2642,7 +2667,7 @@
         // Opposing gentle vertical slow hover wave for floating legs
         const legHoverWave = Math.sin(t * 4.0) * 1.8;
 
-        // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS (Head, Torso, Arms, Legs) ──
+        // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS ──
         let afkHeadAngle = 0;
         let afkHeadX = 0;
         let afkHeadY = 0;
@@ -2656,7 +2681,6 @@
 
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
-            // 😴 Sleep: Head drops, eyes shut, body slumps down, arms rest
             isBlinking = true;
             afkHeadAngle = 0.28;
             afkHeadY = 2;
@@ -2666,7 +2690,6 @@
             afkLegROffset = 1.5;
             afkLegLOffset = 1.5;
           } else if (player.afkAction === "dance") {
-            // 💃 Dance: Hips & Torso groove left/right, arms wave in rhythm, feet tap!
             afkTorsoX = Math.sin(t * 8) * 3.5;
             afkTorsoAngle = Math.sin(t * 8) * 0.18;
             afkHeadAngle = -Math.sin(t * 8) * 0.12;
@@ -2675,20 +2698,17 @@
             afkLegROffset = Math.max(0, Math.sin(t * 8)) * 3;
             afkLegLOffset = Math.max(0, -Math.sin(t * 8)) * 3;
           } else if (player.afkAction === "think") {
-            // 🤔 Think: Head tilts, front arm raised to chin, back arm folded across chest
             afkHeadAngle = -0.30;
             afkHeadY = -1;
             afkFrontArmAngle = -1.85;
             afkBackArmAngle = 0.65;
           } else if (player.afkAction === "cheer") {
-            // 🎉 Cheer: Body hops continuously, both arms raised high in victory!
             const hopY = -Math.abs(Math.sin(t * 12)) * 6.0;
             afkTorsoY = hopY;
             afkHeadY = hopY;
             afkBackArmAngle = -2.3;
             afkFrontArmAngle = -2.3;
           } else if (player.afkAction === "angry") {
-            // 😡 Angry: Trembling fists clenched at sides, stomping feet, body shaking!
             afkTorsoX = (Math.random() - 0.5) * 2.5;
             afkTorsoY = 1.5;
             afkBackArmAngle = -0.7 + Math.sin(t * 30) * 0.15;
@@ -2703,21 +2723,23 @@
         const legLLift = isWalking ? Math.max(0, -Math.sin(t * 14)) * 1.8 : afkLegLOffset;
         const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
 
-        // ── Pupil Gaze Calculation following Mouse Cursor (Desktop PC Only) ──
+        // ── Accurate Pupil Gaze Calculation Following Mouse Cursor (Desktop PC Only) ──
         let pupilOffsetX = 0;
         let pupilOffsetY = 0;
-        if (player.isDesktopCursor && !isFloating) {
-          const eyeX = px + pw / 2 + player.facing * 4;
-          const eyeY = py + 6;
-          const dx = player.cursorWorldX - eyeX;
-          const dy = player.cursorWorldY - eyeY;
+        if (player.isDesktopCursor) {
+          const eyeWorldX = px + pw / 2 + player.facing * 4;
+          const eyeWorldY = py + 6;
+          const dx = player.cursorWorldX - eyeWorldX;
+          const dy = player.cursorWorldY - eyeWorldY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const maxR = 1.8; // Clamped strictly inside sclera eye socket
-          pupilOffsetX = player.facing * Math.max(-maxR, Math.min(maxR, (dx / dist) * 2.2));
-          pupilOffsetY = Math.max(-maxR, Math.min(maxR, (dy / dist) * 2.2));
+          const maxPupilX = 1.4; // Max horizontal gaze shift inside eye socket
+          const maxPupilY = 0.6; // Max vertical gaze shift inside eye socket
+          pupilOffsetX = player.facing * Math.max(-maxPupilX, Math.min(maxPupilX, (dx / dist) * 1.6));
+          pupilOffsetY = Math.max(-maxPupilY, Math.min(maxPupilY, (dy / dist) * 1.0));
         }
 
         const skin = player.skinStyle || "classic";
+        const cOffsets = player.clothesOffsets || { hair: { x: 0, y: -5 } };
 
         if (skin === "classic" || skin === "growtopia" || skin === "builder") {
           // ── 1. Authentic Growtopia Set Character Engine ──
@@ -2729,13 +2751,14 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          let headSrc = "character_base_assets/gt_parts/head_open.png";
+          // Pick head with clean white sclera for cursor pupil tracking
+          let headSrc = "character_base_assets/gt_parts/head_sclera.png";
           if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
           const imgHead = getSpriteImage(headSrc);
 
-          // 1. Back Arm (Tangan Kanan)
+          // 1. Back Arm (Tangan Kanan) - 2x Jump Spin
           let backArmAngle = 0;
-          if (isJumpSpinning) backArmAngle = jumpSpinAngle;
+          if (isJumpSpinning) backArmAngle = jumpSpinAngleBack;
           else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
           else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
           else if (isFalling) backArmAngle = -1.1;
@@ -2790,7 +2813,7 @@
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 5. Head with Face & Dynamic Pupil Gaze
+          // 5. Head with White Sclera Eyeballs & Clean Embedded Pupils
           ctx.save();
           ctx.translate(afkHeadX, afkHeadY);
           ctx.rotate(afkHeadAngle);
@@ -2798,28 +2821,33 @@
             ctx.drawImage(imgHead, -16, -16, 32, 32);
           }
 
-          // Draw Live Cursor-Tracking Pupil on Desktop (if eyes open)
-          if (!isBlinking && player.isDesktopCursor) {
+          // Render exact 2x2 px black pupils inside left & right eye sockets (under eyelid layer)
+          if (!isBlinking) {
             ctx.fillStyle = "#0f172a";
-            ctx.fillRect(-3 + pupilOffsetX, -7 + pupilOffsetY, 2.0, 2.5);
+            // Left Eye Pupil (Centered in x: 13..17, y: 5..7 -> base at x: 0, y: -11)
+            ctx.fillRect(0 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
+            // Right Eye Pupil (Centered in x: 21..25, y: 5..7 -> base at x: 8, y: -11)
+            ctx.fillRect(8 + pupilOffsetX, -11 + pupilOffsetY, 2.0, 2.0);
           }
 
-          // Selected Hair Overlay (Red Hair #44 default)
+          // Selected Hair Overlay with custom repositioning offset
           const hairChoice = player.hairStyle || "red";
           if (hairChoice !== "none") {
             const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
             const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
             if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
-              ctx.drawImage(imgHair, -16, -16, 32, 32);
+              const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
+              const hy = (cOffsets.hair ? cOffsets.hair.y : -5) || -5;
+              ctx.drawImage(imgHair, -16 + hx, -16 + hy, 32, 32);
             }
           }
           ctx.restore();
           ctx.restore();
 
-          // 6. Front Arm (Tangan Kiri - 360 Spin on Punch & Power Jump)
+          // 6. Front Arm (Tangan Kiri - 2x INVERTED Jump Spin)
           let frontArmAngle = 0;
           if (isJumpSpinning) {
-            frontArmAngle = jumpSpinAngle;
+            frontArmAngle = jumpSpinAngleFront;
           } else if (isPunching) {
             frontArmAngle = punchSpinAngle;
           } else if (afkFrontArmAngle !== null) {
@@ -2927,9 +2955,9 @@
           ctx.restore();
           ctx.restore();
 
-          // 6. Arm
+          // 6. Arm (2x INVERTED Jump Spin)
           let cArmAngle = 0;
-          if (isJumpSpinning) cArmAngle = jumpSpinAngle;
+          if (isJumpSpinning) cArmAngle = jumpSpinAngleFront;
           else if (isPunching) cArmAngle = punchSpinAngle;
           else if (afkFrontArmAngle !== null) cArmAngle = afkFrontArmAngle;
           else if (isFloating) cArmAngle = 0.45 + Math.sin(t * 6) * 0.15;
@@ -2964,7 +2992,7 @@
         }
 
         // ── Authentic Growtopia Speech Bubble Chat ──
-        if (player.chatMessage && player.chatTimer > 0) {
+        if (player.chatMessage && player.chatTimer > 0 && !player.isDead) {
           ctx.save();
           const chatFade = Math.min(1.0, player.chatTimer);
           ctx.globalAlpha = chatFade;
@@ -3011,10 +3039,11 @@
           ctx.restore();
         }
 
-        drawPlayerNametag(ctx, px + pw / 2, py - 18);
+        if (!player.isDead) {
+          drawPlayerNametag(ctx, px + pw / 2, py - 18);
+        }
         ctx.restore();
       }
-
 
       function drawPlayerNametag(ctx, centerX, topY) {
         ctx.save();
