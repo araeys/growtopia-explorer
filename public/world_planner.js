@@ -455,12 +455,57 @@
         });
       }
 
+      function spawnTileBreakParticle(tx, ty) {
+        const worldX = (tx + 0.5) * TILE_SIZE;
+        const worldY = (ty + 0.5) * TILE_SIZE;
+
+        // Anti-lag throttling: Limit max concurrent break sequence particles to 24
+        let breakCount = 0;
+        for (let i = 0; i < gameParticles.length; i++) {
+          if (gameParticles[i].type === "break_seq") breakCount++;
+        }
+        if (breakCount >= 24) {
+          for (let i = 0; i < gameParticles.length; i++) {
+            if (gameParticles[i].type === "break_seq") {
+              gameParticles.splice(i, 1);
+              break;
+            }
+          }
+        }
+
+        const lifeTime = 0.24; // 0.24s total duration for 10 frames (~42 FPS sequence)
+        gameParticles.push({
+          type: "break_seq",
+          x: worldX,
+          y: worldY,
+          vx: 0,
+          vy: 0,
+          life: lifeTime,
+          maxLife: lifeTime
+        });
+        requestRender();
+      }
+
       function updateAndDrawParticles(ctx, dt) {
         for (let i = gameParticles.length - 1; i >= 0; i--) {
           const p = gameParticles[i];
           p.life -= dt;
           if (p.life <= 0) {
             gameParticles.splice(i, 1);
+            continue;
+          }
+
+          if (p.type === "break_seq") {
+            const frameProgress = 1.0 - (p.life / p.maxLife);
+            const frameIdx = Math.min(9, Math.max(0, Math.floor(frameProgress * 10)));
+            const frameSrc = breakParticleFrames[frameIdx];
+            const img = getSpriteImage(frameSrc);
+            if (img && img.complete && img.naturalWidth > 0) {
+              ctx.save();
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(img, p.x - 16, p.y - 16, 32, 32);
+              ctx.restore();
+            }
             continue;
           }
 
@@ -573,6 +618,7 @@
             triggerPlayerPunch(x, y);
             spawnBlockPlaceEffect(x, y, item);
           }
+          spawnTileBreakParticle(x, y);
           playSfx("pop", 0.95 + Math.random() * 0.15, 0.50);
         }
         return true;
@@ -587,6 +633,7 @@
         if (player.active) {
           triggerPlayerPunch(x, y);
         }
+        spawnTileBreakParticle(x, y);
         if (world.fg[idx] !== 0) {
           world.fg[idx] = 0;
           world.flags[idx] = 0;
@@ -2678,6 +2725,13 @@
         electroMagnetFrames.push(`particles/electromagnet/ElectroMagnet_${pad}.png`);
       }
 
+      // ── Block Break / Place Particle Sequence (10 Frames) ──
+      const breakParticleFrames = [];
+      for (let i = 1; i <= 10; i++) {
+        const pad = String(i).padStart(3, "0");
+        breakParticleFrames.push(`particles/breaks/Breaks_${pad}.png`);
+      }
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2698,6 +2752,9 @@
           }
         });
         electroMagnetFrames.forEach(path => {
+          getSpriteImage(path);
+        });
+        breakParticleFrames.forEach(path => {
           getSpriteImage(path);
         });
       }
@@ -3163,19 +3220,19 @@
               ctx.save();
               ctx.translate(hx, hy);
 
-              // Inertial Sway & Physics Bend Angles (Subtle and smooth response)
-              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.045) : 0;
-              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.010 * (player.facing || 1)) : 0;
-              const hairJumpSway = isJumping ? (-player.vy * 0.008) : 0;
-              const hairFallLift = isFalling ? (-player.vy * 0.010) : 0;
-              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.015) : 0;
+              // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
+              const hairWalkSway = isWalking ? (-Math.sin(walkPhase - 0.7) * 0.072) : 0;
+              const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0;
+              const hairJumpSway = isJumping ? (-player.vy * 0.013) : 0;
+              const hairFallLift = isFalling ? (-player.vy * 0.015) : 0;
+              const hairIdleSway = (player.isGrounded && !isWalking) ? (Math.sin(t * 3.0) * 0.022) : 0;
 
               const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
               ctx.rotate(totalHairBend);
 
               // Elastic vertical bounce / wind lift
-              const hairScaleY = 1.0 + (isJumping ? 0.03 : (isFalling ? -0.03 : (isWalking ? Math.sin(walkPhase) * 0.02 : 0)));
-              const hairScaleX = 1.0 + (isFalling ? 0.02 : 0);
+              const hairScaleY = 1.0 + (isJumping ? 0.05 : (isFalling ? -0.04 : (isWalking ? Math.sin(walkPhase) * 0.03 : 0)));
+              const hairScaleX = 1.0 + (isFalling ? 0.035 : 0);
               ctx.scale(hairScaleX, hairScaleY);
 
               ctx.drawImage(imgHair, -16, -16, 32, 32);
@@ -3733,8 +3790,8 @@
         const dt = Math.min((timestamp - lastGameTimestamp) / 1000, 0.1);
         lastGameTimestamp = timestamp;
 
-        if (player.active) {
-          updatePlayerPhysics(dt);
+        if (player.active || gameParticles.length > 0) {
+          if (player.active) updatePlayerPhysics(dt);
           render();
         }
 
