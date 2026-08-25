@@ -987,10 +987,11 @@
       <canvas id="world-canvas"></canvas>
 
       <!-- Floating Growtopia Speech Bubble Chat Bar (Bottom-Left) -->
-      <div id="game-chat-bar" style="position:fixed;bottom:24px;left:24px;z-index:999999;display:none;align-items:center;background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:2px solid #00e5ff;border-radius:14px;padding:6px 10px;box-shadow:0 10px 30px rgba(0,0,0,0.8);">
-        <span style="font-size:16px;margin-right:8px;">💬</span>
-        <input id="game-chat-input" type="text" placeholder="Type a message (Press Enter)..." maxlength="60" style="background:transparent;border:none;outline:none;color:#ffffff;font-size:13px;font-weight:700;width:240px;">
-        <button id="game-chat-send-btn" style="background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#ffffff;font-weight:700;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;margin-left:8px;">Send</button>
+      <div id="game-chat-bar" style="position:fixed;bottom:24px;left:24px;z-index:999999;display:none;align-items:center;background:#101c2e;border:2px solid #38bdf8;box-shadow:inset 0 0 0 1px #1e293b, 0 8px 24px rgba(0,0,0,0.8);border-radius:8px;padding:6px 10px;font-family:'Century Gothic',Arial,sans-serif;">
+        <span style="font-size:14px;margin-right:6px;">💬</span>
+        <input id="game-chat-input" type="text" placeholder="Say something (Press Enter)..." maxlength="60" style="background:#090f1a;border:1px solid #1c2b42;border-radius:4px;outline:none;color:#ffffff;font-size:12px;font-weight:700;padding:5px 8px;width:230px;">
+        <button id="game-chat-send-btn" style="background:linear-gradient(180deg,#22c55e 0%,#15803d 100%);border:2px solid #052e16;box-shadow:inset 0 1px 0 #86efac, 0 2px 0 #022c22;color:#ffffff;font-weight:900;font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;margin-left:6px;text-shadow:1px 1px 0 #000;">SEND</button>
+        <button id="game-chat-close-btn" onclick="document.getElementById('game-chat-bar').style.display='none';" style="background:#c0392b;border:2px solid #450a0a;color:#ffffff;font-weight:900;font-size:11px;padding:5px 8px;border-radius:4px;cursor:pointer;margin-left:4px;" title="Close Chat">✕</button>
       </div>
 
       <!-- Permanent Developer Watermark (Bottom-Right) -->
@@ -1041,7 +1042,7 @@
         <div id="playmode-hud" class="hidden">
           <span style="font-weight:600;color:#38bdf8;font-size:12px;">🎮 Game Mode</span>
           <span style="font-size:11px;color:#94a3b8;">Controls: <strong>WASD / Arrows</strong> run & jump | <strong>R</strong> Respawn</span>
-          <button class="btn-sm" id="playmode-chat-btn" style="background:linear-gradient(135deg,#00e5ff,#a855f7);border:none;color:#fff;font-weight:700;padding:4px 12px;border-radius:6px;cursor:pointer;">💬 Chat</button>
+          <button class="btn-sm" id="playmode-chat-btn" onclick="openGameChat();" style="background:linear-gradient(180deg,#3b82f6 0%,#1d4ed8 100%);border:2px solid #172554;box-shadow:inset 0 1px 0 #93c5fd, 0 2px 0 #090e17;color:#ffffff;font-weight:900;font-size:11px;padding:3px 12px;border-radius:4px;cursor:pointer;text-shadow:1px 1px 0 #000;">💬 Chat</button>
           <button class="btn-sm btn-secondary" id="playmode-mod-btn" title="Toggle Moderator Fly/Noclip Mode (M)">🛡️ Mod Mode: OFF</button>
           <button class="btn-sm btn-danger-lite" id="playmode-respawn-btn">🔄 Respawn</button>
           <button class="btn-sm btn-secondary" id="playmode-exit-btn">✕ Exit</button>
