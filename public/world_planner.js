@@ -106,6 +106,7 @@
         punchTargetY: 0,
         stepParticleTimer: 0,
         landingSquashTimer: 0,
+        modTransformTimer: 0,
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -402,6 +403,55 @@
           borderColor: "#ef4444",
           life: 0.45,
           maxLife: 0.45
+        });
+      }
+
+      function spawnModTransformParticles(x, y) {
+        // 1. Electrical Lightning Energy Sparks (20 particles)
+        for (let i = 0; i < 20; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2.2 + Math.random() * 5.5;
+          const lifeTime = 0.50 + Math.random() * 0.20;
+          gameParticles.push({
+            type: "burst",
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1.2,
+            radius: 2.6 + Math.random() * 2.6,
+            color: Math.random() > 0.5 ? "#c084fc" : (Math.random() > 0.5 ? "#38bdf8" : "#ffffff"),
+            borderColor: "rgba(192, 132, 252, 0.45)",
+            life: lifeTime,
+            maxLife: lifeTime
+          });
+        }
+
+        // 2. Expanding Celestial Power Rings
+        gameParticles.push({
+          type: "ring",
+          x: x,
+          y: y,
+          vx: 0,
+          vy: 0,
+          radius: 8,
+          maxRadius: 44,
+          color: "#c084fc",
+          borderColor: "#a855f7",
+          life: 0.50,
+          maxLife: 0.50
+        });
+        gameParticles.push({
+          type: "ring",
+          x: x,
+          y: y,
+          vx: 0,
+          vy: 0,
+          radius: 4,
+          maxRadius: 34,
+          color: "#38bdf8",
+          borderColor: "#0284c7",
+          life: 0.40,
+          maxLife: 0.40
         });
       }
 
@@ -2295,12 +2345,16 @@
         if (player.moderatorMode) {
           player.vx = 0;
           player.vy = 0;
+          player.modTransformTimer = 0.65; // 0.65s transformation sequence with rapid electrical flicker
+          spawnModTransformParticles(player.x + player.width / 2, player.y + player.height / 2);
           if (player.active) {
-            playSfx("magic", 1.0, 0.6);
-            playSfx("boo_ghost_be_gone", 1.0, 0.65);
+            playSfx("magic", 1.25, 0.85);
+            playSfx("boo_ghost_be_gone", 1.05, 0.80);
+            playSfx("already_used", 1.30, 0.70);
           }
           onStatusMessage("🛡️ Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
         } else {
+          player.modTransformTimer = 0;
           if (player.active) playSfx("switch", 1.1, 0.5);
           onStatusMessage("🛡️ Moderator Mode Disabled. Solid block collisions restored.");
         }
@@ -2325,7 +2379,7 @@
         return player.moderatorMode;
       }
 
-            function triggerPlayerPunch(targetTileX, targetTileY) {
+      function triggerPlayerPunch(targetTileX, targetTileY) {
         if (!player.active) return;
         player.punchTimer = 0.22;
       }
@@ -2354,6 +2408,7 @@
         player.animTimer += dt;
 
         // Timers
+        if (player.modTransformTimer > 0) player.modTransformTimer = Math.max(0, player.modTransformTimer - dt);
         if (player.punchTimer > 0) player.punchTimer = Math.max(0, player.punchTimer - dt);
         if (player.jumpThrustTimer > 0) player.jumpThrustTimer = Math.max(0, player.jumpThrustTimer - dt);
         if (player.jumpSpinTimer > 0) player.jumpSpinTimer = Math.max(0, player.jumpSpinTimer - dt);
@@ -2821,6 +2876,15 @@
           ctx.rotate(deathProgress * Math.PI * 6 * spinDir);
           const deathScale = Math.max(0.15, 1.0 + Math.sin(deathProgress * Math.PI * 0.5) * 0.2 - deathProgress * 0.6);
           ctx.scale(deathScale, deathScale);
+        } else if (player.modTransformTimer > 0) {
+          // Mod Transformation Electrical Strobe Flicker Effect
+          const transProg = 1.0 - (player.modTransformTimer / 0.65);
+          // Rapid alternating holographic electrical flash
+          const isFlickerOn = Math.sin((0.65 - player.modTransformTimer) * 55) > -0.2;
+          ctx.globalAlpha = isFlickerOn ? 1.0 : 0.35;
+          ctx.filter = `brightness(${1.4 + (1.0 - transProg) * 1.4}) drop-shadow(0 0 ${14 * (1.0 - transProg)}px #a855f7)`;
+          const transformScale = 1.0 + Math.sin(transProg * Math.PI) * 0.16;
+          ctx.scale(transformScale, transformScale);
         } else if (player.respawnInvincible > 0) {
           ctx.globalAlpha = (player.animTimer % 0.2 < 0.1) ? 0.45 : 1.0;
         } else if (player.moderatorMode) {
@@ -3034,30 +3098,64 @@
           ctx.rotate(afkHeadAngle + fallHeadTilt + (isWalking ? -walkCycleSin * 0.04 : 0));
 
           if (player.moderatorMode) {
-            // ── Glowing Pure White Eyes (Mod Mode - No Pupils, Pulsing Aura) ──
-            const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
-            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-              // 1. White Eyeball Sclera base with glowing cyan pulse under head mask
+            // ── Glowing Pure Radiant White Eyes (Intense Bloom & Divine Glow) ──
+            const eyePulse = 0.75 + 0.25 * Math.sin(t * 6.0);
+            if (!isBlinking) {
+              // 1. Solid Pure Blinding White Core Fill behind eye cutouts
               ctx.save();
-              ctx.shadowColor = "#38bdf8";
-              ctx.shadowBlur = 6 + 6 * eyePulse;
-              ctx.drawImage(imgSclera, -16, -16, 32, 32);
+              ctx.fillStyle = "#ffffff";
+              ctx.shadowColor = "#ffffff";
+              ctx.shadowBlur = 8 + 6 * eyePulse;
+              // Left Eye Socket Fill (under head mask cutout)
+              ctx.beginPath();
+              ctx.ellipse(2, -9.5, 3.2, 3.0, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Right Eye Socket Fill (under head mask cutout)
+              ctx.beginPath();
+              ctx.ellipse(10, -9.5, 3.2, 3.0, 0, 0, Math.PI * 2);
+              ctx.fill();
               ctx.restore();
+
+              // 2. White Eyeball Sclera base with glowing cyan pulse
+              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                ctx.save();
+                ctx.shadowColor = "#38bdf8";
+                ctx.shadowBlur = 8 + 8 * eyePulse;
+                ctx.drawImage(imgSclera, -16, -16, 32, 32);
+                ctx.restore();
+              }
             }
 
-            // Layer C: Head Mask with transparent eye cutouts (Draws face, framing the eyes naturally!)
+            // Layer C: Head Mask with transparent eye cutouts (Frames the radiant eyes!)
             if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
               ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
             }
 
-            // Layer D: Subtle eye glow flare from the exact eye shape (Using screen blend mode on imgSclera)
-            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+            // Layer D: Radiant Eye Bloom Flare & Subtle Divine Lens Flare Streaks
+            if (!isBlinking) {
               ctx.save();
               ctx.globalCompositeOperation = "screen";
-              ctx.globalAlpha = 0.55 * eyePulse;
+
+              // Multi-layer intense pure white & cyan core bloom
+              ctx.fillStyle = "#ffffff";
               ctx.shadowColor = "#00e5ff";
-              ctx.shadowBlur = 8 * eyePulse;
-              ctx.drawImage(imgSclera, -16, -16, 32, 32);
+              ctx.shadowBlur = 14 * eyePulse;
+              ctx.beginPath();
+              ctx.arc(2, -9.5, 2.2, 0, Math.PI * 2);
+              ctx.arc(10, -9.5, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Horizontal Subtle Divine Lens Flare Streaks
+              ctx.fillStyle = "rgba(103, 232, 249, " + (0.55 * eyePulse) + ")";
+              ctx.shadowColor = "#38bdf8";
+              ctx.shadowBlur = 8;
+              ctx.fillRect(-2, -10.5, 8, 2);
+              ctx.fillRect(6, -10.5, 8, 2);
+
+              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                ctx.globalAlpha = 0.70 * eyePulse;
+                ctx.drawImage(imgSclera, -16, -16, 32, 32);
+              }
               ctx.restore();
             }
           } else {
