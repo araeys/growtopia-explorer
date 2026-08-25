@@ -2366,13 +2366,13 @@
         } else {
           // Normal Game Mode Physics
 
-          // Horizontal Movement
+          // Horizontal Movement (10% tuned speed for authentic platforming)
           if (player.keys.left) {
-            player.vx -= 1.8 * timeScale;
+            player.vx -= 1.62 * timeScale;
             player.facing = -1;
             if (player.isGrounded) player.state = "walk";
           } else if (player.keys.right) {
-            player.vx += 1.8 * timeScale;
+            player.vx += 1.62 * timeScale;
             player.facing = 1;
             if (player.isGrounded) player.state = "walk";
           } else {
@@ -2381,8 +2381,8 @@
             if (player.isGrounded) player.state = "idle";
           }
 
-          // Max walk speed: 6.2 px/frame
-          player.vx = Math.max(-6.2, Math.min(6.2, player.vx));
+          // Max walk speed: 5.58 px/frame (10% decrease from 6.2)
+          player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
           // Dynamic Footstep & Skid Particles + Sound Effects (Randomized footstep1-7 with 200ms gap, nonstop while moving)
           const isMovingOnGround = player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35);
@@ -2446,11 +2446,11 @@
           player.isGrounded = false;
           resolvePlayerCollisionY();
 
-          // Landing Dust Puff Burst & Squash + rock_hit.wav Impact SFX
+          // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX
           if (!wasGrounded && player.isGrounded) {
             player.landingSquashTimer = 0.14;
             spawnLandingDust(player.x + player.width / 2, player.y + player.height);
-            playSfx("rock_hit", 0.95 + Math.random() * 0.15, 0.65);
+            playSfx("hitground", 0.96 + Math.random() * 0.08, 0.85);
           }
         }
 
