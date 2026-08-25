@@ -2955,23 +2955,58 @@
           ctx.translate(afkHeadX - sxShirt, afkHeadY - syShirt + headBobLag);
           ctx.rotate(afkHeadAngle + (isWalking ? -walkCycleSin * 0.04 : 0));
 
-          // Layer A: White Eyeballs Sclera Base (Behind head mask)
-          if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
-            ctx.drawImage(imgSclera, -16, -16, 32, 32);
-          }
+          if (player.moderatorMode) {
+            // ── Glowing Pure White Eyes (Mod Mode - No Pupils) ──
+            if (!isBlinking) {
+              // 1. Luminous White Sclera with Electric Glow
+              ctx.save();
+              ctx.shadowColor = "#00e5ff";
+              ctx.shadowBlur = 12;
+              if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+                ctx.drawImage(imgSclera, -16, -16, 32, 32);
+              }
+              // Fill eye sockets with intense solid white
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(-1, -13, 4.5, 4.5);
+              ctx.fillRect(7, -13, 4.5, 4.5);
+              ctx.restore();
+            }
 
-          // Layer B: Eye Pupils (UNDER Head Mask, permanently locked forward in eye sockets!)
-          if (!isBlinking) {
-            ctx.fillStyle = "#0f172a";
-            // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
-            ctx.fillRect(0, -11, 2.0, 2.0);
-            // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
-            ctx.fillRect(8, -11, 2.0, 2.0);
-          }
+            // Layer C: Head Mask with transparent eye cutouts (Drawn on top of glowing eyes!)
+            if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+              ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
+            }
 
-          // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
-          if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
-            ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
+            // Layer C2: Pure White Electric Eye Glow Flare overlay
+            if (!isBlinking) {
+              ctx.save();
+              ctx.shadowColor = "#ffffff";
+              ctx.shadowBlur = 8;
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(-0.5, -12, 3.5, 3.5);
+              ctx.fillRect(7.5, -12, 3.5, 3.5);
+              ctx.restore();
+            }
+          } else {
+            // Standard Normal Mode: White Sclera + Dark Locked Pupils
+            // Layer A: White Eyeballs Sclera Base (Behind head mask)
+            if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+              ctx.drawImage(imgSclera, -16, -16, 32, 32);
+            }
+
+            // Layer B: Eye Pupils (UNDER Head Mask, permanently locked forward in eye sockets!)
+            if (!isBlinking) {
+              ctx.fillStyle = "#0f172a";
+              // Left Eye Pupil (socket x: 13..17, front position at x = 0, y = -11)
+              ctx.fillRect(0, -11, 2.0, 2.0);
+              // Right Eye Pupil (socket x: 21..25, front position at x = 8, y = -11)
+              ctx.fillRect(8, -11, 2.0, 2.0);
+            }
+
+            // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
+            if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+              ctx.drawImage(imgHeadMask, -16, -16, 32, 32);
+            }
           }
 
           // Layer D: Hair / Hats Overlay with Reposition Offset
@@ -3082,6 +3117,15 @@
             ctx.fillStyle = "#452817";
             ctx.fillRect(0, -13, 2.5, 1.5);
             ctx.fillRect(3.5, -13, 2.5, 1.5);
+          } else if (player.moderatorMode) {
+            // Glowing Pure White Eyes (Mod Mode - No Pupils)
+            ctx.save();
+            ctx.shadowColor = "#00e5ff";
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(1, -14.5, 5.5, 4.2);
+            ctx.fillRect(-4, -14.5, 4.0, 4.2);
+            ctx.restore();
           } else {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(1, -14, 5, 3.5);
