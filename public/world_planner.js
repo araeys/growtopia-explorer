@@ -2768,6 +2768,13 @@
         crystalOrbFrames.push(`particles/crystal_orbs/CrystalOrbs_${pad}.png`);
       }
 
+      // ── Mod Portal Astral Sequence (10 Frames in Purple-Blue) ──
+      const modPortalFrames = [];
+      for (let i = 1; i <= 10; i++) {
+        const pad = String(i).padStart(3, "0");
+        modPortalFrames.push(`particles/mod_portal/ModPortal_${pad}.png`);
+      }
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2797,6 +2804,9 @@
           getSpriteImage(path);
         });
         crystalOrbFrames.forEach(path => {
+          getSpriteImage(path);
+        });
+        modPortalFrames.forEach(path => {
           getSpriteImage(path);
         });
       }
@@ -2835,8 +2845,8 @@
         const cx = px + pw / 2;
         const cy = py + ph / 2 + 1;
         const t = player.animTimer;
-        const rx = 24; // Horizontal elliptical span
-        const ry = 6.5; // Vertical orbit tilt
+        const rx = 27; // Horizontal elliptical span
+        const ry = 7.5; // Vertical orbit tilt
         const orbitSpeed = 2.4; // 3D orbit speed
         const orbCount = 3; // 3 Symmetrical orbiting crystal orbs
 
@@ -2859,15 +2869,15 @@
           if (img && img.complete && img.naturalWidth > 0) {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-            // Dynamic 3D depth scaling (delicate miniature floating orbs)
-            const depthScale = 0.70 + (oz + 1.0) * 0.16; // 0.70 to 1.02
+            // Dynamic 3D depth scaling (sweet spot size)
+            const depthScale = 0.78 + (oz + 1.0) * 0.18; // 0.78 to 1.14
             const depthAlpha = 0.75 + (oz + 1.0) * 0.12;
             ctx.globalAlpha = Math.max(0, Math.min(1, depthAlpha));
             ctx.shadowColor = "#38bdf8";
-            ctx.shadowBlur = 4 * depthScale;
+            ctx.shadowBlur = 5 * depthScale;
             ctx.translate(ox, oy);
             ctx.scale(depthScale, depthScale);
-            ctx.drawImage(img, -6, -6, 12, 12);
+            ctx.drawImage(img, -8, -8, 16, 16);
             ctx.restore();
           }
         }
@@ -2904,6 +2914,22 @@
           ctx.beginPath();
           ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
           ctx.fill();
+
+          // ── Mod Astral Portal Backdrop (10-Frame Looping Sequence in Purple-Blue) ──
+          const portalFps = 12;
+          const portalIndex = Math.floor((t * portalFps) % 10);
+          const portalSrc = modPortalFrames[portalIndex];
+          const portalImg = getSpriteImage(portalSrc);
+          if (portalImg && portalImg.complete && portalImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            const portalSize = 74;
+            ctx.globalAlpha = 0.88;
+            ctx.shadowColor = "#a855f7";
+            ctx.shadowBlur = 10;
+            ctx.drawImage(portalImg, centerX - portalSize / 2, centerY - portalSize / 2 + 1, portalSize, portalSize);
+            ctx.restore();
+          }
 
           // ── ElectroMagnet Electrical Power Surge (12-Frame Looping Sequence) ──
           const emFps = 13;
@@ -3585,7 +3611,27 @@
       function drawPlayerNametag(ctx, centerX, topY) {
         ctx.save();
         const isMod = player.moderatorMode;
-        const nameText = isMod ? "[MOD] Raey" : "Raey";
+        const isTransforming = player.modTransformTimer > 0;
+        
+        let nameText = isMod ? "[MOD] Raey" : "Raey";
+        let textJitterX = 0;
+        let textJitterY = 0;
+        let isGlitching = false;
+
+        // Cyber Holographic Text Glitch Animation on Transformation
+        if (isTransforming) {
+          isGlitching = true;
+          textJitterX = (Math.random() - 0.5) * 3.5;
+          textJitterY = (Math.random() - 0.5) * 2.0;
+          const glitchChars = "!@#$%^&*<>/?~01R43Y_+-=";
+          if (Math.random() < 0.70) {
+            nameText = (Math.random() < 0.4 ? "[MOD] " : "") + nameText.split("").map(ch => {
+              if (ch === " " || ch === "[" || ch === "]") return ch;
+              return Math.random() < 0.45 ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch;
+            }).join("");
+          }
+        }
+
         ctx.font = "bold 10px 'Outfit', 'Inter', sans-serif";
         const textMetrics = ctx.measureText ? ctx.measureText(nameText) : { width: 30 };
         const textW = textMetrics.width || 30;
@@ -3594,11 +3640,11 @@
         const paddingH = 6;
         const boxW = flagSize + 5 + textW + paddingH * 2;
         const boxH = 18;
-        const boxX = centerX - boxW / 2;
-        const boxY = topY - boxH;
+        const boxX = centerX - boxW / 2 + textJitterX;
+        const boxY = topY - boxH + textJitterY;
 
         // Pill background
-        ctx.fillStyle = "rgba(9, 13, 26, 0.88)";
+        ctx.fillStyle = isGlitching ? (Math.random() < 0.5 ? "rgba(147, 51, 234, 0.92)" : "rgba(14, 165, 233, 0.92)") : "rgba(9, 13, 26, 0.88)";
         ctx.beginPath();
         if (typeof ctx.roundRect === "function") {
           ctx.roundRect(boxX, boxY, boxW, boxH, 5);
@@ -3608,11 +3654,11 @@
         ctx.fill();
 
         // Border
-        ctx.strokeStyle = isMod ? "#a855f7" : "rgba(56, 189, 248, 0.5)";
+        ctx.strokeStyle = isGlitching ? "#ffffff" : (isMod ? "#a855f7" : "rgba(56, 189, 248, 0.5)");
         ctx.lineWidth = 1.2 / viewport.zoom;
-        if (isMod) {
-          ctx.shadowColor = "#a855f7";
-          ctx.shadowBlur = 6;
+        if (isMod || isGlitching) {
+          ctx.shadowColor = isGlitching ? "#38bdf8" : "#a855f7";
+          ctx.shadowBlur = isGlitching ? 10 : 6;
         }
         ctx.stroke();
 
@@ -3631,13 +3677,35 @@
           ctx.fillRect(flagX + flagSize / 2 - 1, flagY + flagSize / 2 - 1, 2, 2);
         }
 
-        // Nametag Text
-        ctx.fillStyle = isMod ? "#c084fc" : "#ffffff";
-        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-        ctx.shadowBlur = 3;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        if (typeof ctx.fillText === "function") ctx.fillText(nameText, flagX + flagSize + 4, boxY + boxH - 5);
+        // Glitch Chromatic Aberration RGB split & Main Text
+        const textPosX = flagX + flagSize + 4;
+        const textPosY = boxY + boxH - 5;
+        if (typeof ctx.fillText === "function") {
+          if (isGlitching) {
+            // Cyan Aberration Pass
+            ctx.save();
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText(nameText, textPosX - 1.5, textPosY);
+            ctx.restore();
+            // Red/Magenta Aberration Pass
+            ctx.save();
+            ctx.fillStyle = "#f43f5e";
+            ctx.fillText(nameText, textPosX + 1.5, textPosY);
+            ctx.restore();
+            // Main Glitch Text Pass
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "#c084fc";
+            ctx.shadowBlur = 6;
+            ctx.fillText(nameText, textPosX, textPosY);
+          } else {
+            ctx.fillStyle = isMod ? "#c084fc" : "#ffffff";
+            ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.fillText(nameText, textPosX, textPosY);
+          }
+        }
 
         ctx.restore();
       }
