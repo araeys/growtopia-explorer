@@ -2555,6 +2555,13 @@
         "Base Set GT/Tangan Kiri.png"
       ];
 
+      // ── ElectroMagnet Particle Sequence (12 Frames) ──
+      const electroMagnetFrames = [];
+      for (let i = 1; i <= 12; i++) {
+        const pad = String(i).padStart(3, "0");
+        electroMagnetFrames.push(`particles/electromagnet/ElectroMagnet_${pad}.png`);
+      }
+
       const avatarTextureCache = new Map();
       let isAvatarTexturesLoading = false;
 
@@ -2573,6 +2580,9 @@
           if (img.complete && img.naturalWidth > 0) {
             avatarTextureCache.set(path, img);
           }
+        });
+        electroMagnetFrames.forEach(path => {
+          getSpriteImage(path);
         });
       }
 
@@ -2624,6 +2634,26 @@
           ctx.beginPath();
           ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
           ctx.fill();
+
+          // ── ElectroMagnet Electrical Power Surge (12-Frame Looping Sequence) ──
+          const emFps = 13;
+          const emIndex = Math.floor((t * emFps) % 12);
+          const emSrc = electroMagnetFrames[emIndex];
+          const emImg = getSpriteImage(emSrc);
+
+          if (emImg && emImg.complete && emImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            const emSize = 64;
+            const emX = centerX - emSize / 2;
+            const emY = (py + ph + 4) - emSize;
+            
+            ctx.shadowColor = "#c084fc";
+            ctx.shadowBlur = 10;
+            ctx.globalAlpha = 0.95;
+            ctx.drawImage(emImg, emX, emY, emSize, emSize);
+            ctx.restore();
+          }
 
           // 2. Rotating Diamond Flare Starburst Rays
           ctx.save();
@@ -3094,7 +3124,26 @@
 
         ctx.restore();
 
-        // ── Respawn Expanding Cyan Halo Ring ──
+        // ── Moderator Mode Front ElectroMagnet Electric Arcs (Foreground Overlay) ──
+        if (player.moderatorMode && !player.isDead) {
+          const emFps = 13;
+          const emIndex = Math.floor((player.animTimer * emFps) % 12);
+          const emSrc = electroMagnetFrames[emIndex];
+          const emImg = getSpriteImage(emSrc);
+          if (emImg && emImg.complete && emImg.naturalWidth > 0) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            const emSize = 64;
+            const centerX = px + pw / 2;
+            const emX = centerX - emSize / 2;
+            const emY = (py + ph + 4) - emSize;
+            ctx.globalAlpha = 0.45;
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 6;
+            ctx.drawImage(emImg, emX, emY, emSize, emSize);
+            ctx.restore();
+          }
+        }
         if (player.respawnRingRadius > 0 && player.respawnRingRadius < 55) {
           ctx.save();
           ctx.strokeStyle = "rgba(0, 229, 255, " + Math.max(0, 1 - player.respawnRingRadius / 55) + ")";
