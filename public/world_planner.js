@@ -1637,17 +1637,21 @@
           const diff = smoothZoomTarget - viewport.zoom;
           if (Math.abs(diff) < 0.001) {
             viewport.zoom = smoothZoomTarget;
-            viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
-            viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+            if (!player.active) {
+              viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
+              viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+            }
             isZoomAnimating = false;
             render();
             return;
           }
 
-          // Smooth exponential easing (0.22 per frame) - silky, responsive, zero jitter
+          // Silky smooth exponential decay easing
           viewport.zoom += diff * 0.22;
-          viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
-          viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+          if (!player.active) {
+            viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
+            viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+          }
 
           render();
           if (typeof requestAnimationFrame !== "undefined") {
@@ -1698,6 +1702,13 @@
             }
 
             const { tileX, tileY } = screenToWorldTile(event.clientX, event.clientY);
+            // Track cursor world position for live pupil gaze tracking (Desktop only)
+            const rect = canvas.getBoundingClientRect();
+            const sx = event.clientX - rect.left;
+            const sy = event.clientY - rect.top;
+            player.cursorWorldX = (sx - viewport.x) / viewport.zoom;
+            player.cursorWorldY = (sy - viewport.y) / viewport.zoom;
+            player.isDesktopCursor = true;
             if (tileX !== hoveredTile.x || tileY !== hoveredTile.y) {
               hoveredTile.x = tileX;
               hoveredTile.y = tileY;
@@ -2206,6 +2217,8 @@
         // Timers
         if (player.punchTimer > 0) player.punchTimer = Math.max(0, player.punchTimer - dt);
         if (player.jumpThrustTimer > 0) player.jumpThrustTimer = Math.max(0, player.jumpThrustTimer - dt);
+        if (player.jumpSpinTimer > 0) player.jumpSpinTimer = Math.max(0, player.jumpSpinTimer - dt);
+        if (player.chatTimer > 0) player.chatTimer = Math.max(0, player.chatTimer - dt);
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
 
@@ -2305,6 +2318,7 @@
               player.jumpCount = 1;
               player.jumpConsumed = true;
               player.jumpThrustTimer = 0.22; // Power jump kick!
+              player.jumpSpinTimer = 0.28;   // 360-degree power spin!
               player.state = "jump";
               playJumpSound(false);
             } else if (player.jumpCount === 1) {
@@ -2312,6 +2326,7 @@
               player.jumpCount = 2;
               player.jumpConsumed = true;
               player.jumpThrustTimer = 0.22; // Power jump kick!
+              player.jumpSpinTimer = 0.28;   // 360-degree power spin!
               player.state = "jump";
               playJumpSound(true);
             }
@@ -2491,7 +2506,7 @@
         const pw = player.width;
         const ph = player.height;
 
-        // Shadow beneath player (Ground contact shadow)
+        // Shadow beneath player
         ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.beginPath();
         ctx.ellipse(px + pw / 2, py + ph + 1, pw * 0.5, 3, 0, 0, Math.PI * 2);
@@ -2538,7 +2553,7 @@
           }
           ctx.restore();
 
-          // 3. Primary Celestial Orbital Ring (Tilted at 18 degrees with glowing cyan/purple sheen)
+          // 3. Primary Celestial Orbital Ring
           ctx.save();
           ctx.translate(centerX, centerY);
           ctx.rotate(0.32);
@@ -2551,7 +2566,7 @@
           ctx.ellipse(0, 0, pw * 0.95, ph * 0.72, 0, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Secondary Counter-Rotating Celestial Ring
+          // Secondary Counter-Rotating Ring
           ctx.rotate(-0.64);
           ctx.shadowColor = "#c084fc";
           ctx.shadowBlur = 8 * ringPulse;
@@ -2562,7 +2577,7 @@
           ctx.stroke();
           ctx.restore();
 
-          // 4. Orbiting Celestial Gems (Gold Sun Gem & Neon Cyan Astral Spheres with specular glint)
+          // 4. Orbiting Celestial Gems
           const orbCount = 4;
           for (let o = 0; o < orbCount; o++) {
             const orbAngle = t * 2.2 + (o * Math.PI * 2) / orbCount;
@@ -2570,7 +2585,6 @@
             const oy = centerY + Math.sin(orbAngle) * (ph * 0.70);
             const isGold = o % 2 === 0;
 
-            // Outer Glow Halo
             ctx.save();
             ctx.shadowColor = isGold ? "#fbbf24" : "#00e5ff";
             ctx.shadowBlur = 12;
@@ -2579,13 +2593,11 @@
             ctx.arc(ox, oy, 3.2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Core Solid Color
             ctx.fillStyle = isGold ? "#fef08a" : "#67e8f9";
             ctx.beginPath();
             ctx.arc(ox, oy, 2.0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Specular Highlight Spark
             ctx.fillStyle = "#ffffff";
             ctx.beginPath();
             ctx.arc(ox - 0.7, oy - 0.7, 0.9, 0, Math.PI * 2);
@@ -2604,37 +2616,106 @@
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
         const isFalling = !player.isGrounded && player.vy > 0.8;
         const isFloating = player.moderatorMode;
+        const t = player.animTimer;
 
-        // Dynamic Facial Expression State (Idle relaxed, Jump happy, Fall surprised, Blink soft with space in middle)
-        const isBlinking = (player.animTimer % 3.8) < 0.14;
+        // Dynamic Facial Expression State
+        let isBlinking = (t % 3.8) < 0.14;
 
-        // Mod Flying Hover Float Wave
-        const floatBob = isFloating ? Math.sin(player.animTimer * 4.5) * 2.2 : 0;
-        
-        // Rhythmic walking step bounce (Only active when walking on solid ground blocks, disabled when floating!)
-        const walkStepBob = (isWalking && player.isGrounded && !isFloating) ? Math.abs(Math.sin(player.animTimer * 16)) * 2.2 : 0;
-
-        const breatheBob = player.isGrounded ? (Math.sin(player.animTimer * 4) * 0.75 - walkStepBob) : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
-        const walkCycle = isWalking ? Math.sin(player.animTimer * 14) : 0;
-
-        // Dynamic walking leg step lift (alternating up & down naturally during walking!)
-        const legRLift = isWalking ? Math.max(0, Math.sin(player.animTimer * 14)) * 1.8 : 0;
-        const legLLift = isWalking ? Math.max(0, -Math.sin(player.animTimer * 14)) * 1.8 : 0;
-
-        // Subtle gentle idle breathing arm sway/wiggle (Low frequency, 0.08 rad)
-        const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(player.animTimer * 2.5) * 0.08 : 0;
+        // 360-Degree Jump Spin Throw Animation
+        const isJumpSpinning = player.jumpSpinTimer > 0;
+        const jumpSpinAngle = isJumpSpinning ? (1.0 - player.jumpSpinTimer / 0.28) * Math.PI * 2 : 0;
 
         // Placing / Punch Spin Throw Animation (Inverted forward rotation)
         const isPunching = player.punchTimer > 0;
         const punchProgress = isPunching ? (1.0 - (player.punchTimer / 0.22)) : 0;
         const punchSpinAngle = isPunching ? punchProgress * Math.PI * 2 : 0;
 
-        // Jump Thrust Leg Extension (extends downwards with power for first 0.22s, then returns)
+        // Jump Thrust Leg Extension
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
-        const jumpThrustAngle = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 0.45 : 0;
 
-        // Opposing gentle vertical slow hover wave for floating legs (opposite directions!)
-        const legHoverWave = Math.sin(player.animTimer * 4.0) * 1.8;
+        // Mod Flying Hover Float Wave
+        const floatBob = isFloating ? Math.sin(t * 4.5) * 2.2 : 0;
+        
+        // Rhythmic walking step bounce on solid blocks
+        const walkStepBob = (isWalking && player.isGrounded && !isFloating) ? Math.abs(Math.sin(t * 16)) * 2.2 : 0;
+
+        // Opposing gentle vertical slow hover wave for floating legs
+        const legHoverWave = Math.sin(t * 4.0) * 1.8;
+
+        // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS (Head, Torso, Arms, Legs) ──
+        let afkHeadAngle = 0;
+        let afkHeadX = 0;
+        let afkHeadY = 0;
+        let afkTorsoX = 0;
+        let afkTorsoY = 0;
+        let afkTorsoAngle = 0;
+        let afkBackArmAngle = null;
+        let afkFrontArmAngle = null;
+        let afkLegROffset = 0;
+        let afkLegLOffset = 0;
+
+        if (player.afkAction && player.isGrounded && !isWalking) {
+          if (player.afkAction === "sleep") {
+            // 😴 Sleep: Head drops, eyes shut, body slumps down, arms rest
+            isBlinking = true;
+            afkHeadAngle = 0.28;
+            afkHeadY = 2;
+            afkTorsoY = 2;
+            afkBackArmAngle = 0.45;
+            afkFrontArmAngle = 0.55;
+            afkLegROffset = 1.5;
+            afkLegLOffset = 1.5;
+          } else if (player.afkAction === "dance") {
+            // 💃 Dance: Hips & Torso groove left/right, arms wave in rhythm, feet tap!
+            afkTorsoX = Math.sin(t * 8) * 3.5;
+            afkTorsoAngle = Math.sin(t * 8) * 0.18;
+            afkHeadAngle = -Math.sin(t * 8) * 0.12;
+            afkBackArmAngle = -Math.cos(t * 8) * 1.3;
+            afkFrontArmAngle = Math.sin(t * 8) * 1.3;
+            afkLegROffset = Math.max(0, Math.sin(t * 8)) * 3;
+            afkLegLOffset = Math.max(0, -Math.sin(t * 8)) * 3;
+          } else if (player.afkAction === "think") {
+            // 🤔 Think: Head tilts, front arm raised to chin, back arm folded across chest
+            afkHeadAngle = -0.30;
+            afkHeadY = -1;
+            afkFrontArmAngle = -1.85;
+            afkBackArmAngle = 0.65;
+          } else if (player.afkAction === "cheer") {
+            // 🎉 Cheer: Body hops continuously, both arms raised high in victory!
+            const hopY = -Math.abs(Math.sin(t * 12)) * 6.0;
+            afkTorsoY = hopY;
+            afkHeadY = hopY;
+            afkBackArmAngle = -2.3;
+            afkFrontArmAngle = -2.3;
+          } else if (player.afkAction === "angry") {
+            // 😡 Angry: Trembling fists clenched at sides, stomping feet, body shaking!
+            afkTorsoX = (Math.random() - 0.5) * 2.5;
+            afkTorsoY = 1.5;
+            afkBackArmAngle = -0.7 + Math.sin(t * 30) * 0.15;
+            afkFrontArmAngle = -0.7 + Math.cos(t * 30) * 0.15;
+            afkLegROffset = Math.abs(Math.sin(t * 12)) * 3.5;
+          }
+        }
+
+        const breatheBob = player.isGrounded ? (Math.sin(t * 4) * 0.75 - walkStepBob + afkTorsoY) : (isJumping ? -1.5 : (isFalling ? 1.0 : floatBob));
+        const walkCycle = isWalking ? Math.sin(t * 14) : 0;
+        const legRLift = isWalking ? Math.max(0, Math.sin(t * 14)) * 1.8 : afkLegROffset;
+        const legLLift = isWalking ? Math.max(0, -Math.sin(t * 14)) * 1.8 : afkLegLOffset;
+        const idleArmWiggle = player.isGrounded && !isWalking ? Math.sin(t * 2.5) * 0.08 : 0;
+
+        // ── Pupil Gaze Calculation following Mouse Cursor (Desktop PC Only) ──
+        let pupilOffsetX = 0;
+        let pupilOffsetY = 0;
+        if (player.isDesktopCursor && !isFloating) {
+          const eyeX = px + pw / 2 + player.facing * 4;
+          const eyeY = py + 6;
+          const dx = player.cursorWorldX - eyeX;
+          const dy = player.cursorWorldY - eyeY;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const maxR = 1.8; // Clamped strictly inside sclera eye socket
+          pupilOffsetX = player.facing * Math.max(-maxR, Math.min(maxR, (dx / dist) * 2.2));
+          pupilOffsetY = Math.max(-maxR, Math.min(maxR, (dy / dist) * 2.2));
+        }
 
         const skin = player.skinStyle || "classic";
 
@@ -2648,110 +2729,130 @@
           const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
           const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
 
-          // Pick dynamic expression head (Idle relaxed, Jump, Fall, 2-slit Blink)
           let headSrc = "character_base_assets/gt_parts/head_open.png";
           if (isBlinking) headSrc = "character_base_assets/gt_parts/head_blink.png";
           const imgHead = getSpriteImage(headSrc);
 
-          // 1. Back Arm (Tangan Kanan - Shoulder at 8, 4)
+          // 1. Back Arm (Tangan Kanan)
           let backArmAngle = 0;
-          if (isFloating) backArmAngle = -0.75 + Math.sin(player.animTimer * 5) * 0.1;
+          if (isJumpSpinning) backArmAngle = jumpSpinAngle;
+          else if (afkBackArmAngle !== null) backArmAngle = afkBackArmAngle;
+          else if (isFloating) backArmAngle = -0.75 + Math.sin(t * 5) * 0.1;
           else if (isFalling) backArmAngle = -1.1;
           else if (isJumping) backArmAngle = -0.7;
-          else if (isWalking) backArmAngle = -Math.cos(player.animTimer * 14) * 0.5;
+          else if (isWalking) backArmAngle = -Math.cos(t * 14) * 0.5;
           else backArmAngle = -idleArmWiggle;
 
           ctx.save();
-          ctx.translate(8, 4 + breatheBob);
+          ctx.translate(8 + afkTorsoX, 4 + breatheBob);
           ctx.rotate(backArmAngle);
           if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
             ctx.drawImage(imgArmR, -24, -20, 32, 32);
           }
           ctx.restore();
 
-          // 2. Back Leg (Kaki Kanan - Standard y: 8, opposing hover wave in float mode)
+          // 2. Back Leg (Kaki Kanan)
           let legRAngle = 0;
-          if (isFloating) legRAngle = 0.40 + Math.sin(player.animTimer * 4) * 0.08;
+          if (isFloating) legRAngle = 0.40 + Math.sin(t * 4) * 0.08;
           else if (isFalling) legRAngle = 0.35;
           else if (isWalking) legRAngle = walkCycle * 0.4;
 
           const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
           ctx.save();
-          ctx.translate(8, legRY);
+          ctx.translate(8 + afkTorsoX, legRY);
           ctx.rotate(legRAngle);
           if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
             ctx.drawImage(imgLegR, -24, -24, 32, 32);
           }
           ctx.restore();
 
-          // 3. Front Leg (Kaki Kiri - Rotated DOWNWARDS during jump/float, opposing hover wave!)
+          // 3. Front Leg (Kaki Kiri - Rotated downwards during jump/float)
           let legLAngle = 0;
-          if (isFloating) legLAngle = 0.30 - Math.sin(player.animTimer * 4) * 0.08; // Downwards angle!
-          else if (isFalling) legLAngle = 0.30; // Downwards angle!
-          else if (isJumping) legLAngle = 0.25; // Downwards angle!
+          if (isFloating) legLAngle = 0.30 - Math.sin(t * 4) * 0.08;
+          else if (isFalling) legLAngle = 0.30;
+          else if (isJumping) legLAngle = 0.25;
           else if (isWalking) legLAngle = -walkCycle * 0.4;
 
           const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
           ctx.save();
-          ctx.translate(-4, legLY);
+          ctx.translate(-4 + afkTorsoX, legLY);
           ctx.rotate(legLAngle);
           if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
             ctx.drawImage(imgLegL, -12, -24, 32, 32);
           }
           ctx.restore();
 
-          // 4. Torso & Body (Bobbing with breathing & step bounce - Upright, no hunch)
+          // 4. Torso & Body
           ctx.save();
-          ctx.translate(0, breatheBob);
+          ctx.translate(afkTorsoX, breatheBob);
+          ctx.rotate(afkTorsoAngle);
           if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
             ctx.drawImage(imgBody, -16, -16, 32, 32);
           }
 
-          // 5. Head with Face & Permanent Dark Smile Line
+          // 5. Head with Face & Dynamic Pupil Gaze
+          ctx.save();
+          ctx.translate(afkHeadX, afkHeadY);
+          ctx.rotate(afkHeadAngle);
           if (imgHead && imgHead.complete && imgHead.naturalWidth > 0) {
             ctx.drawImage(imgHead, -16, -16, 32, 32);
           }
 
-          // Red Hair (#44) Layer positioned precisely over skull
-          const imgRedHair = getSpriteImage("character_base_assets/gt_parts/red_hair.png");
-          if (imgRedHair && imgRedHair.complete && imgRedHair.naturalWidth > 0) {
-            ctx.drawImage(imgRedHair, -16, -18, 32, 32);
+          // Draw Live Cursor-Tracking Pupil on Desktop (if eyes open)
+          if (!isBlinking && player.isDesktopCursor) {
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(-3 + pupilOffsetX, -7 + pupilOffsetY, 2.0, 2.5);
+          }
+
+          // Selected Hair Overlay (Red Hair #44 default)
+          const hairChoice = player.hairStyle || "red";
+          if (hairChoice !== "none") {
+            const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
+            const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
+            if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
+              ctx.drawImage(imgHair, -16, -16, 32, 32);
+            }
           }
           ctx.restore();
+          ctx.restore();
 
-          // 6. Front Arm (Tangan Kiri - Shoulder at -7, 4, DRAWN ON TOP of shirt!)
+          // 6. Front Arm (Tangan Kiri - 360 Spin on Punch & Power Jump)
           let frontArmAngle = 0;
-          if (isPunching) {
+          if (isJumpSpinning) {
+            frontArmAngle = jumpSpinAngle;
+          } else if (isPunching) {
             frontArmAngle = punchSpinAngle;
+          } else if (afkFrontArmAngle !== null) {
+            frontArmAngle = afkFrontArmAngle;
           } else if (isFloating) {
-            frontArmAngle = 0.45 - Math.sin(player.animTimer * 5) * 0.1;
+            frontArmAngle = 0.45 - Math.sin(t * 5) * 0.1;
           } else if (isFalling) {
             frontArmAngle = -1.1;
           } else if (isJumping) {
             frontArmAngle = -0.6;
           } else if (isWalking) {
-            frontArmAngle = Math.cos(player.animTimer * 14) * 0.5;
+            frontArmAngle = Math.cos(t * 14) * 0.5;
           } else {
             frontArmAngle = idleArmWiggle;
           }
 
           ctx.save();
-          ctx.translate(-7, 4 + breatheBob);
+          ctx.translate(-7 + afkTorsoX, 4 + breatheBob);
           ctx.rotate(frontArmAngle);
           if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
             ctx.drawImage(imgArmL, -9, -20, 32, 32);
           }
           ctx.restore();
         } else {
-          // ── 2. Cartoon Chibi (Stylized HD Growtopian) ──
+          // ── 2. Cartoon Chibi Skin ──
           const skinColor = "#f6b484";
           const darkSkin = "#d88b56";
-          const legOffset = (isWalking ? Math.sin(player.animTimer * 14) : 0) * 3.5;
+          const legOffset = (isWalking ? Math.sin(t * 14) : 0) * 3.5;
 
-          // 1. Back Leg (Opposing hover wave)
+          // 1. Back Leg
           const cLegRAngle = isFloating ? 0.35 : (isFalling ? 0.35 : 0);
           ctx.save();
-          ctx.translate(0, isFloating ? (floatBob + 2 + legHoverWave) : 0);
+          ctx.translate(afkTorsoX, isFloating ? (floatBob + 2 + legHoverWave) : 0);
           ctx.rotate(cLegRAngle);
           ctx.fillStyle = "#1e3a8a";
           ctx.fillRect(-6, 3 - legOffset, 5, 9 + legOffset);
@@ -2761,10 +2862,10 @@
           ctx.fillRect(-7, 13, 6, 1);
           ctx.restore();
 
-          // 2. Front Leg (Rotated DOWNWARDS, opposing hover wave)
+          // 2. Front Leg
           const cLegLAngle = isFloating ? 0.30 : (isFalling ? 0.25 : (isJumping ? 0.20 : 0));
           ctx.save();
-          ctx.translate(0, isFloating ? (floatBob + 2 - legHoverWave) : 0);
+          ctx.translate(afkTorsoX, isFloating ? (floatBob + 2 - legHoverWave) : 0);
           ctx.rotate(cLegLAngle);
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(1, 3 + legOffset, 5, 9 - legOffset);
@@ -2776,7 +2877,8 @@
 
           // 3. Torso
           ctx.save();
-          ctx.translate(0, breatheBob);
+          ctx.translate(afkTorsoX, breatheBob);
+          ctx.rotate(afkTorsoAngle);
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-8, -6, 16, 10);
           ctx.fillStyle = "#38bdf8";
@@ -2786,7 +2888,10 @@
           ctx.fillStyle = "#e2e8f0";
           ctx.fillRect(-2, 2, 4, 2);
 
-          // 4. Head & Shaded Hair
+          // 4. Head & Pupil
+          ctx.save();
+          ctx.translate(afkHeadX, afkHeadY);
+          ctx.rotate(afkHeadAngle);
           ctx.fillStyle = skinColor;
           ctx.beginPath();
           ctx.arc(0, -12, 8.5, 0, Math.PI * 2);
@@ -2800,7 +2905,7 @@
           ctx.fillStyle = "#784c2f";
           ctx.fillRect(-4, -17.5, 5, 2);
 
-          // 5. Dynamic Eye Expression (Separate 2 slits for blink)
+          // 5. Dynamic Eye Expression
           if (isBlinking) {
             ctx.fillStyle = "#452817";
             ctx.fillRect(0, -13, 2.5, 1.5);
@@ -2809,9 +2914,9 @@
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(1, -14, 5, 3.5);
             ctx.fillStyle = "#0f172a";
-            ctx.fillRect(3, -13.5, 2.5, 2.5);
+            ctx.fillRect(3 + pupilOffsetX * 0.7, -13.5 + pupilOffsetY * 0.7, 2.5, 2.5);
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(4, -14, 1, 1);
+            ctx.fillRect(4 + pupilOffsetX * 0.7, -14 + pupilOffsetY * 0.7, 1, 1);
           }
           ctx.fillStyle = "#452817";
           ctx.fillRect(1, -16.5, 5, 1.2);
@@ -2820,18 +2925,21 @@
           ctx.fillStyle = "rgba(244, 114, 182, 0.4)";
           ctx.fillRect(-2, -9.5, 3, 1.5);
           ctx.restore();
+          ctx.restore();
 
-          // 6. Arm with Spin Throw Punch & Idle Wiggle & Walking Swing & Flight Wave
+          // 6. Arm
           let cArmAngle = 0;
-          if (isPunching) cArmAngle = punchSpinAngle;
-          else if (isFloating) cArmAngle = 0.45 + Math.sin(player.animTimer * 6) * 0.15;
-          else if (isFalling) cArmAngle = -1.0 + Math.sin(player.animTimer * 8) * 0.1;
-          else if (isJumping) cArmAngle = -0.8 + Math.sin(player.animTimer * 8) * 0.1;
-          else if (isWalking) cArmAngle = Math.cos(player.animTimer * 14) * 0.6;
+          if (isJumpSpinning) cArmAngle = jumpSpinAngle;
+          else if (isPunching) cArmAngle = punchSpinAngle;
+          else if (afkFrontArmAngle !== null) cArmAngle = afkFrontArmAngle;
+          else if (isFloating) cArmAngle = 0.45 + Math.sin(t * 6) * 0.15;
+          else if (isFalling) cArmAngle = -1.0 + Math.sin(t * 8) * 0.1;
+          else if (isJumping) cArmAngle = -0.8 + Math.sin(t * 8) * 0.1;
+          else if (isWalking) cArmAngle = Math.cos(t * 14) * 0.6;
           else cArmAngle = idleArmWiggle;
 
           ctx.save();
-          ctx.translate(-2, -3 + breatheBob);
+          ctx.translate(-2 + afkTorsoX, -3 + breatheBob);
           ctx.rotate(cArmAngle);
           ctx.fillStyle = "#0284c7";
           ctx.fillRect(-2, 0, 5, 3.5);
@@ -2842,10 +2950,9 @@
           ctx.restore();
         }
 
-        ctx.restore(); // Restore sprite transform
+        ctx.restore();
 
-        // Growtopia Nametag ("Raey" with Flag Logo)
-        // Draw Respawn Expanding Cyan Halo Ring
+        // ── Respawn Expanding Cyan Halo Ring ──
         if (player.respawnRingRadius > 0 && player.respawnRingRadius < 55) {
           ctx.save();
           ctx.strokeStyle = "rgba(0, 229, 255, " + Math.max(0, 1 - player.respawnRingRadius / 55) + ")";
@@ -2856,49 +2963,58 @@
           ctx.restore();
         }
 
-        // Draw AFK Cute Animated Emotes (Sleep, Dance, Think, Cheer, Angry)
-        if (player.afkAction && player.isGrounded) {
+        // ── Authentic Growtopia Speech Bubble Chat ──
+        if (player.chatMessage && player.chatTimer > 0) {
           ctx.save();
-          const afkX = px + pw / 2;
-          const afkY = py - 26;
-          const t = player.animTimer;
+          const chatFade = Math.min(1.0, player.chatTimer);
+          ctx.globalAlpha = chatFade;
+          const bubbleX = px + pw / 2;
+          const bubbleY = py - 32;
 
-          if (player.afkAction === "sleep") {
-            // Floating Z z z... bubbles rising
-            const zProgress = (t * 2) % 1.5;
-            ctx.fillStyle = "#93c5fd";
-            ctx.font = "bold 13px sans-serif";
-            ctx.fillText("Z", afkX + Math.sin(t * 3) * 4, afkY - zProgress * 18);
-            ctx.font = "bold 10px sans-serif";
-            ctx.fillText("z", afkX + 8 + Math.sin(t * 3 + 1) * 3, afkY + 6 - zProgress * 18);
-          } else if (player.afkAction === "dance") {
-            // Floating music notes
-            ctx.font = "14px sans-serif";
-            ctx.fillText("🎵", afkX - 10 + Math.sin(t * 5) * 4, afkY - 2);
-            ctx.fillText("🎶", afkX + 4 - Math.sin(t * 5) * 4, afkY - 6);
-          } else if (player.afkAction === "think") {
-            // Glowing thought bubble with question mark
-            ctx.fillStyle = "#fef08a";
-            ctx.font = "bold 14px sans-serif";
-            ctx.fillText("❓", afkX - 5, afkY + Math.sin(t * 4) * 3);
-          } else if (player.afkAction === "cheer") {
-            // Celebration stars
-            ctx.font = "13px sans-serif";
-            ctx.fillText("✨", afkX - 12, afkY - 4);
-            ctx.fillText("🎉", afkX + 2, afkY - 2);
-          } else if (player.afkAction === "angry") {
-            // Angry steam puffs
-            ctx.fillStyle = "#f87171";
-            ctx.font = "bold 14px sans-serif";
-            ctx.fillText("💢", afkX - 6, afkY + Math.sin(t * 8) * 2);
-          }
+          ctx.font = "bold 11px sans-serif";
+          const text = player.chatMessage;
+          const textMetrics = ctx.measureText(text);
+          const bubbleW = Math.max(60, textMetrics.width + 16);
+          const bubbleH = 22;
+          const bLeft = bubbleX - bubbleW / 2;
+          const bTop = bubbleY - bubbleH;
+
+          // Bubble box with rounded corners
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#1e293b";
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(bLeft, bTop, bubbleW, bubbleH, 6) : ctx.rect(bLeft, bTop, bubbleW, bubbleH);
+          ctx.fill();
+          ctx.stroke();
+
+          // Bubble downward pointer tail
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.moveTo(bubbleX - 4, bubbleY);
+          ctx.lineTo(bubbleX, bubbleY + 5);
+          ctx.lineTo(bubbleX + 4, bubbleY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(bubbleX - 4, bubbleY);
+          ctx.lineTo(bubbleX, bubbleY + 5);
+          ctx.lineTo(bubbleX + 4, bubbleY);
+          ctx.strokeStyle = "#1e293b";
+          ctx.stroke();
+
+          // Message Text
+          ctx.fillStyle = "#0f172a";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, bubbleX, bTop + bubbleH / 2);
           ctx.restore();
         }
 
         drawPlayerNametag(ctx, px + pw / 2, py - 18);
-
         ctx.restore();
       }
+
 
       function drawPlayerNametag(ctx, centerX, topY) {
         ctx.save();

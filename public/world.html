@@ -1139,19 +1139,43 @@
     </div>
     <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Select your preferred character appearance for Game Mode:</div>
     
-    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:14px;margin-bottom:18px;" id="skin-grid">
+    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;margin-bottom:16px;" id="skin-grid">
       <!-- Option 1: Growtopia Set -->
-      <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:12px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <img src="character_base_assets/gt_growtopia_preview.png" width="48" height="48" style="image-rendering:pixelated;margin-bottom:6px;object-fit:contain;" alt="Growtopia Set">
-        <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Growtopia Set</div>
-        <div style="font-size:11px;color:#38bdf8;">Official Pixel Art</div>
+      <div class="skin-card active" data-skin="classic" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <img src="character_base_assets/gt_growtopia_preview.png" width="42" height="42" style="image-rendering:pixelated;margin-bottom:4px;object-fit:contain;" alt="Growtopia Set">
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;">Growtopia Set</div>
+        <div style="font-size:10px;color:#38bdf8;">Official Pixel Art</div>
       </div>
 
       <!-- Option 2: Cartoon Chibi -->
-      <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
-        <div style="font-size:36px;margin-bottom:6px;line-height:1.1;">🎨</div>
-        <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:2px;">Cartoon Chibi</div>
-        <div style="font-size:11px;color:#94a3b8;">Illustrated HD</div>
+      <div class="skin-card" data-skin="cartoon" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;transition:all 0.15s ease;">
+        <div style="font-size:32px;margin-bottom:4px;line-height:1.1;">🎨</div>
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;">Cartoon Chibi</div>
+        <div style="font-size:10px;color:#94a3b8;">Illustrated HD</div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;gap:6px;">💇 Hairstyle / Hair Color:</div>
+    <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:8px;margin-bottom:18px;" id="hair-grid">
+      <div class="hair-card active" data-hair="red" style="background:rgba(0,229,255,0.2);border:2px solid #00e5ff;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:2px;">🔴</div>
+        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Red Hair</div>
+      </div>
+      <div class="hair-card" data-hair="brown" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:2px;">🟤</div>
+        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Brown</div>
+      </div>
+      <div class="hair-card" data-hair="blonde" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:2px;">🟡</div>
+        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Golden</div>
+      </div>
+      <div class="hair-card" data-hair="black" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:2px;">⬛</div>
+        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Black</div>
+      </div>
+      <div class="hair-card" data-hair="none" style="background:rgba(15,23,42,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;">
+        <div style="font-size:20px;margin-bottom:2px;">⚪</div>
+        <div style="font-size:10px;font-weight:700;color:#f8fafc;">Bald</div>
       </div>
     </div>
 
@@ -2123,11 +2147,12 @@
   });
 
 
-  // ── Character Skin Selector Modal Handlers ──
+  // ── Character Skin & Wardrobe Modal Handlers ──
   const charModal = document.getElementById('character-modal');
   const skinBtn = document.getElementById('world-skin-btn');
   const mobileSkinBtn = document.getElementById('mobile-skin-btn');
   let selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
+  let selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
 
   function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
@@ -2137,9 +2162,19 @@
     });
   }
 
+  function updateHairCards(activeHair) {
+    document.querySelectorAll('.hair-card').forEach(card => {
+      const isSel = card.getAttribute('data-hair') === activeHair;
+      card.style.borderColor = isSel ? '#00e5ff' : 'rgba(255,255,255,0.15)';
+      card.style.background = isSel ? 'rgba(0, 229, 255, 0.2)' : 'rgba(15,23,42,0.85)';
+    });
+  }
+
   function openSkinModal() {
     selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
+    selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
     updateSkinCards(selectedSkinTemp);
+    updateHairCards(selectedHairTemp);
     if (charModal) charModal.classList.remove('hidden');
   }
 
@@ -2164,9 +2199,19 @@
     });
   });
 
+  document.querySelectorAll('.hair-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedHairTemp = card.getAttribute('data-hair');
+      updateHairCards(selectedHairTemp);
+    });
+  });
+
   document.getElementById('character-modal-save')?.addEventListener('click', () => {
     if (engine && typeof engine.setPlayerSkin === 'function') {
       engine.setPlayerSkin(selectedSkinTemp);
+    }
+    if (engine && typeof engine.setPlayerHair === 'function') {
+      engine.setPlayerHair(selectedHairTemp);
     }
     closeSkinModal();
   });
@@ -2175,6 +2220,28 @@
   document.getElementById('character-modal-close')?.addEventListener('click', closeSkinModal);
   charModal?.addEventListener('click', (e) => {
     if (e.target === charModal) closeSkinModal();
+  });
+
+  // ── Game Mode Bubble Chat Input & Enter Handler ──
+  const chatInput = document.getElementById('game-chat-input');
+  const chatSendBtn = document.getElementById('game-chat-send-btn');
+
+  function handleSendGameChat() {
+    if (!chatInput) return;
+    const msg = chatInput.value;
+    if (msg && msg.trim() && engine && typeof engine.sendChatMessage === 'function') {
+      engine.sendChatMessage(msg.trim());
+      chatInput.value = '';
+      chatInput.blur();
+    }
+  }
+
+  chatSendBtn?.addEventListener('click', handleSendGameChat);
+  chatInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSendGameChat();
+    }
   });
   // Global Button Click Sound Effect (Exclude virtual touch controller keys)
   document.addEventListener('click', (e) => {
