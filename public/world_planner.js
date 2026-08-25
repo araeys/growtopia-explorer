@@ -1662,25 +1662,24 @@
 
         canvas.addEventListener("wheel", event => {
           event.preventDefault();
-          const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 800, height: 600 };
-          const sx = event.clientX - rect.left;
-          const sy = event.clientY - rect.top;
+          const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
+          smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
 
           if (!player.active) {
             // Builder Mode: anchor to cursor
+            const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 800, height: 600 };
+            const sx = event.clientX - rect.left;
+            const sy = event.clientY - rect.top;
             zoomAnchorWorldX = (sx - viewport.x) / viewport.zoom;
             zoomAnchorWorldY = (sy - viewport.y) / viewport.zoom;
             zoomScreenX = sx;
             zoomScreenY = sy;
-          }
 
-          const zoomFactor = event.deltaY < 0 ? 1.20 : 0.82;
-          smoothZoomTarget = Math.max(viewport.minZoom, Math.min(viewport.maxZoom, smoothZoomTarget * zoomFactor));
-
-          if (!isZoomAnimating) {
-            isZoomAnimating = true;
-            if (typeof requestAnimationFrame !== "undefined") {
-              requestAnimationFrame(stepSmoothZoom);
+            if (!isZoomAnimating) {
+              isZoomAnimating = true;
+              if (typeof requestAnimationFrame !== "undefined") {
+                requestAnimationFrame(stepSmoothZoom);
+              }
             }
           }
         }, { passive: false });
@@ -2150,11 +2149,13 @@
           // Play Game Mode Enter Sound Effect & Zoom in to Player
           playSfx("already_used", 1.0, 0.75);
           viewport.zoom = 2.2;
+          smoothZoomTarget = 2.2;
           if (canvas) {
-            viewport.targetX = spawn.x + player.width / 2;
-            viewport.targetY = spawn.y + player.height / 2;
-            viewport.x = viewport.targetX - (canvas.width / 2) / viewport.zoom;
-            viewport.y = viewport.targetY - (canvas.height / 2) / viewport.zoom;
+            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+            const viewW = canvas.width / dpr;
+            const viewH = canvas.height / dpr;
+            viewport.x = (viewW / 2) - (spawn.x + player.width / 2) * viewport.zoom;
+            viewport.y = (viewH / 2) - (spawn.y + player.height / 2) * viewport.zoom;
           }
 
           onStatusMessage("🎮 Game Mode Active! WASD/Arrows to run & jump (Double Jump enabled!), R to respawn, ESC to exit.");
@@ -2374,17 +2375,15 @@
           respawnPlayer("Fell into the void!");
         }
 
-        // Rock-Solid Center on Player in Game Mode (Zero Camera Jitter During Zoom & Walk)
+        // Rock-Solid Center on Player in Game Mode
         if (canvas && player.active) {
           const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
           const viewW = canvas.width / dpr;
           const viewH = canvas.height / dpr;
-          const targetX = viewW / 2 - (player.x + player.width / 2) * viewport.zoom;
-          const targetY = viewH / 2 - (player.y + player.height / 2) * viewport.zoom;
-          // Direct lock during active zoom, smooth follow during walk
-          const lerpSpeed = Math.abs(smoothZoomTarget - viewport.zoom) > 0.01 ? 1.0 : Math.min(1.0, 0.45 * (timeScale || 1.0));
-          viewport.x += (targetX - viewport.x) * lerpSpeed;
-          viewport.y += (targetY - viewport.y) * lerpSpeed;
+          const targetX = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
+          const targetY = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
+          viewport.x = targetX;
+          viewport.y = targetY;
         }
       }
 
