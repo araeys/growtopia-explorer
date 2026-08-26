@@ -1757,6 +1757,34 @@
       function getTileConnectionOffset(item, x, y, layer) {
         if (!item || !layer || x < 0 || y < 0) return { offsetX: 0, offsetY: 0 };
 
+        // ── 0. Authentic Growtopia Door & Entrance Open/Close Sprite Animation ──
+        if (isDoorItem(item)) {
+          let isOpen = false;
+          if (player.active) {
+            // In Game Mode: Door swings open when player approaches or stands at the entrance!
+            const pxCenter = player.x + player.width / 2;
+            const pyCenter = player.y + player.height / 2;
+            const tileCenterX = x * TILE_SIZE + TILE_SIZE / 2;
+            const tileCenterY = y * TILE_SIZE + TILE_SIZE / 2;
+            const dx = Math.abs(pxCenter - tileCenterX);
+            const dy = Math.abs(pyCenter - tileCenterY);
+            if (dx <= 22 && dy <= 28) {
+              isOpen = true;
+            }
+          } else {
+            // In Builder Mode: Door swings open when hovered with cursor
+            if (typeof hoverTileX !== "undefined" && typeof hoverTileY !== "undefined") {
+              if (hoverTileX === x && hoverTileY === y) {
+                isOpen = true;
+              }
+            }
+          }
+          if (isOpen) {
+            return { offsetX: 1, offsetY: 0 }; // 2nd sprite in tilesheet: Open Door!
+          }
+          return { offsetX: 0, offsetY: 0 }; // 1st sprite in tilesheet: Closed Door!
+        }
+
         const autotileEngine = autotile || (typeof GTAutotile !== "undefined" ? GTAutotile : (typeof window !== "undefined" ? window.GTAutotile : null));
         const id = Number(item.id);
         const st = Number(item.spread_type) || 0;
