@@ -13,7 +13,10 @@
  const MAX_HISTORY = 40;
  const AUTOSAVE_KEY = "gt-world-planner-autosave-v1";
 
- const AMETHYST_PLACE_SFX_POOL = [
+   const JUMP_VOCAL_POOL = ["jump_vocal1", "jump_vocal2", "jump_vocal3"];
+  const LAND_GRUNT_POOL = ["land_grunt1", "land_grunt2", "land_grunt3", "character_land_ugh.mp3"];
+
+  const AMETHYST_PLACE_SFX_POOL = [
     "Amethyst_break1.ogg",
     "Amethyst_break2.ogg",
     "Amethyst_break3.ogg",
@@ -5371,7 +5374,7 @@
 
  function preloadFootstepSounds() {
  // Preload all essential gameplay SFX for zero-delay instant playback
- const coreSounds = ["Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+ const coreSounds = [...JUMP_VOCAL_POOL, ...LAND_GRUNT_POOL, "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
@@ -5479,12 +5482,16 @@
  }
  }
 
- function playJumpSound(isDoubleJump = false) {
- const ctx = getAudioContext();
- if (!ctx) return;
+       function playJumpSound(isDoubleJump = false) {
+        const ctx = getAudioContext();
+        if (!ctx) return;
 
- // 1. Play authentic Growtopia jump sound sample
- playSfx("jump", isDoubleJump ? 1.28 : 1.0, 0.65);
+        // 1. Play authentic Growtopia jump sound sample
+        playSfx("jump", isDoubleJump ? 1.28 : 1.0, 0.65);
+
+        // 2. Play human jump vocal effort sound
+        const jumpVocal = JUMP_VOCAL_POOL[Math.floor(Math.random() * JUMP_VOCAL_POOL.length)];
+        playSfx(jumpVocal, isDoubleJump ? 1.15 : (0.95 + Math.random() * 0.10), 0.70);
 
  // 2. Play immediate synth chirp fallback for zero-latency response
  try {
