@@ -847,7 +847,9 @@
  spawnBlockPlaceEffect(x, y, item);
  }
  spawnTileBreakParticle(x, y);
- playSfx("pop", 0.95 + Math.random() * 0.15, 0.50);
+ // Combine authentic pop and tile_created sounds on block placement
+ playSfx("pop", 0.95 + Math.random() * 0.15, 0.45);
+ playSfx("tile_created", 0.98 + Math.random() * 0.08, 0.55);
  }
  return true;
  }
@@ -5354,7 +5356,7 @@
 
  function preloadFootstepSounds() {
  // Preload all essential gameplay SFX for zero-delay instant playback
- const coreSounds = ["door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+ const coreSounds = ["door_open", "door_shut", "knock", "piano_nice", "tile_created", "pop", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
