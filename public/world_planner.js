@@ -5271,22 +5271,15 @@
       }
 
       function playSfx(name, playbackRate = 1.0, volume = 0.6) {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === "suspended") {
+          ctx.resume().catch(() => {});
+        }
+
         const ext = (name.endsWith(".ogg") || name.endsWith(".wav")) ? "" : ".wav";
         const url = "audio/" + name + ext;
-
-        // 1. Direct HTML5 Audio element for instant playback on any protocol/browser
-        try {
-          const directAudio = new Audio(url);
-          directAudio.volume = Math.max(0, Math.min(1, volume));
-          directAudio.playbackRate = playbackRate;
-          directAudio.play().catch(() => {});
-        } catch(e) {}
-
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        if (ctx.state === "suspended") ctx.resume().catch(() => {});
-
         const key = "sfx_" + name;
+
         const playBuffer = (buffer) => {
           try {
             const src = ctx.createBufferSource();
@@ -5305,16 +5298,37 @@
           return;
         }
 
-        fetch(url)
-          .then(r => r.arrayBuffer())
-          .then(ab => ctx.decodeAudioData(ab))
-          .then(buf => {
-            audioBufferCache.set(key, buf);
-            playBuffer(buf);
-          })
-          .catch(() => {
-            playSynthFallbackSfx(ctx, name, volume);
-          });
+        if (ctx) {
+          fetch(url)
+            .then(r => {
+              if (!r.ok) throw new Error("HTTP error " + r.status);
+              return r.arrayBuffer();
+            })
+            .then(ab => ctx.decodeAudioData(ab))
+            .then(buf => {
+              audioBufferCache.set(key, buf);
+              playBuffer(buf);
+            })
+            .catch(() => {
+              try {
+                const el = new Audio(url);
+                el.volume = Math.max(0, Math.min(1, volume));
+                el.playbackRate = playbackRate;
+                el.play().catch(() => {
+                  playSynthFallbackSfx(ctx, name, volume);
+                });
+              } catch(_) {
+                playSynthFallbackSfx(ctx, name, volume);
+              }
+            });
+        } else {
+          try {
+            const el = new Audio(url);
+            el.volume = Math.max(0, Math.min(1, volume));
+            el.playbackRate = playbackRate;
+            el.play().catch(() => {});
+          } catch(_) {}
+        }
       }
 
       let lastFootstepIdx = -1;

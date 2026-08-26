@@ -3219,45 +3219,37 @@
  window.switchWelcomeTab = switchWelcomeTab;
 
  function hideWelcomeDialog() {
- if (wModal) {
- wModal.style.display = 'none';
- try {
- const clickAudio = new Audio("audio/switch.wav");
- clickAudio.volume = 0.5;
- clickAudio.play().catch(() => {});
- } catch (e) {}
- }
- }
- window.hideWelcomeDialog = hideWelcomeDialog;
-
- document.getElementById('world-about-btn')?.addEventListener('click', openWelcomeModal);
- if (wClose) wClose.addEventListener('click', hideWelcomeDialog);
- if (wAck) {
- wAck.addEventListener('click', () => {
- hideWelcomeDialog();
+    if (wModal) {
+      wModal.style.display = 'none';
       try {
-        const audio = new Audio("audio/piano_nice.wav");
-        audio.volume = 0.75;
-        audio.play().catch(() => {});
-        const door = new Audio("audio/door_shut.wav");
-        door.volume = 0.85;
-        door.play().catch(() => {});
+        const clickAudio = new Audio("audio/switch.wav");
+        clickAudio.volume = 0.5;
+        clickAudio.play().catch(() => {});
       } catch (e) {}
- if (engine && typeof engine.togglePlayMode === 'function') {
- engine.togglePlayMode(true);
- }
- });
- }
- if (wModal) {
- wModal.addEventListener('click', (e) => {
- if (e.target === wModal) hideWelcomeDialog();
- });
- }
+    }
+  }
+  window.hideWelcomeDialog = hideWelcomeDialog;
 
- window.addEventListener('keydown', (e) => {
- if (e.key === 'Escape' && wModal && wModal.style.display !== 'none') {
- hideWelcomeDialog();
- }
- });
+  document.getElementById('world-about-btn')?.addEventListener('click', openWelcomeModal);
+  if (wClose) wClose.addEventListener('click', hideWelcomeDialog);
+  if (wAck) {
+    wAck.addEventListener('click', () => {
+      hideWelcomeDialog();
+      if (engine && typeof engine.togglePlayMode === 'function') {
+        engine.togglePlayMode(true);
+      }
+    });
+  }
+  if (wModal) {
+    wModal.addEventListener('click', (e) => {
+      if (e.target === wModal) hideWelcomeDialog();
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && wModal && wModal.style.display !== 'none') {
+      hideWelcomeDialog();
+    }
+  });
 
 </script>
