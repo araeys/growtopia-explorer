@@ -18,8 +18,9 @@
         canvas,
         minimapCanvas,
         itemsDb = [],
-        catalog = window.GTWorldCatalog,
-        lzString = window.LZString,
+        catalog = (typeof GTWorldCatalog !== "undefined" ? GTWorldCatalog : (typeof window !== "undefined" ? window.GTWorldCatalog : null)),
+        autotile = (typeof GTAutotile !== "undefined" ? GTAutotile : (typeof window !== "undefined" ? window.GTAutotile : null)),
+        lzString = (typeof LZString !== "undefined" ? LZString : (typeof window !== "undefined" ? window.LZString : null)),
         onWorldChange: externalOnWorldChange = () => {},
         onToolChange = () => {},
         onHotbarChange = () => {},
@@ -74,6 +75,7 @@
       // Block Placement Pop & Particle Effects
       const activeBlockEffects = [];
       const activeParticles = [];
+      const gameParticles = [];
       let flagLogoImg = null;
       if (typeof Image !== "undefined") {
         flagLogoImg = new Image();
@@ -316,9 +318,7 @@
         return y * world.width + x;
       }
 
-            // Dynamic World Particle System (Footstep dust, block hits, death burst, respawn rings)
-      const gameParticles = [];
-
+      // Dynamic World Particle System (Footstep dust, block hits, death burst, respawn rings)
       function spawnFootstepDust(x, y, facing, isSkid = false) {
         const count = isSkid ? 5 : 3;
         for (let i = 0; i < count; i++) {
@@ -1230,14 +1230,19 @@
           );
 
           if (activeTool === "pencil" && hotbar[activeHotbarIndex]) {
+            const previewItem = hotbar[activeHotbarIndex];
+            const isBg = catalog.isBackgroundItem(previewItem);
             ctx.globalAlpha = 0.5;
             drawTileSprite(
               ctx,
-              hotbar[activeHotbarIndex],
+              previewItem,
               hoveredTile.x * TILE_SIZE,
               hoveredTile.y * TILE_SIZE,
               isFlipped,
-              catalog.isBackgroundItem(hotbar[activeHotbarIndex])
+              isBg,
+              hoveredTile.x,
+              hoveredTile.y,
+              isBg ? world.bg : world.fg
             );
             ctx.globalAlpha = 1.0;
           }
@@ -1277,26 +1282,29 @@
 
       function getTileConnectionOffset(item, x, y, layer) {
         if (!item || !layer || x < 0 || y < 0) return { offsetX: 0, offsetY: 0 };
-        
-        const nameLower = (item.name || "").toLowerCase();
+
+        const autotileEngine = autotile || (typeof GTAutotile !== "undefined" ? GTAutotile : (typeof window !== "undefined" ? window.GTAutotile : null));
         const id = Number(item.id);
-        
-        // 1. Horizontal Connectable Items (Couch, Table, Platform, Bench, Bar, Desk, Shelf, Bed, Sofa, Bannister, Pew, Counter)
+        const st = Number(item.spread_type) || 0;
+
+        // Use official Growtopia 8-neighbor bitmask solver if spread_type is 2, 5, 3, 14, or 7
+        if (autotileEngine && [2, 5, 3, 14, 7].includes(st)) {
+          const mask = autotileEngine.computeNeighborMask(layer, world.width, world.height, x, y, id);
+          return autotileEngine.getTileOffset(item, mask);
+        }
+
+        // Horizontal connectable fallback (tables, couches, desks, platforms)
+        const nameLower = (item.name || "").toLowerCase();
         const isHorizontalConnectable = (
-          item.spread_type === 3 ||
-          item.frames >= 3 ||
+          st === 3 ||
+          st === 14 ||
           nameLower.includes("couch") ||
           nameLower.includes("table") ||
           nameLower.includes("platform") ||
           nameLower.includes("bench") ||
           nameLower.includes("sofa") ||
           nameLower.includes("desk") ||
-          nameLower.includes("shelf") ||
-          nameLower.includes("counter") ||
-          nameLower.includes("bannister") ||
-          nameLower.includes("bar ") ||
-          nameLower.endsWith(" bar") ||
-          nameLower.includes("pew")
+          nameLower.includes("counter")
         );
 
         if (isHorizontalConnectable) {
@@ -1311,45 +1319,6 @@
             return { offsetX: 1, offsetY: 0 }; // Middle segment
           } else if (hasLeft && !hasRight) {
             return { offsetX: 2, offsetY: 0 }; // Right end
-          }
-        }
-
-        // 2. 4-Way Connectable Items (Fences, Pipes, Plumbing, Wires, Ropes, Lattices)
-        const is4WayConnectable = (
-          nameLower.includes("fence") ||
-          nameLower.includes("pipe") ||
-          nameLower.includes("plumbing") ||
-          nameLower.includes("wire") ||
-          nameLower.includes("lattice") ||
-          nameLower.includes("rope") ||
-          nameLower.includes("vine") ||
-          nameLower.includes("beam")
-        );
-
-        // 3. Terrain Blocks with Grass / Border (Dirt and natural blocks with spread_type === 2)
-        if (id === 2 || (item.spread_type === 2 && !nameLower.includes("bedrock") && !nameLower.includes("background"))) {
-          const hasAbove = y > 0 && layer[(y - 1) * world.width + x] > 0;
-          const hasLeft = x > 0 && layer[y * world.width + (x - 1)] === id;
-          const hasRight = x < world.width - 1 && layer[y * world.width + (x + 1)] === id;
-
-          if (!hasAbove) {
-            // Surface with air above -> has grass top!
-            if (!hasLeft && hasRight) {
-              return { offsetX: 5, offsetY: 0 }; // Top-left grass corner
-            } else if (hasLeft && !hasRight) {
-              return { offsetX: 6, offsetY: 0 }; // Top-right grass corner
-            } else {
-              return { offsetX: 1, offsetY: 0 }; // Continuous top grass
-            }
-          } else {
-            // Under ground / solid above
-            if (!hasLeft && hasRight) {
-              return { offsetX: 3, offsetY: 0 }; // Left edge
-            } else if (hasLeft && !hasRight) {
-              return { offsetX: 4, offsetY: 0 }; // Right edge
-            } else {
-              return { offsetX: 0, offsetY: 0 }; // Solid inner dirt
-            }
           }
         }
 
@@ -3377,14 +3346,16 @@
           const t = player.animTimer;
 
           // 1. Soft Radiant Radial Core Glow
-          const radialGlow = ctx.createRadialGradient(centerX, centerY, 4, centerX, centerY, 38);
-          radialGlow.addColorStop(0, "rgba(168, 85, 247, 0.45)");
-          radialGlow.addColorStop(0.5, "rgba(56, 189, 248, 0.20)");
-          radialGlow.addColorStop(1, "rgba(168, 85, 247, 0)");
-          ctx.fillStyle = radialGlow;
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
-          ctx.fill();
+          if (typeof ctx.createRadialGradient === "function") {
+            const radialGlow = ctx.createRadialGradient(centerX, centerY, 4, centerX, centerY, 38);
+            radialGlow.addColorStop(0, "rgba(168, 85, 247, 0.45)");
+            radialGlow.addColorStop(0.5, "rgba(56, 189, 248, 0.20)");
+            radialGlow.addColorStop(1, "rgba(168, 85, 247, 0)");
+            ctx.fillStyle = radialGlow;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 38, 0, Math.PI * 2);
+            ctx.fill();
+          }
 
           // ── Mod Astral Portal Backdrop (10-Frame Looping Sequence in Purple-Blue) ──
           const portalFps = 12;

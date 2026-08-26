@@ -118,28 +118,27 @@
 
     function isBackgroundItem(item) {
       if (!item) return false;
-      if (item.action === 18) return true;
-      const cat = String(item.category || "").toLowerCase();
-      if (cat.includes("wallpaper") || cat.includes("background")) return true;
-      const name = String(item.name || "").toLowerCase();
-      return name.includes("background") || name.includes("wallpaper") || name.endsWith("backng");
+      // In Growtopia items.dat: action === 18 is Wallpaper / Background
+      if (Number(item.action) === 18) return true;
+      if (item.layer === 0 && item.action !== 0 && item.action !== 17) return true;
+      return false;
     }
 
     function getItemCategoryKey(item) {
       if (!item) return "all";
-      const action = Number(item.action);
+      const action = Number(item.action) || 0;
       const name = String(item.name || "").toLowerCase();
       const cat = String(item.category || "").toLowerCase();
 
       if (action === 18 || isBackgroundItem(item)) return "wallpaper";
-      if (action === 16 || name.includes("lava") || name.includes("spike") || name.includes("hazard")) return "hazard";
-      if (action === 1 || action === 2 || name.includes("door") || name.includes("portal") || name.includes("gate")) return "door";
-      if (action === 3 || action === 27 || name.includes("sign") || name.includes("board") || name.includes("checkpoint")) return "sign";
-      if (action === 21 || name.includes("platform") || name.includes("ladder") || name.includes("stairs") || name.includes("bridge")) return "platform";
-      if ([3, 6, 7, 8, 97].includes(action) || name.includes("lock") || name.includes("vending") || name.includes("display") || name.includes("generator")) return "lock";
-      if (action === 28 || name.includes("music") || name.includes("note") || name.includes("piano")) return "music";
-      if ([12, 14, 15, 37, 38, 120].includes(action) || cat.includes("furniture") || name.includes("chair") || name.includes("table") || name.includes("bed") || name.includes("light") || name.includes("statue") || name.includes("box")) return "furniture";
-      if (action === 17 || action === 22 || cat.includes("blocks") || cat.includes("building")) return "building";
+      if (action === 16 || name.includes("spike") || name.includes("hazard")) return "hazard";
+      if (action === 1 || action === 2 || action === 26 || name.includes("door") || name.includes("portal") || name.includes("gate")) return "door";
+      if (action === 4 || action === 27 || name.includes("sign") || name.includes("checkpoint")) return "sign";
+      if (action === 21 || name.includes("platform") || name.includes("ladder") || name.includes("bridge")) return "platform";
+      if ([3, 6, 7, 8, 97].includes(action) || name.includes("lock") || name.includes("vending") || name.includes("display")) return "lock";
+      if (action === 28 || name.includes("music note") || name.includes("piano")) return "music";
+      if ([12, 14, 15, 37, 38, 120].includes(action) || cat.includes("furniture") || name.includes("chair") || name.includes("table") || name.includes("couch") || name.includes("bench") || name.includes("desk")) return "furniture";
+      if (action === 17 || action === 22 || item.spread_type === 2 || cat.includes("building") || cat.includes("blocks")) return "building";
 
       return "building";
     }

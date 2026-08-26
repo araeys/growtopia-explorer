@@ -3,7 +3,17 @@ const assert = require("node:assert");
 const fs = require("fs");
 const path = require("path");
 
-const LZString = require("lz-string");
+let LZString;
+try {
+  LZString = require("lz-string");
+} catch {
+  const code = fs.readFileSync(path.join(__dirname, "../public/lz-string.min.js"), "utf8");
+  const vm = require("vm");
+  const sandbox = {};
+  vm.runInNewContext(code, sandbox);
+  LZString = sandbox.LZString || globalThis.LZString;
+}
+const autotile = require("../public/autotile.js");
 const catalog = require("../public/world_catalog.js");
 const planner = require("../public/world_planner.js");
 
@@ -304,7 +314,11 @@ function createTestCanvas() {
       ellipse: () => {},
       rect: () => {},
       clip: () => {},
-      createLinearGradient: () => ({ addColorStop: () => {} })
+      closePath: () => {},
+      setLineDash: () => {},
+      measureText: () => ({ width: 10 }),
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      createRadialGradient: () => ({ addColorStop: () => {} })
     }),
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }),
     clientWidth: 800,
