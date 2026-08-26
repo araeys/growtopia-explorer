@@ -818,7 +818,7 @@
             world.paint[idx] = Number(item.id);
           }
           if (player.active) {
-            triggerPlayerPunch(x, y);
+            triggerPlayerPlace(x, y);
           }
           spawnTileBreakParticle(x, y);
           playSfx("pop", 1.15 + Math.random() * 0.20, 0.50);
@@ -838,7 +838,7 @@
         }
         if (item) {
           if (player.active) {
-            triggerPlayerPunch(x, y);
+            triggerPlayerPlace(x, y);
             spawnBlockPlaceEffect(x, y, item);
           }
           spawnTileBreakParticle(x, y);
@@ -2176,7 +2176,7 @@
                   // Default to pencil (Place Tile)
                   isTouchDrawing = true;
                   pushUndoSnapshot("Place Tile");
-                  triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+                  triggerPlayerPlace(tileX, tileY);
                   setTile(tileX, tileY, hotbar[activeHotbarIndex]);
                   lastDrawTile = { x: tileX, y: tileY };
                   render();
@@ -2901,6 +2901,16 @@
         return player.moderatorMode;
       }
 
+      function triggerPlayerPlace(targetTileX, targetTileY) {
+        if (!player.active) return;
+        player.placeTimer = 0.20;
+        if (typeof targetTileX === "number") {
+          const playerTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+          if (targetTileX > playerTileX) player.facing = 1;
+          else if (targetTileX < playerTileX) player.facing = -1;
+        }
+      }
+
       function triggerPlayerPunch(targetTileX, targetTileY, preciseWorldX, preciseWorldY) {
         if (!player.active) return;
         player.punchTimer = 0.24;
@@ -2950,6 +2960,7 @@
         if (player.hitFlashTimer > 0) player.hitFlashTimer = Math.max(0, player.hitFlashTimer - dt);
         if (player.modTransformTimer > 0) player.modTransformTimer = Math.max(0, player.modTransformTimer - dt);
         if (player.punchTimer > 0) player.punchTimer = Math.max(0, player.punchTimer - dt);
+        if (player.placeTimer > 0) player.placeTimer = Math.max(0, player.placeTimer - dt);
         if (player.jumpThrustTimer > 0) player.jumpThrustTimer = Math.max(0, player.jumpThrustTimer - dt);
         if (player.jumpSpinTimer > 0) player.jumpSpinTimer = Math.max(0, player.jumpSpinTimer - dt);
         if (player.chatTimer > 0) player.chatTimer = Math.max(0, player.chatTimer - dt);
@@ -3809,11 +3820,15 @@
         const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 2;   // 1x 360-degree forward spin
         const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 2; // 1x 360-degree INVERTED spin
 
-        // Placing / Punch Dynamic Thrust & Snap Kinematics
+        // Placing Kinematics (Normal block placing arm gesture)
+        const isPlacing = player.placeTimer > 0;
+        const placeProg = isPlacing ? (1.0 - (player.placeTimer / 0.20)) : 0;
+        const placeThrustX = isPlacing ? Math.sin(placeProg * Math.PI) * 6.5 : 0;
+        const placeSnapAngle = isPlacing ? (-0.35 - Math.sin(placeProg * Math.PI) * 1.35 + (1.0 - placeProg) * 0.2) : 0;
+
+        // Punch Kinematics (Stretched Fist Action)
         const isPunching = player.punchTimer > 0;
-        const punchProg = isPunching ? (1.0 - (player.punchTimer / 0.28)) : 0;
-        const punchThrustX = isPunching ? Math.sin(punchProg * Math.PI) * 7.5 : 0;
-        const punchSnapAngle = isPunching ? (-0.35 - Math.sin(punchProg * Math.PI) * 1.45 + (1.0 - punchProg) * 0.3) : 0;
+        const punchProg = isPunching ? (1.0 - (player.punchTimer / (player.punchMaxTimer || 0.24))) : 0;
         const punchTorsoLean = isPunching ? Math.sin(punchProg * Math.PI) * 0.14 : 0;
         const punchHeadDip = isPunching ? Math.sin(punchProg * Math.PI) * 0.08 : 0;
         const punchStepX = isPunching ? Math.sin(punchProg * Math.PI) * 2.5 : 0;
@@ -3970,6 +3985,8 @@
               backArmAngle = jumpSpinAngleBack;
             } else if (isPunching) {
               backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
+            } else if (isPlacing) {
+              backArmAngle = 0.35 + Math.sin(placeProg * Math.PI) * 0.25;
             } else if (afkBackArmAngle !== null) {
               backArmAngle = afkBackArmAngle;
             } else {
@@ -4241,6 +4258,8 @@
               let frontArmAngle = 0;
               if (isJumpSpinning) {
                 frontArmAngle = jumpSpinAngleFront;
+              } else if (isPlacing) {
+                frontArmAngle = placeSnapAngle;
               } else if (afkFrontArmAngle !== null) {
                 frontArmAngle = afkFrontArmAngle;
               } else {
@@ -4253,7 +4272,7 @@
               }
 
               tCtx.save();
-              tCtx.translate(-7 + afkTorsoX, 4 + breatheBob);
+              tCtx.translate(-7 + afkTorsoX + placeThrustX, 4 + breatheBob);
               tCtx.rotate(frontArmAngle);
               if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
                 tCtx.drawImage(imgArmL, -9, -20, 32, 32);
