@@ -495,3 +495,40 @@ test("GTWorldPlanner: Paint Bucket Coloring & Varnish", () => {
   // 7. Verify Dirt tile is still preserved underneath
   assert.strictEqual(state.fg[10 * state.width + 10], 2);
 });
+
+test("GTWorldPlanner: Interactive Punch Tool (Fist)", () => {
+  const engine = planner.createEngine({
+    canvas: createTestCanvas(),
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.init();
+  engine.loadPreset("blank");
+
+  const dirt = itemsDb.find(i => i.id === 2);
+  const diceBlock = itemsDb.find(i => i.name && i.name.toLowerCase().includes("dice block")) || { id: 384, name: "Dice Block", action: 36, texture: "tiles_page1.png" };
+  const weatherNight = itemsDb.find(i => i.name && i.name.toLowerCase().includes("weather machine - night")) || { id: 982, name: "Weather Machine - Night", action: 41, texture: "tiles_page2.png" };
+
+  // 1. Place a Dirt block and test breaking it with Punch
+  engine.setTile(5, 5, dirt);
+  const state = engine.getWorldState();
+  assert.strictEqual(state.fg[5 * state.width + 5], 2);
+
+  engine.punchInteract(5, 5);
+  assert.strictEqual(state.fg[5 * state.width + 5], 0, "Punch should erase/break regular block");
+
+  // 2. Place a Dice Block and punch it (should trigger roll and NOT delete block)
+  engine.setTile(12, 12, diceBlock);
+  assert.strictEqual(state.fg[12 * state.width + 12], diceBlock.id);
+
+  const rollResult = engine.punchInteract(12, 12);
+  assert.strictEqual(rollResult, true);
+  assert.strictEqual(state.fg[12 * state.width + 12], diceBlock.id, "Punching dice block must roll and preserve the block");
+
+  // 3. Place Weather Machine - Night and punch it (should activate weather)
+  engine.setTile(20, 20, weatherNight);
+  engine.punchInteract(20, 20);
+  assert.strictEqual(engine.getWeather(), "NIGHT", "Punching Weather Machine - Night should set world weather to NIGHT");
+});

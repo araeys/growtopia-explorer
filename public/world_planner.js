@@ -630,6 +630,27 @@
             continue;
           }
 
+          if (p.type === "floating_text") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy *= 0.96;
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = progress < 0.15 ? (progress / 0.15) : Math.max(0, 1.0 - Math.pow((progress - 0.15) / 0.85, 1.5));
+            ctx.save();
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = p.color || "#fde047";
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+            ctx.shadowBlur = 4;
+            if (typeof ctx.fillText === "function") {
+              ctx.fillText(p.text || "", p.x, p.y);
+            }
+            ctx.restore();
+            continue;
+          }
+
           if (p.type === "wind_breeze") {
             p.x += p.vx;
             p.y += p.vy;
@@ -847,6 +868,140 @@
         }
         playSfx("rock_destroy", 0.95 + Math.random() * 0.15, 0.75);
         return true;
+      }
+
+      function spawnFloatingText(tileX, tileY, text, color = "#fde047") {
+        const px = tileX * TILE_SIZE + TILE_SIZE / 2;
+        const py = tileY * TILE_SIZE;
+        gameParticles.push({
+          type: "floating_text",
+          x: px,
+          y: py,
+          vx: 0,
+          vy: -0.9,
+          text,
+          color,
+          life: 1.1,
+          maxLife: 1.1
+        });
+      }
+
+      function spawnPunchImpactEffect(tileX, tileY) {
+        const px = tileX * TILE_SIZE + TILE_SIZE / 2;
+        const py = tileY * TILE_SIZE + TILE_SIZE / 2;
+
+        // Expanding shockwave punch ring
+        gameParticles.push({
+          type: "ring",
+          x: px,
+          y: py,
+          vx: 0,
+          vy: 0,
+          radius: 4,
+          maxRadius: 22,
+          color: "#f87171",
+          borderColor: "#ef4444",
+          life: 0.25,
+          maxLife: 0.25
+        });
+
+        // Punch impact sparks
+        for (let i = 0; i < 4; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spd = 1.5 + Math.random() * 2.5;
+          gameParticles.push({
+            type: "dust",
+            x: px + (Math.random() - 0.5) * 6,
+            y: py + (Math.random() - 0.5) * 6,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            radius: 2 + Math.random() * 1.5,
+            color: "#fb7185",
+            borderColor: "#e11d48",
+            life: 0.22,
+            maxLife: 0.22
+          });
+        }
+      }
+
+      function punchInteract(tileX, tileY) {
+        const idx = getTileIndex(tileX, tileY);
+        if (idx === -1) return false;
+
+        const fgId = world.fg[idx];
+        const bgId = world.bg[idx];
+        const fgItem = fgId > 0 ? getItem(fgId) : null;
+        const fgName = (fgItem?.name || "").toLowerCase();
+
+        // 1. Interactive Dice / Roulette / Roshambo (Action 36 / Dice blocks)
+        if (fgItem && (fgItem.action === 36 || fgName.includes("dice") || fgName.includes("roulette") || fgName.includes("roshambo"))) {
+          if (player.active) triggerPlayerPunch(tileX, tileY);
+          spawnPunchImpactEffect(tileX, tileY);
+          const isRoulette = fgName.includes("roulette");
+          const rollVal = isRoulette ? Math.floor(Math.random() * 37) : (Math.floor(Math.random() * 6) + 1);
+          playSfx("magic", 1.2, 0.7);
+          spawnFloatingText(tileX, tileY, isRoulette ? `🎰 [ ${rollVal} ]` : `🎲 [ ${rollVal} ]`, "#fde047");
+          onStatusMessage(`🎲 ${fgItem.name} rolled: ${rollVal}!`);
+          return true;
+        }
+
+        // 2. Weather Machines (Action 41 / 81 / 89 / 134)
+        if (fgItem && [41, 81, 89, 134].includes(fgItem.action)) {
+          if (player.active) triggerPlayerPunch(tileX, tileY);
+          spawnPunchImpactEffect(tileX, tileY);
+          const matchedWeather = catalog.getWeathers().find(w => fgName.includes(w.id.toLowerCase()) || fgName.includes(w.name.toLowerCase()));
+          if (matchedWeather) {
+            setWeather(matchedWeather.id);
+            playSfx("magic", 1.1, 0.8);
+            spawnFloatingText(tileX, tileY, `⚡ ${matchedWeather.name}`, "#38bdf8");
+            onStatusMessage(`⚡ Activated Weather Machine: ${matchedWeather.name}!`);
+            return true;
+          }
+        }
+
+        // 3. Music Note Blocks / Piano / Drums (Action 12 / 28 / 71 / 99)
+        if (fgItem && (fgItem.action === 12 || fgItem.action === 28 || fgItem.action === 71 || fgName.includes("note") || fgName.includes("piano"))) {
+          if (player.active) triggerPlayerPunch(tileX, tileY);
+          spawnPunchImpactEffect(tileX, tileY);
+          const inst = getNoteInstrument(fgItem);
+          if (inst) {
+            const pitch = Math.max(0, Math.min(25, 25 - (tileY % 26)));
+            playNoteSound(inst, pitch);
+            spawnFloatingText(tileX, tileY, `🎵 ${inst.toUpperCase()}`, "#c084fc");
+            return true;
+          }
+        }
+
+        // 4. Doors & Portals (Action 1, 2, 26, 43, 84, 142)
+        if (fgItem && [1, 2, 26, 43, 84, 104, 105, 106, 142].includes(fgItem.action)) {
+          if (player.active) triggerPlayerPunch(tileX, tileY);
+          spawnPunchImpactEffect(tileX, tileY);
+          playSfx("door_open", 1.0, 0.7);
+          spawnFloatingText(tileX, tileY, `🚪 Knock Knock!`, "#a7f3d0");
+          onStatusMessage(`🚪 Interacted with ${fgItem.name}!`);
+          return true;
+        }
+
+        // 5. Donation Box, Vending, ATM, Lock (Action 3, 6, 7, 47, 62, 80, 97, 130)
+        if (fgItem && [3, 6, 7, 47, 62, 80, 97, 130].includes(fgItem.action)) {
+          if (player.active) triggerPlayerPunch(tileX, tileY);
+          spawnPunchImpactEffect(tileX, tileY);
+          playSfx("coin", 1.0, 0.8);
+          spawnFloatingText(tileX, tileY, `💰 ${fgItem.name}`, "#fbbf24");
+          onStatusMessage(`💰 Interacted with ${fgItem.name}!`);
+          return true;
+        }
+
+        // 6. Default: Punch breaks block
+        if (player.active) triggerPlayerPunch(tileX, tileY);
+        spawnPunchImpactEffect(tileX, tileY);
+        pushUndoSnapshot("Punch Erase");
+        const erased = eraseTile(tileX, tileY);
+        if (erased) {
+          render();
+          onWorldChange(world);
+        }
+        return erased;
       }
 
       function floodFill(startX, startY, newItem) {
@@ -1937,13 +2092,10 @@
               return;
             }
 
-            if (activeTool === "eraser") {
+            if (activeTool === "eraser" || activeTool === "punch") {
               isDrawing = true;
-              pushUndoSnapshot("Erase");
-              eraseTile(tileX, tileY);
+              punchInteract(tileX, tileY);
               lastDrawTile = { x: tileX, y: tileY };
-              render();
-              onWorldChange(world);
               return;
             }
 
@@ -2006,14 +2158,10 @@
                   selection.startX = tileX; selection.startY = tileY;
                   selection.endX = tileX; selection.endY = tileY;
                   render();
-                } else if (activeTool === "eraser") {
+                } else if (activeTool === "eraser" || activeTool === "punch") {
                   isTouchDrawing = true;
-                  pushUndoSnapshot("Erase Tile");
-                  triggerPlayerPunch(tileX, tileY);
-                  eraseTile(tileX, tileY);
+                  punchInteract(tileX, tileY);
                   lastDrawTile = { x: tileX, y: tileY };
-                  render();
-                  onWorldChange(world);
                 } else {
                   // Default to pencil (Place Tile)
                   isTouchDrawing = true;
@@ -2043,13 +2191,10 @@
                 lastDrawTile = { x: tileX, y: tileY };
                 render();
                 onWorldChange(world);
-              } else if (activeTool === "eraser") {
+              } else if (activeTool === "eraser" || activeTool === "punch") {
                 isTouchDrawing = true;
-                pushUndoSnapshot("Erase");
-                eraseTile(tileX, tileY);
+                punchInteract(tileX, tileY);
                 lastDrawTile = { x: tileX, y: tileY };
-                render();
-                onWorldChange(world);
               } else if (activeTool === "picker") {
                 pickTile(tileX, tileY);
               } else if (activeTool === "bucket") {
@@ -2097,8 +2242,8 @@
                 if (lastDrawTile?.x !== tileX || lastDrawTile?.y !== tileY) {
                   if (activeTool === "pencil") {
                     setTile(tileX, tileY, hotbar[activeHotbarIndex]);
-                  } else if (activeTool === "eraser") {
-                    eraseTile(tileX, tileY);
+                  } else if (activeTool === "eraser" || activeTool === "punch") {
+                    punchInteract(tileX, tileY);
                   }
                   lastDrawTile = { x: tileX, y: tileY };
                   requestRender();
@@ -2164,36 +2309,29 @@
             viewport.zoom = smoothZoomTarget;
             if (player.active) {
               const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
-              const viewW = canvas.width / dpr;
-              const viewH = canvas.height / dpr;
-              viewport.x = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
-              viewport.y = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
-            } else {
-              viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
-              viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+              const cw = canvas.clientWidth || (canvas.width / dpr);
+              const ch = canvas.clientHeight || (canvas.height / dpr);
+              viewport.x = cw / 2 - (player.x + TILE_SIZE / 2) * viewport.zoom;
+              viewport.y = ch / 2 - (player.y + TILE_SIZE / 2) * viewport.zoom;
             }
             isZoomAnimating = false;
-            render();
+            requestRender();
             return;
           }
 
-          // Smooth exponential easing (zero jitter)
-          viewport.zoom += diff * 0.25;
-          if (player.active) {
-            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
-            const viewW = canvas.width / dpr;
-            const viewH = canvas.height / dpr;
-            viewport.x = (viewW / 2) - (player.x + player.width / 2) * viewport.zoom;
-            viewport.y = (viewH / 2) - (player.y + player.height / 2) * viewport.zoom;
-          } else {
+          viewport.zoom += diff * 0.28;
+          if (!player.active) {
             viewport.x = zoomScreenX - zoomAnchorWorldX * viewport.zoom;
             viewport.y = zoomScreenY - zoomAnchorWorldY * viewport.zoom;
+          } else {
+            const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+            const cw = canvas.clientWidth || (canvas.width / dpr);
+            const ch = canvas.clientHeight || (canvas.height / dpr);
+            viewport.x = cw / 2 - (player.x + TILE_SIZE / 2) * viewport.zoom;
+            viewport.y = ch / 2 - (player.y + TILE_SIZE / 2) * viewport.zoom;
           }
-
-          render();
-          if (typeof requestAnimationFrame !== "undefined") {
-            requestAnimationFrame(stepSmoothZoom);
-          }
+          requestRender();
+          requestAnimationFrame(stepSmoothZoom);
         }
 
         canvas.addEventListener("wheel", event => {
@@ -2248,8 +2386,8 @@
               } else if (isDrawing && (lastDrawTile?.x !== tileX || lastDrawTile?.y !== tileY)) {
                 if (activeTool === "pencil") {
                   setTile(tileX, tileY, hotbar[activeHotbarIndex]);
-                } else if (activeTool === "eraser") {
-                  eraseTile(tileX, tileY);
+                } else if (activeTool === "eraser" || activeTool === "punch") {
+                  punchInteract(tileX, tileY);
                 }
                 lastDrawTile = { x: tileX, y: tileY };
                 requestRender();
@@ -4907,6 +5045,7 @@
         createCustomWorld,
         setTile,
         eraseTile,
+        punchInteract,
         floodFill,
         undo,
         redo,
