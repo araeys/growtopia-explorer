@@ -5014,6 +5014,7 @@
         init: () => {
           setupEventHandlers();
           centerViewport();
+          getSpriteImage("character_base_assets/gt_parts/gt_punch_fist.png");
         },
         render,
         setTool,
