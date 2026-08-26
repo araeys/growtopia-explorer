@@ -118,9 +118,10 @@
 
     function isBackgroundItem(item) {
       if (!item) return false;
+      const act = Number(item.action) || 0;
       // In Growtopia items.dat: action === 18 is Wallpaper / Background
-      if (Number(item.action) === 18) return true;
-      if (item.layer === 0 && item.action !== 0 && item.action !== 17) return true;
+      if (act === 18) return true;
+      if (item.layer === 0 && act !== 0 && act !== 17 && act !== 15 && act !== 22) return true;
       return false;
     }
 
@@ -130,15 +131,82 @@
       const name = String(item.name || "").toLowerCase();
       const cat = String(item.category || "").toLowerCase();
 
-      if (action === 18 || isBackgroundItem(item)) return "wallpaper";
-      if (action === 16 || name.includes("spike") || name.includes("hazard")) return "hazard";
-      if (action === 1 || action === 2 || action === 26 || name.includes("door") || name.includes("portal") || name.includes("gate")) return "door";
-      if (action === 4 || action === 27 || name.includes("sign") || name.includes("checkpoint")) return "sign";
-      if (action === 21 || name.includes("platform") || name.includes("ladder") || name.includes("bridge")) return "platform";
-      if ([3, 6, 7, 8, 97].includes(action) || name.includes("lock") || name.includes("vending") || name.includes("display")) return "lock";
-      if (action === 28 || name.includes("music note") || name.includes("piano")) return "music";
-      if ([12, 14, 15, 37, 38, 120].includes(action) || cat.includes("furniture") || name.includes("chair") || name.includes("table") || name.includes("couch") || name.includes("bench") || name.includes("desk")) return "furniture";
-      if (action === 17 || action === 22 || item.spread_type === 2 || cat.includes("building") || cat.includes("blocks")) return "building";
+      // 1. Wallpaper / Background
+      if (action === 18 || isBackgroundItem(item)) {
+        return "wallpaper";
+      }
+
+      // 2. Hazards (Spikes, Lava, Acid, Deathtraps, Storm Clouds)
+      if (
+        action === 16 || action === 126 || action === 136 ||
+        name.includes("spike") || name.includes("lava") || name.includes("hazard") || name.includes("deathtrap")
+      ) {
+        return "hazard";
+      }
+
+      // 3. Doors & Portals (Main Door, Dungeon Door, VIP Entrance, Portals, Gates)
+      if (
+        action === 1 || action === 2 || action === 26 || action === 43 || action === 84 ||
+        action === 104 || action === 105 || action === 106 || action === 142 ||
+        name.includes("door") || name.includes("portal") || name.includes("gate") || name.includes("entrance")
+      ) {
+        return "door";
+      }
+
+      // 4. Signs & Boards (Sign, Pointy Sign, Crappy Sign, Bulletin Board, Checkpoints)
+      if (
+        action === 4 || action === 10 || action === 27 || action === 34 ||
+        name.includes("sign") || name.includes("bulletin") || name.includes("guestbook") || name.includes("checkpoint")
+      ) {
+        return "sign";
+      }
+
+      // 5. Platforms & Stairs (Wooden Platform, Ladder, Stairs, Bridges, Climbing Wall)
+      if (
+        action === 21 || action === 145 ||
+        name.includes("platform") || name.includes("ladder") || name.includes("stairs") ||
+        name.includes("bridge") || name.includes("lattice") || name.includes("bannister")
+      ) {
+        return "platform";
+      }
+
+      // 6. Locks, Vending & Machines (WL, DL, Weather Machines, Vending, Generators, Magplant, Gaia, Safe)
+      if (
+        [3, 6, 7, 8, 41, 50, 53, 62, 80, 81, 89, 91, 92, 95, 96, 100, 103, 111, 116, 117, 123, 125, 130, 134].includes(action) ||
+        name.includes("lock") || name.includes("weather machine") || name.includes("machine") ||
+        name.includes("vending") || name.includes("generator") || name.includes("display") ||
+        name.includes("camera") || name.includes("processor") || name.includes("safe") || name.includes("magplant")
+      ) {
+        return "lock";
+      }
+
+      // 7. Music & Audio (Notes, Pianos, Drums, Boomboxes, Audio Racks, Organ)
+      if (
+        action === 12 || action === 28 || action === 71 || action === 99 ||
+        name.includes("music") || name.includes("piano") || name.includes("drum") ||
+        name.includes("note") || name.includes("boombox") || name.includes("audio") || name.includes("speaker")
+      ) {
+        return "music";
+      }
+
+      // 8. Furniture & Decorative Items (Tables, Couches, Chairs, Desks, Ovens, Statues, Crops, Beds, Storage)
+      if (
+        [14, 35, 36, 38, 39, 47, 49, 55, 58, 59, 61, 73, 76, 77, 83, 87, 88, 94, 97, 98, 118, 120, 122, 138, 140].includes(action) ||
+        cat.includes("furniture") || name.includes("chair") || name.includes("table") || name.includes("couch") ||
+        name.includes("bench") || name.includes("desk") || name.includes("shelf") || name.includes("bed") ||
+        name.includes("statue") || name.includes("oven") || name.includes("mannequin") || name.includes("portrait") ||
+        name.includes("box") || name.includes("light") || name.includes("plant") || name.includes("tree")
+      ) {
+        return "furniture";
+      }
+
+      // 9. Building Blocks (Solid Blocks, Bedrock, Soil, Bricks, Tiles, Starship Hull, Minerals)
+      if (
+        [15, 17, 22, 25, 60, 69, 90, 108, 110, 127, 128, 141, 144].includes(action) ||
+        item.spread_type === 2 || cat.includes("building") || cat.includes("blocks")
+      ) {
+        return "building";
+      }
 
       return "building";
     }
