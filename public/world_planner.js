@@ -924,7 +924,7 @@
         }
       }
 
-      function punchInteract(tileX, tileY) {
+      function punchInteract(tileX, tileY, preciseWorldX, preciseWorldY) {
         const idx = getTileIndex(tileX, tileY);
         if (idx === -1) return false;
 
@@ -935,7 +935,7 @@
 
         // 1. Interactive Dice / Roulette / Roshambo (Action 36 / Dice blocks)
         if (fgItem && (fgItem.action === 36 || fgName.includes("dice") || fgName.includes("roulette") || fgName.includes("roshambo"))) {
-          if (player.active) triggerPlayerPunch(tileX, tileY);
+          if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           spawnPunchImpactEffect(tileX, tileY);
           const isRoulette = fgName.includes("roulette");
           const rollVal = isRoulette ? Math.floor(Math.random() * 37) : (Math.floor(Math.random() * 6) + 1);
@@ -947,7 +947,7 @@
 
         // 2. Weather Machines (Action 41 / 81 / 89 / 134)
         if (fgItem && [41, 81, 89, 134].includes(fgItem.action)) {
-          if (player.active) triggerPlayerPunch(tileX, tileY);
+          if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           spawnPunchImpactEffect(tileX, tileY);
           const matchedWeather = catalog.getWeathers().find(w => fgName.includes(w.id.toLowerCase()) || fgName.includes(w.name.toLowerCase()));
           if (matchedWeather) {
@@ -961,7 +961,7 @@
 
         // 3. Music Note Blocks / Piano / Drums (Action 12 / 28 / 71 / 99)
         if (fgItem && (fgItem.action === 12 || fgItem.action === 28 || fgItem.action === 71 || fgName.includes("note") || fgName.includes("piano"))) {
-          if (player.active) triggerPlayerPunch(tileX, tileY);
+          if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           spawnPunchImpactEffect(tileX, tileY);
           const inst = getNoteInstrument(fgItem);
           if (inst) {
@@ -974,7 +974,7 @@
 
         // 4. Doors & Portals (Action 1, 2, 26, 43, 84, 142)
         if (fgItem && [1, 2, 26, 43, 84, 104, 105, 106, 142].includes(fgItem.action)) {
-          if (player.active) triggerPlayerPunch(tileX, tileY);
+          if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           spawnPunchImpactEffect(tileX, tileY);
           playSfx("door_open", 1.0, 0.7);
           spawnFloatingText(tileX, tileY, `🚪 Knock Knock!`, "#a7f3d0");
@@ -984,7 +984,7 @@
 
         // 5. Donation Box, Vending, ATM, Lock (Action 3, 6, 7, 47, 62, 80, 97, 130)
         if (fgItem && [3, 6, 7, 47, 62, 80, 97, 130].includes(fgItem.action)) {
-          if (player.active) triggerPlayerPunch(tileX, tileY);
+          if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           spawnPunchImpactEffect(tileX, tileY);
           playSfx("coin", 1.0, 0.8);
           spawnFloatingText(tileX, tileY, `💰 ${fgItem.name}`, "#fbbf24");
@@ -993,7 +993,7 @@
         }
 
         // 6. Default: Punch breaks block
-        if (player.active) triggerPlayerPunch(tileX, tileY);
+        if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
         spawnPunchImpactEffect(tileX, tileY);
         pushUndoSnapshot("Punch Erase");
         const erased = eraseTile(tileX, tileY);
@@ -2037,6 +2037,11 @@
         // Mouse Down
         canvas.addEventListener("mousedown", event => {
           const { tileX, tileY } = screenToWorldTile(event.clientX, event.clientY);
+          const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+          const sx = event.clientX - rect.left;
+          const sy = event.clientY - rect.top;
+          const preciseWorldX = (sx - viewport.x) / viewport.zoom;
+          const preciseWorldY = (sy - viewport.y) / viewport.zoom;
 
           // Middle click or Spacebar held -> Pan viewport
           if (event.button === 1 || event.spaceKey || event.shiftKey && event.button === 0 && activeTool === "preview") {
@@ -2094,7 +2099,7 @@
 
             if (activeTool === "eraser" || activeTool === "punch") {
               isDrawing = true;
-              punchInteract(tileX, tileY);
+              punchInteract(tileX, tileY, preciseWorldX, preciseWorldY);
               lastDrawTile = { x: tileX, y: tileY };
               return;
             }
@@ -2135,6 +2140,11 @@
           if (event.touches.length === 1) {
             const t = event.touches[0];
             const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
+            const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+            const sx = t.clientX - rect.left;
+            const sy = t.clientY - rect.top;
+            const preciseWorldX = (sx - viewport.x) / viewport.zoom;
+            const preciseWorldY = (sy - viewport.y) / viewport.zoom;
 
             if (player.active) {
               if (activeTool === "preview" || event.shiftKey) {
@@ -2160,13 +2170,13 @@
                   render();
                 } else if (activeTool === "eraser" || activeTool === "punch") {
                   isTouchDrawing = true;
-                  punchInteract(tileX, tileY);
+                  punchInteract(tileX, tileY, preciseWorldX, preciseWorldY);
                   lastDrawTile = { x: tileX, y: tileY };
                 } else {
                   // Default to pencil (Place Tile)
                   isTouchDrawing = true;
                   pushUndoSnapshot("Place Tile");
-                  triggerPlayerPunch(tileX, tileY);
+                  triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
                   setTile(tileX, tileY, hotbar[activeHotbarIndex]);
                   lastDrawTile = { x: tileX, y: tileY };
                   render();
@@ -2193,7 +2203,7 @@
                 onWorldChange(world);
               } else if (activeTool === "eraser" || activeTool === "punch") {
                 isTouchDrawing = true;
-                punchInteract(tileX, tileY);
+                punchInteract(tileX, tileY, preciseWorldX, preciseWorldY);
                 lastDrawTile = { x: tileX, y: tileY };
               } else if (activeTool === "picker") {
                 pickTile(tileX, tileY);
@@ -2891,16 +2901,25 @@
         return player.moderatorMode;
       }
 
-      function triggerPlayerPunch(targetTileX, targetTileY) {
+      function triggerPlayerPunch(targetTileX, targetTileY, preciseWorldX, preciseWorldY) {
         if (!player.active) return;
-        player.punchTimer = 0.28;
-        player.punchTargetX = targetTileX;
-        player.punchTargetY = targetTileY;
-        if (typeof targetTileX === "number") {
-          const playerTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
-          if (targetTileX > playerTileX) player.facing = 1;
-          else if (targetTileX < playerTileX) player.facing = -1;
+        player.punchTimer = 0.24;
+        player.punchMaxTimer = 0.24;
+
+        if (typeof preciseWorldX === "number" && typeof preciseWorldY === "number") {
+          player.punchTargetWorldX = preciseWorldX;
+          player.punchTargetWorldY = preciseWorldY;
+        } else if (typeof targetTileX === "number" && typeof targetTileY === "number") {
+          player.punchTargetWorldX = targetTileX * TILE_SIZE + TILE_SIZE / 2;
+          player.punchTargetWorldY = targetTileY * TILE_SIZE + TILE_SIZE / 2;
+        } else {
+          player.punchTargetWorldX = (player.x + player.width / 2) + player.facing * 32;
+          player.punchTargetWorldY = player.y + 12;
         }
+
+        const centerPlayerX = player.x + player.width / 2;
+        if (player.punchTargetWorldX > centerPlayerX + 4) player.facing = 1;
+        else if (player.punchTargetWorldX < centerPlayerX - 4) player.facing = -1;
       }
 
       function updatePlayerPhysics(dt) {
@@ -4111,30 +4130,161 @@
             tCtx.restore();
             tCtx.restore();
 
-            // 6. Front Arm (Tangan Kiri - Dynamic opposing swing & Punch Jab Thrust)
-            let frontArmAngle = 0;
-            if (isJumpSpinning) {
-              frontArmAngle = jumpSpinAngleFront;
-            } else if (isPunching) {
-              frontArmAngle = punchSnapAngle;
-            } else if (afkFrontArmAngle !== null) {
-              frontArmAngle = afkFrontArmAngle;
-            } else {
-              const idleFront = idleArmWiggle;
-              const walkFront = walkCycleCos * 0.85;
-              const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
-              const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
-              const floatFront = 0.45 - Math.sin(t * 5) * 0.1;
-              frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend);
-            }
+            // 6. Front Arm (Tangan Kiri - Dynamic Opposing Swing & Growtopia Stretched Conical Punch Arm)
+            if (isPunching) {
+              // ── AUTHENTIC GROWTOPIA STRETCHED PUNCH ARM & GIANT FIST ──
+              const shoulderX = -4 + afkTorsoX + punchStepX;
+              const shoulderY = 4 + breatheBob;
 
-            tCtx.save();
-            tCtx.translate(-7 + afkTorsoX + punchThrustX, 4 + breatheBob);
-            tCtx.rotate(frontArmAngle);
-            if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
-              tCtx.drawImage(imgArmL, -9, -20, 32, 32);
+              // Compute target in character local coordinate space (considering player.facing)
+              const worldShoulderX = px + pw / 2 + shoulderX * player.facing;
+              const worldShoulderY = py + ph / 2 + shoulderY;
+
+              const targetX = player.punchTargetWorldX !== undefined ? player.punchTargetWorldX : (worldShoulderX + player.facing * 32);
+              const targetY = player.punchTargetWorldY !== undefined ? player.punchTargetWorldY : worldShoulderY;
+
+              const dx = (targetX - (px + pw / 2)) * player.facing - shoulderX;
+              const dy = targetY - (py + ph / 2) - shoulderY;
+              const aimAngle = Math.atan2(dy, dx);
+              const totalDist = Math.hypot(dx, dy);
+
+              const punchProgress = 1.0 - Math.max(0, player.punchTimer / (player.punchMaxTimer || 0.24));
+              const punchExtend = Math.sin(punchProgress * Math.PI); // 0 -> 1 -> 0
+              const maxReach = Math.min(Math.max(28, totalDist), 60);
+              const armLen = 8 + (maxReach - 8) * punchExtend;
+              const fistScale = 1.0 + punchExtend * 0.35;
+
+              tCtx.save();
+              tCtx.translate(shoulderX, shoulderY);
+              tCtx.rotate(aimAngle);
+
+              // 1. Stretched Tapered Arm (Conical Sleeve / Skin from shoulder to fist)
+              const wBase = 3.5;
+              const wTip = 8.0;
+              const armTipX = armLen - 6;
+
+              const skinFill = "#c8b69c";
+              const skinDark = "#a3947f";
+              const skinLight = "#dac7aa";
+              const skinOutline = "#51301b";
+
+              // Fill Conical Arm
+              tCtx.beginPath();
+              tCtx.moveTo(0, -wBase);
+              tCtx.lineTo(armTipX, -wTip);
+              tCtx.lineTo(armTipX, wTip);
+              tCtx.lineTo(0, wBase);
+              tCtx.closePath();
+              tCtx.fillStyle = skinFill;
+              tCtx.fill();
+
+              // Top Highlight Strip on Arm
+              tCtx.beginPath();
+              tCtx.moveTo(0, -wBase);
+              tCtx.lineTo(armTipX, -wTip);
+              tCtx.lineTo(armTipX, -wTip + 2.5);
+              tCtx.lineTo(0, -wBase + 1.5);
+              tCtx.closePath();
+              tCtx.fillStyle = skinLight;
+              tCtx.fill();
+
+              // Bottom Shadow Strip on Arm
+              tCtx.beginPath();
+              tCtx.moveTo(0, wBase - 1.5);
+              tCtx.lineTo(armTipX, wTip - 3.0);
+              tCtx.lineTo(armTipX, wTip);
+              tCtx.lineTo(0, wBase);
+              tCtx.closePath();
+              tCtx.fillStyle = skinDark;
+              tCtx.fill();
+
+              // Arm Outline
+              tCtx.lineWidth = 1.2;
+              tCtx.strokeStyle = skinOutline;
+              tCtx.beginPath();
+              tCtx.moveTo(0, -wBase);
+              tCtx.lineTo(armTipX, -wTip);
+              tCtx.moveTo(armTipX, wTip);
+              tCtx.lineTo(0, wBase);
+              tCtx.stroke();
+
+              // 2. Giant Growtopia Fist Head at (armLen, 0)
+              tCtx.save();
+              tCtx.translate(armLen, 0);
+              tCtx.scale(fistScale, fistScale);
+
+              if (player.moderatorMode) {
+                tCtx.shadowColor = "#c084fc";
+                tCtx.shadowBlur = 10 * punchExtend;
+              }
+
+              // Fist Body / Knuckles
+              tCtx.fillStyle = skinFill;
+              tCtx.strokeStyle = skinOutline;
+              tCtx.lineWidth = 1.2;
+
+              // Fist Main Palm
+              if (typeof tCtx.roundRect === "function") {
+                tCtx.beginPath();
+                tCtx.roundRect(-8, -10, 16, 20, [3, 5, 5, 3]);
+                tCtx.fill();
+                tCtx.stroke();
+              } else {
+                tCtx.fillRect(-8, -10, 16, 20);
+                tCtx.strokeRect(-8, -10, 16, 20);
+              }
+
+              // Knuckle highlights (4 finger segments on the leading edge)
+              tCtx.fillStyle = skinLight;
+              tCtx.fillRect(2, -9, 4, 4);
+              tCtx.fillRect(3, -4, 4, 4);
+              tCtx.fillRect(3, 1, 4, 4);
+              tCtx.fillRect(2, 6, 4, 3.5);
+
+              // Knuckle shadow creases
+              tCtx.fillStyle = skinOutline;
+              tCtx.fillRect(-2, -5, 8, 1.2);
+              tCtx.fillRect(-2, 0, 8, 1.2);
+              tCtx.fillRect(-2, 5, 8, 1.2);
+
+              // Thumb folded over side
+              if (typeof tCtx.roundRect === "function") {
+                tCtx.beginPath();
+                tCtx.roundRect(-7, 3, 9, 6, [2, 3, 3, 2]);
+                tCtx.fillStyle = skinDark;
+                tCtx.fill();
+                tCtx.stroke();
+              } else {
+                tCtx.fillStyle = skinDark;
+                tCtx.fillRect(-7, 3, 9, 6);
+                tCtx.strokeRect(-7, 3, 9, 6);
+              }
+
+              tCtx.restore(); // restore fist transform
+              tCtx.restore(); // restore arm transform
+            } else {
+              let frontArmAngle = 0;
+              if (isJumpSpinning) {
+                frontArmAngle = jumpSpinAngleFront;
+              } else if (afkFrontArmAngle !== null) {
+                frontArmAngle = afkFrontArmAngle;
+              } else {
+                const idleFront = idleArmWiggle;
+                const walkFront = walkCycleCos * 0.85;
+                const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
+                const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
+                const floatFront = 0.45 - Math.sin(t * 5) * 0.1;
+                frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend);
+              }
+
+              tCtx.save();
+              tCtx.translate(-7 + afkTorsoX, 4 + breatheBob);
+              tCtx.rotate(frontArmAngle);
+              if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+                tCtx.drawImage(imgArmL, -9, -20, 32, 32);
+              }
+              tCtx.restore();
             }
-            tCtx.restore();
           } else {
             // ── 2. Cartoon Chibi Skin ──
             const skinColor = "#f6b484";
