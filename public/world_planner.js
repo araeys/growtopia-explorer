@@ -4130,7 +4130,7 @@
             tCtx.restore();
             tCtx.restore();
 
-            // 6. Front Arm (Tangan Kiri - Dynamic Opposing Swing & Growtopia Stretched Conical Punch Arm)
+            // 6. Front Arm (Tangan Kiri - Growtopia Stretched Punch Arm & Official Fist Asset)
             if (isPunching) {
               // ── AUTHENTIC GROWTOPIA STRETCHED PUNCH ARM & GIANT FIST ──
               const shoulderX = -4 + afkTorsoX + punchStepX;
@@ -4150,9 +4150,8 @@
 
               const punchProgress = 1.0 - Math.max(0, player.punchTimer / (player.punchMaxTimer || 0.24));
               const punchExtend = Math.sin(punchProgress * Math.PI); // 0 -> 1 -> 0
-              const maxReach = Math.min(Math.max(28, totalDist), 60);
-              const armLen = 8 + (maxReach - 8) * punchExtend;
-              const fistScale = 1.0 + punchExtend * 0.35;
+              const armLen = Math.max(8, totalDist * punchExtend);
+              const fistScale = 1.0 + punchExtend * 0.25;
 
               tCtx.save();
               tCtx.translate(shoulderX, shoulderY);
@@ -4160,107 +4159,83 @@
 
               // 1. Stretched Tapered Arm (Conical Sleeve / Skin from shoulder to fist)
               const wBase = 3.5;
-              const wTip = 8.0;
-              const armTipX = armLen - 6;
+              const wTip = 8.5;
+              const fistW = 28 * fistScale;
+              const fistH = 26 * fistScale;
+              const armTipX = Math.max(0, armLen - (fistW * 0.55));
 
               const skinFill = "#c8b69c";
               const skinDark = "#a3947f";
               const skinLight = "#dac7aa";
-              const skinOutline = "#51301b";
+              const skinOutline = "#000000";
 
-              // Fill Conical Arm
-              tCtx.beginPath();
-              tCtx.moveTo(0, -wBase);
-              tCtx.lineTo(armTipX, -wTip);
-              tCtx.lineTo(armTipX, wTip);
-              tCtx.lineTo(0, wBase);
-              tCtx.closePath();
-              tCtx.fillStyle = skinFill;
-              tCtx.fill();
+              if (armTipX > 2) {
+                // Fill Conical Arm
+                tCtx.beginPath();
+                tCtx.moveTo(0, -wBase);
+                tCtx.lineTo(armTipX, -wTip);
+                tCtx.lineTo(armTipX, wTip);
+                tCtx.lineTo(0, wBase);
+                tCtx.closePath();
+                tCtx.fillStyle = skinFill;
+                tCtx.fill();
 
-              // Top Highlight Strip on Arm
-              tCtx.beginPath();
-              tCtx.moveTo(0, -wBase);
-              tCtx.lineTo(armTipX, -wTip);
-              tCtx.lineTo(armTipX, -wTip + 2.5);
-              tCtx.lineTo(0, -wBase + 1.5);
-              tCtx.closePath();
-              tCtx.fillStyle = skinLight;
-              tCtx.fill();
+                // Top Highlight Strip on Arm
+                tCtx.beginPath();
+                tCtx.moveTo(0, -wBase);
+                tCtx.lineTo(armTipX, -wTip);
+                tCtx.lineTo(armTipX, -wTip + 2.5);
+                tCtx.lineTo(0, -wBase + 1.5);
+                tCtx.closePath();
+                tCtx.fillStyle = skinLight;
+                tCtx.fill();
 
-              // Bottom Shadow Strip on Arm
-              tCtx.beginPath();
-              tCtx.moveTo(0, wBase - 1.5);
-              tCtx.lineTo(armTipX, wTip - 3.0);
-              tCtx.lineTo(armTipX, wTip);
-              tCtx.lineTo(0, wBase);
-              tCtx.closePath();
-              tCtx.fillStyle = skinDark;
-              tCtx.fill();
+                // Bottom Shadow Strip on Arm
+                tCtx.beginPath();
+                tCtx.moveTo(0, wBase - 1.5);
+                tCtx.lineTo(armTipX, wTip - 3.0);
+                tCtx.lineTo(armTipX, wTip);
+                tCtx.lineTo(0, wBase);
+                tCtx.closePath();
+                tCtx.fillStyle = skinDark;
+                tCtx.fill();
 
-              // Arm Outline
-              tCtx.lineWidth = 1.2;
-              tCtx.strokeStyle = skinOutline;
-              tCtx.beginPath();
-              tCtx.moveTo(0, -wBase);
-              tCtx.lineTo(armTipX, -wTip);
-              tCtx.moveTo(armTipX, wTip);
-              tCtx.lineTo(0, wBase);
-              tCtx.stroke();
+                // Arm Outline
+                tCtx.lineWidth = 1.2;
+                tCtx.strokeStyle = skinOutline;
+                tCtx.beginPath();
+                tCtx.moveTo(0, -wBase);
+                tCtx.lineTo(armTipX, -wTip);
+                tCtx.moveTo(armTipX, wTip);
+                tCtx.lineTo(0, wBase);
+                tCtx.stroke();
+              }
 
-              // 2. Giant Growtopia Fist Head at (armLen, 0)
-              tCtx.save();
-              tCtx.translate(armLen, 0);
-              tCtx.scale(fistScale, fistScale);
-
+              // 2. Official Growtopia Fist Sprite Asset at (armTipX, 0)
+              const imgPunchFist = getSpriteImage("character_base_assets/gt_parts/gt_punch_fist.png");
               if (player.moderatorMode) {
                 tCtx.shadowColor = "#c084fc";
                 tCtx.shadowBlur = 10 * punchExtend;
               }
 
-              // Fist Body / Knuckles
-              tCtx.fillStyle = skinFill;
-              tCtx.strokeStyle = skinOutline;
-              tCtx.lineWidth = 1.2;
-
-              // Fist Main Palm
-              if (typeof tCtx.roundRect === "function") {
+              if (imgPunchFist && imgPunchFist.complete && imgPunchFist.naturalWidth > 0) {
+                tCtx.imageSmoothingEnabled = false;
+                tCtx.drawImage(imgPunchFist, armTipX - 2, -fistH / 2, fistW, fistH);
+              } else {
+                // High Quality Fallback
+                tCtx.fillStyle = skinFill;
+                tCtx.strokeStyle = skinOutline;
+                tCtx.lineWidth = 1.2;
                 tCtx.beginPath();
-                tCtx.roundRect(-8, -10, 16, 20, [3, 5, 5, 3]);
+                if (typeof tCtx.roundRect === "function") {
+                  tCtx.roundRect(armTipX - 2, -fistH / 2, fistW, fistH, 4);
+                } else {
+                  tCtx.rect(armTipX - 2, -fistH / 2, fistW, fistH);
+                }
                 tCtx.fill();
                 tCtx.stroke();
-              } else {
-                tCtx.fillRect(-8, -10, 16, 20);
-                tCtx.strokeRect(-8, -10, 16, 20);
               }
 
-              // Knuckle highlights (4 finger segments on the leading edge)
-              tCtx.fillStyle = skinLight;
-              tCtx.fillRect(2, -9, 4, 4);
-              tCtx.fillRect(3, -4, 4, 4);
-              tCtx.fillRect(3, 1, 4, 4);
-              tCtx.fillRect(2, 6, 4, 3.5);
-
-              // Knuckle shadow creases
-              tCtx.fillStyle = skinOutline;
-              tCtx.fillRect(-2, -5, 8, 1.2);
-              tCtx.fillRect(-2, 0, 8, 1.2);
-              tCtx.fillRect(-2, 5, 8, 1.2);
-
-              // Thumb folded over side
-              if (typeof tCtx.roundRect === "function") {
-                tCtx.beginPath();
-                tCtx.roundRect(-7, 3, 9, 6, [2, 3, 3, 2]);
-                tCtx.fillStyle = skinDark;
-                tCtx.fill();
-                tCtx.stroke();
-              } else {
-                tCtx.fillStyle = skinDark;
-                tCtx.fillRect(-7, 3, 9, 6);
-                tCtx.strokeRect(-7, 3, 9, 6);
-              }
-
-              tCtx.restore(); // restore fist transform
               tCtx.restore(); // restore arm transform
             } else {
               let frontArmAngle = 0;
