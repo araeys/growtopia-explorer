@@ -941,6 +941,7 @@
         // 1. Interactive Dice / Roulette / Roshambo (Action 36 / Dice blocks)
         if (fgItem && (fgItem.action === 36 || fgName.includes("dice") || fgName.includes("roulette") || fgName.includes("roshambo"))) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+          else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           const isRoulette = fgName.includes("roulette");
           const rollVal = isRoulette ? Math.floor(Math.random() * 37) : (Math.floor(Math.random() * 6) + 1);
@@ -953,6 +954,7 @@
         // 2. Weather Machines (Action 41 / 81 / 89 / 134)
         if (fgItem && [41, 81, 89, 134].includes(fgItem.action)) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+          else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           const matchedWeather = catalog.getWeathers().find(w => fgName.includes(w.id.toLowerCase()) || fgName.includes(w.name.toLowerCase()));
           if (matchedWeather) {
@@ -967,6 +969,7 @@
         // 3. Music Note Blocks / Piano / Drums (Action 12 / 28 / 71 / 99)
         if (fgItem && (fgItem.action === 12 || fgItem.action === 28 || fgItem.action === 71 || fgName.includes("note") || fgName.includes("piano"))) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+          else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           const inst = getNoteInstrument(fgItem);
           if (inst) {
@@ -980,6 +983,7 @@
         // 4. Doors & Portals (Action 1, 2, 26, 43, 84, 142)
         if (fgItem && [1, 2, 26, 43, 84, 104, 105, 106, 142].includes(fgItem.action)) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+          else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           playSfx("door_open", 1.0, 0.7);
           spawnFloatingText(tileX, tileY, `🚪 Knock Knock!`, "#a7f3d0");
@@ -990,15 +994,20 @@
         // 5. Donation Box, Vending, ATM, Lock (Action 3, 6, 7, 47, 62, 80, 97, 130)
         if (fgItem && [3, 6, 7, 47, 62, 80, 97, 130].includes(fgItem.action)) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+          else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
-          playSfx("coin", 1.0, 0.8);
+          playSfx("gem_pickup", 1.0, 0.8);
           spawnFloatingText(tileX, tileY, `💰 ${fgItem.name}`, "#fbbf24");
           onStatusMessage(`💰 Interacted with ${fgItem.name}!`);
           return true;
         }
 
         // 6. Default: Punch breaks block
-        if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+        if (player.active) {
+          triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
+        } else {
+          playPunchSound(tileX, tileY);
+        }
         spawnPunchImpactEffect(tileX, tileY);
         pushUndoSnapshot("Punch Erase");
         const erased = eraseTile(tileX, tileY);
@@ -3257,6 +3266,9 @@
         const centerPlayerX = player.x + player.width / 2;
         if (player.punchTargetWorldX > centerPlayerX + 4) player.facing = 1;
         else if (player.punchTargetWorldX < centerPlayerX - 4) player.facing = -1;
+
+        // Play punch sound effect
+        playPunchSound(targetTileX, targetTileY);
       }
 
       function updatePlayerPhysics(dt) {
@@ -5001,6 +5013,81 @@
         }
       }
 
+      function preloadPunchSounds() {
+        const soundList = [
+          "punch", "punch_miss", "punch_organic", "punch_glass",
+          "punch_locked", "hit", "rock_hit", "metal_hit", "wood_break"
+        ];
+        soundList.forEach(name => {
+          const key = `sfx_${name}`;
+          if (!audioBufferCache.has(key)) {
+            fetch(`audio/${name}.wav`)
+              .then(r => r.arrayBuffer())
+              .then(ab => {
+                const ctx = getAudioContext();
+                return ctx ? ctx.decodeAudioData(ab) : null;
+              })
+              .then(buf => {
+                if (buf) audioBufferCache.set(key, buf);
+              })
+              .catch(() => {});
+          }
+        });
+      }
+
+      function playPunchSound(targetTileX, targetTileY) {
+        let soundName = "punch";
+        let pitch = 0.95 + Math.random() * 0.1;
+
+        if (typeof targetTileX === "number" && typeof targetTileY === "number") {
+          const idx = getTileIndex(targetTileX, targetTileY);
+          if (idx !== -1) {
+            const fgId = world.fg[idx];
+            const bgId = world.bg[idx];
+            const item = (fgId > 0) ? getItem(fgId) : ((bgId > 0) ? getItem(bgId) : null);
+            if (item) {
+              const itemName = (item.name || "").toLowerCase();
+              if (itemName.includes("glass") || itemName.includes("window")) {
+                soundName = "punch_glass";
+              } else if (itemName.includes("rock") || itemName.includes("stone") || itemName.includes("granite") || itemName.includes("grimstone") || itemName.includes("bedrock")) {
+                soundName = "rock_hit";
+              } else if (itemName.includes("wood") || itemName.includes("tree") || itemName.includes("platform") || itemName.includes("fence")) {
+                soundName = "wood_break";
+              } else if (itemName.includes("steel") || itemName.includes("metal") || itemName.includes("iron") || itemName.includes("high tech") || itemName.includes("robot")) {
+                soundName = "metal_hit";
+              } else if (itemName.includes("leaf") || itemName.includes("hedge") || itemName.includes("grass") || itemName.includes("plant") || itemName.includes("flower") || itemName.includes("bush")) {
+                soundName = "punch_organic";
+              } else {
+                soundName = "punch";
+              }
+            } else {
+              soundName = "punch_miss";
+            }
+          }
+        }
+
+        playSfx(soundName, pitch, 0.9);
+
+        // Immediate crisp synth punch whoosh fallback for zero-latency
+        const ctx = getAudioContext();
+        if (ctx) {
+          try {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(240, now);
+            osc.frequency.exponentialRampToValueAtTime(70, now + 0.07);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.09);
+          } catch (e) {}
+        }
+      }
+
       function playJumpSound(isDoubleJump = false) {
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -5400,6 +5487,8 @@
           player.y = spawn.y;
           centerViewport();
           getSpriteImage("character_base_assets/gt_parts/gt_punch_fist.png");
+          preloadFootstepSounds();
+          preloadPunchSounds();
         },
         render,
         setTool,
