@@ -460,10 +460,10 @@
       const paint = new Uint16Array(total);
       const flags = new Uint8Array(total);
 
-      const baseGroundY = Math.floor(height * 0.58);
+      const baseGroundY = Math.floor(height * 0.60);
       const bedrockCutoff = height - Math.max(1, Math.min(5, Math.floor(height * 0.1)));
 
-      // 1. Natural Rolling Hills Terrain with Soil & Cave BG
+      // 1. Natural Rolling Hills Terrain (Grass 16 + Soil 2 + Cave BG 14)
       const surfaceProfile = new Int32Array(width);
       for (let x = 0; x < width; x++) {
         const hillOffset = Math.round(
@@ -471,7 +471,7 @@
           Math.sin((x / width) * Math.PI * 8) * 2 +
           Math.cos((x / width) * Math.PI * 2) * 3
         );
-        const surfaceY = Math.max(12, baseGroundY + hillOffset);
+        const surfaceY = Math.max(14, baseGroundY + hillOffset);
         surfaceProfile[x] = surfaceY;
 
         for (let y = 0; y < height; y++) {
@@ -479,7 +479,6 @@
           if (y >= surfaceY) {
             if (y === surfaceY) {
               fg[idx] = 16; // Grass top layer
-              bg[idx] = 0;
             } else if (y < bedrockCutoff) {
               fg[idx] = 2; // Dirt
               bg[idx] = 14; // Cave BG
@@ -491,50 +490,59 @@
         }
       }
 
-      // 2. Wildflowers & Mushrooms along grassy slopes
+      // 2. Modern Garden Landscape: Rustic Fences, Topiary Hedges, and Wildflowers
       const flowerIds = [190, 22, 188, 194]; // Rose, Daisy, Poppy, Mushroom
       for (let x = 2; x < width - 2; x++) {
         const sy = surfaceProfile[x];
-        if (sy > 2 && (x % 3 === 0 || x % 7 === 2)) {
-          fg[(sy - 1) * width + x] = flowerIds[(x * 5) % flowerIds.length];
+        if (sy > 2) {
+          if (x % 5 === 0) {
+            fg[(sy - 1) * width + x] = 1046; // Rustic Fence
+          } else if (x % 6 === 2) {
+            fg[(sy - 1) * width + x] = 1004; // Topiary Hedge
+          } else if (x % 4 === 1) {
+            fg[(sy - 1) * width + x] = flowerIds[(x * 7) % flowerIds.length];
+          }
         }
       }
 
-      // 3. Cozy Woodland Cottage (Center Village, X: center - 12 .. center + 12)
-      const lodgeLeft = Math.floor(width / 2) - 10;
-      const lodgeRight = lodgeLeft + 20;
+      // 3. Central Fairytale Estate / Cottage (X: center - 12 .. center + 12)
+      const lodgeLeft = Math.floor(width / 2) - 11;
+      const lodgeRight = lodgeLeft + 22;
       const lodgeGroundY = surfaceProfile[Math.floor(width / 2)];
       const lodgeFloorY = lodgeGroundY - 1;
-      const lodgeRoofY = lodgeFloorY - 9;
+      const lodgeRoofY = lodgeFloorY - 10;
 
-      // Cottage Foundation & Brick Chimney
+      // Foundation & Brick Base
       for (let x = lodgeLeft; x <= lodgeRight; x++) {
         for (let y = lodgeFloorY; y <= lodgeGroundY; y++) {
           fg[y * width + x] = 116; // Bricks
         }
       }
 
-      // Cottage Interior & Walls
+      // Manor Interior & Flowery Wallpaper
       for (let y = lodgeRoofY; y < lodgeFloorY; y++) {
         for (let x = lodgeLeft; x <= lodgeRight; x++) {
           const idx = y * width + x;
           const isOuterWall = (x === lodgeLeft || x === lodgeRight || y === lodgeRoofY);
           if (isOuterWall) {
-            fg[idx] = 100; // Wood Block wall
+            fg[idx] = 100; // Wood Block framing
           } else {
-            bg[idx] = 118; // Brick Wallpaper interior
-            if (y === lodgeFloorY - 4) {
+            bg[idx] = 198; // Flowery Wallpaper interior
+            if (y === lodgeFloorY - 5) {
               fg[idx] = 102; // Wooden Platform second floor
             }
-            // Windows
-            if ((y === lodgeFloorY - 2 || y === lodgeFloorY - 6) && (x === lodgeLeft + 4 || x === lodgeRight - 4)) {
-              fg[idx] = 56; // Glass Pane window
+            // Windows: Wooden Window & Amber Glass
+            if ((y === lodgeFloorY - 2 || y === lodgeFloorY - 7) && (x === lodgeLeft + 4 || x === lodgeRight - 4)) {
+              fg[idx] = 58; // Wooden Window
+            }
+            if ((y === lodgeFloorY - 2 || y === lodgeFloorY - 7) && (x === lodgeLeft + 5 || x === lodgeRight - 5)) {
+              bg[idx] = 378; // Amber Glass glow
             }
           }
         }
       }
 
-      // Gabled Roof
+      // Gabled Roof with Hanging Chinese Lanterns
       for (let rx = lodgeLeft - 2; rx <= lodgeRight + 2; rx++) {
         const offset = Math.min(rx - (lodgeLeft - 2), (lodgeRight + 2) - rx);
         const ry = lodgeRoofY - Math.floor(offset / 2);
@@ -542,33 +550,41 @@
           fg[ry * width + rx] = 100; // Wood Block roof
         }
       }
+      // Hanging Chinese Lanterns under eaves
+      fg[(lodgeRoofY + 1) * width + (lodgeLeft - 1)] = 1054; // Chinese Lantern
+      fg[(lodgeRoofY + 1) * width + (lodgeRight + 1)] = 1054; // Chinese Lantern
 
-      // Cottage Chimney & Torches
-      for (let cy = lodgeRoofY - 4; cy <= lodgeFloorY; cy++) {
-        fg[cy * width + (lodgeRight - 2)] = 116; // Brick Chimney
-      }
-      fg[(lodgeFloorY - 1) * width + lodgeLeft] = 696; // Lantern Torch
-      fg[(lodgeFloorY - 1) * width + lodgeRight] = 696; // Lantern Torch
-      fg[(lodgeFloorY - 1) * width + (lodgeLeft + 2)] = 24; // Pointy Sign "Cozy Cottage"
-
-      // Cottage Porch & House Entrance / Main Spawn Door
-      const spawnX = lodgeLeft + 8;
+      // Entrance Porch: Main Door, House Entrance, and Welcome Sign
+      const spawnX = lodgeLeft + 6;
       fg[(lodgeFloorY - 1) * width + spawnX] = 6; // Main Door
       fg[(lodgeFloorY - 1) * width + (spawnX + 6)] = 224; // House Entrance
+      fg[(lodgeFloorY - 1) * width + (spawnX + 11)] = 24; // Pointy Sign "FAIRYTALE MANOR"
 
-      // 4. Grand Ancient Canopy Trees (Left: X 8..20, Right: X width - 22..width - 10)
-      function buildGiantTree(trunkX) {
+      // Grand Garden Fountain in the courtyard (Right side of manor)
+      const fountainX = lodgeRight + 5;
+      if (fountainX + 3 < width) {
+        const fGroundY = surfaceProfile[fountainX];
+        fg[(fGroundY - 1) * width + fountainX] = 2964; // Grand Fountain
+        fg[(fGroundY - 1) * width + (fountainX - 1)] = 1004; // Hedge
+        fg[(fGroundY - 1) * width + (fountainX + 1)] = 1004; // Hedge
+      }
+
+      // 4. Ancient Canopy Great Trees with Climbing Vines & Treehouses
+      function buildGreatTree(trunkX) {
         const tGroundY = surfaceProfile[trunkX];
-        const trunkH = 10;
+        const trunkH = 11;
         const crownTop = tGroundY - trunkH - 4;
 
-        // Trunk
+        // Wood trunk with climbing vines
         for (let y = tGroundY - trunkH; y < tGroundY; y++) {
           fg[y * width + trunkX] = 100;
           fg[y * width + (trunkX + 1)] = 100;
+          if (y % 2 === 0) {
+            fg[y * width + (trunkX - 1)] = 1308; // Climbing Vine
+          }
         }
 
-        // Tree Canopy Foliage (Grass ID 16) & Platforms
+        // Tree Canopy: Grass & Topiary Hedge foliage + Hanging Lanterns
         for (let cy = crownTop; cy <= tGroundY - trunkH + 2; cy++) {
           const radius = 6 - Math.abs(cy - (crownTop + 3));
           for (let cx = trunkX - radius; cx <= trunkX + radius + 1; cx++) {
@@ -576,25 +592,30 @@
               const cIdx = cy * width + cx;
               if (fg[cIdx] === 0) {
                 if (cy === tGroundY - trunkH && (cx === trunkX - 2 || cx === trunkX + 3)) {
-                  fg[cIdx] = 102; // Treehouse wooden platform
+                  fg[cIdx] = 102; // Treehouse Platform
+                } else if (cy === crownTop + 1 || cx === trunkX - radius || cx === trunkX + radius + 1) {
+                  fg[cIdx] = 1004; // Topiary Hedge leaves
                 } else {
-                  fg[cIdx] = 16; // Foliage
+                  fg[cIdx] = 16; // Grass foliage
                 }
               }
             }
           }
         }
+        // Hanging Lantern from tree branches
+        fg[(tGroundY - trunkH + 1) * width + (trunkX - 3)] = 1054; // Chinese Lantern
+        fg[(tGroundY - trunkH + 1) * width + (trunkX + 4)] = 1054; // Chinese Lantern
       }
 
-      buildGiantTree(12);
-      buildGiantTree(width - 16);
+      buildGreatTree(10);
+      buildGreatTree(width - 14);
 
-      // 5. Wooden Suspension Bridges connecting trees to cottage roof
-      for (let bx = 16; bx < lodgeLeft - 1; bx++) {
+      // 5. Wooden Suspension Bridges connecting trees to Manor roof
+      for (let bx = 14; bx < lodgeLeft - 1; bx++) {
         const by = lodgeRoofY + 2;
         fg[by * width + bx] = 102; // Wooden Platform Bridge
       }
-      for (let bx = lodgeRight + 2; bx < width - 16; bx++) {
+      for (let bx = lodgeRight + 2; bx < width - 14; bx++) {
         const by = lodgeRoofY + 2;
         fg[by * width + bx] = 102; // Wooden Platform Bridge
       }
@@ -629,65 +650,86 @@
         fg[lavaY * width + x] = 4;   // Lava sea
       }
 
-      // 2. Sector 0: Starting Castle Lobby (X: 3..15, Y: 46..54)
+      // 2. High-Tech Pro Lobby (X: 3..16, Y: 46..54)
       const lobbyLeft = 4;
       const lobbyRight = 16;
       const lobbyFloorY = height - 8;
 
       for (let x = lobbyLeft; x <= lobbyRight; x++) {
         for (let y = lobbyFloorY; y < height - 2; y++) {
-          fg[y * width + x] = 116; // Bricks base
-          bg[y * width + x] = 118; // Brick BG
+          fg[y * width + x] = 2010; // Glowy Block base
+          bg[y * width + x] = 740;  // Neon Lights wallpaper
         }
       }
-      // Castle battlements on lobby
-      fg[(lobbyFloorY - 1) * width + lobbyLeft] = 116;
-      fg[(lobbyFloorY - 1) * width + (lobbyLeft + 2)] = 116;
-      fg[(lobbyFloorY - 1) * width + (lobbyRight - 2)] = 116;
-      fg[(lobbyFloorY - 1) * width + lobbyRight] = 116;
-      fg[(lobbyFloorY - 2) * width + lobbyLeft] = 696; // Torch
-      fg[(lobbyFloorY - 2) * width + lobbyRight] = 696; // Torch
+      // Lobby neon battlements & torches
+      fg[(lobbyFloorY - 1) * width + lobbyLeft] = 2010;
+      fg[(lobbyFloorY - 1) * width + lobbyRight] = 2010;
+      fg[(lobbyFloorY - 2) * width + lobbyLeft] = 696;
+      fg[(lobbyFloorY - 2) * width + lobbyRight] = 696;
 
-      // Spawn Door & Welcome Sign
+      // Spawn Main Door & Checkpoint #0 & Welcome Sign
       const spawnX = lobbyLeft + 4;
       fg[(lobbyFloorY - 1) * width + spawnX] = 6; // Main Door
-      fg[(lobbyFloorY - 1) * width + (spawnX + 4)] = 24; // Pointy Sign "PARKOUR ARENA - Jump to the Sky!"
+      fg[(lobbyFloorY - 1) * width + (spawnX + 3)] = 410; // Authentic Checkpoint
+      fg[(lobbyFloorY - 1) * width + (spawnX + 6)] = 24; // Pointy Sign "PRO PARKOUR ARENA - Good Luck!"
 
-      // 3. Multi-Tiered Floating Obstacle Course Structure
-      // Array of platforms & challenges
+      // 3. Pro Parkour Stages (Ascending Multi-Level Gauntlet)
       const parkourObstacles = [
-        // Stage 1: Cloud Steps (Ascending gentle jumps)
-        { x: 19, y: height - 10, w: 4, type: "cloud" },
-        { x: 25, y: height - 13, w: 3, type: "cloud" },
-        { x: 30, y: height - 16, w: 4, type: "cloud" },
-        { x: 36, y: height - 19, w: 3, type: "platform" },
+        // Stage 1: Neon Pinball & Sproinger Launch (Y: height - 11 .. height - 19)
+        { x: 19, y: height - 10, w: 4, type: "glow_pad" },
+        { x: 25, y: height - 12, w: 3, type: "bumper_pad" }, // Pinball Bumper
+        { x: 30, y: height - 15, w: 3, type: "sproinger_pad" }, // Pinball Sproinger
+        { x: 35, y: height - 18, w: 4, type: "cloud_pad" },
         
-        // Stage 2: Tower 1 & Checkpoint 1
-        { x: 41, y: height - 23, w: 6, type: "brick_tower", checkpoint: true },
+        // Stage 2: Tower 1 with Official Checkpoint & Laser Grid Hurdle
+        { x: 41, y: height - 22, w: 6, type: "checkpoint_tower", checkpointNum: 1 },
+        { x: 49, y: height - 25, w: 4, type: "laser_grid" }, // Laser Grid electric hurdles!
+        { x: 55, y: height - 28, w: 3, type: "glow_pad" },
+        { x: 60, y: height - 31, w: 4, type: "spikes_bridge" }, // Death Spikes
+        { x: 66, y: height - 34, w: 3, type: "bumper_pad" }, // Pinball Bumper
         
-        // Stage 3: The Spike Gauntlet (Precision gaps over spikes)
-        { x: 49, y: height - 25, w: 3, type: "cloud" },
-        { x: 54, y: height - 28, w: 4, type: "spikes_bridge" },
-        { x: 60, y: height - 31, w: 3, type: "platform" },
-        { x: 65, y: height - 34, w: 5, type: "spikes_bridge" },
-        
-        // Stage 4: Tower 2 & Checkpoint 2
-        { x: 72, y: height - 37, w: 6, type: "brick_tower", checkpoint: true },
+        // Stage 3: Tower 2 with Checkpoint #2 & High Cloud Jump
+        { x: 72, y: height - 37, w: 6, type: "checkpoint_tower", checkpointNum: 2 },
+        { x: 66, y: height - 41, w: 4, type: "cloud_pad" },
+        { x: 59, y: height - 44, w: 3, type: "sproinger_pad" },
+        { x: 52, y: height - 47, w: 4, type: "laser_grid" },
+        { x: 44, y: height - 50, w: 4, type: "spikes_bridge" },
+        { x: 36, y: height - 52, w: 4, type: "cloud_pad" },
 
-        // Stage 5: High Altitude Clouds
-        { x: 66, y: height - 41, w: 3, type: "cloud" },
-        { x: 60, y: height - 44, w: 3, type: "cloud" },
-        { x: 53, y: height - 47, w: 4, type: "platform" },
-        { x: 45, y: height - 49, w: 3, type: "cloud" },
-        { x: 38, y: height - 51, w: 4, type: "spikes_bridge" },
-        { x: 31, y: height - 52, w: 3, type: "cloud" },
-
-        // Stage 6: Grand Apex Victory Sky Castle (X: 10..26, Y: 4..12)
+        // Stage 4: Grand Apex Victory Sky Citadel (X: 10..28, Y: 4..12)
         { x: 10, y: 12, w: 18, type: "victory_citadel" }
       ];
 
       parkourObstacles.forEach(ob => {
-        if (ob.type === "cloud") {
+        if (ob.type === "glow_pad") {
+          for (let i = 0; i < ob.w; i++) {
+            const px = ob.x + i;
+            if (px < width && ob.y < height) {
+              fg[ob.y * width + px] = 2010; // Glowy Block
+              bg[ob.y * width + px] = 740;  // Neon Lights BG
+            }
+          }
+        } else if (ob.type === "bumper_pad") {
+          for (let i = 0; i < ob.w; i++) {
+            const px = ob.x + i;
+            if (px < width && ob.y < height) {
+              fg[ob.y * width + px] = 358; // Cloudstone Block
+              if (i === 1 && ob.y > 1) {
+                fg[(ob.y - 1) * width + px] = 526; // Pinball Bumper
+              }
+            }
+          }
+        } else if (ob.type === "sproinger_pad") {
+          for (let i = 0; i < ob.w; i++) {
+            const px = ob.x + i;
+            if (px < width && ob.y < height) {
+              fg[ob.y * width + px] = 2010; // Glowy Block
+              if (i === 1 && ob.y > 1) {
+                fg[(ob.y - 1) * width + px] = 624; // Pinball Sproinger
+              }
+            }
+          }
+        } else if (ob.type === "cloud_pad") {
           for (let i = 0; i < ob.w; i++) {
             const px = ob.x + i;
             if (px < width && ob.y < height) {
@@ -695,55 +737,61 @@
               if (ob.y + 1 < height) fg[(ob.y + 1) * width + px] = 728;
             }
           }
-        } else if (ob.type === "platform") {
+        } else if (ob.type === "laser_grid") {
           for (let i = 0; i < ob.w; i++) {
             const px = ob.x + i;
             if (px < width && ob.y < height) {
-              fg[ob.y * width + px] = 102; // Wooden Platform
+              fg[ob.y * width + px] = 2010; // Glowy Block
+              if (i >= 1 && i <= 2 && ob.y > 1) {
+                fg[(ob.y - 1) * width + px] = 5666; // Laser Grid hurdle!
+              }
             }
           }
         } else if (ob.type === "spikes_bridge") {
           for (let i = 0; i < ob.w; i++) {
             const px = ob.x + i;
             if (px < width && ob.y < height) {
-              fg[ob.y * width + px] = 116; // Brick base
+              fg[ob.y * width + px] = 358; // Cloudstone base
               if (i === 1 && ob.y > 1) {
                 fg[(ob.y - 1) * width + px] = 162; // Death Spikes
               }
             }
           }
-        } else if (ob.type === "brick_tower") {
+        } else if (ob.type === "checkpoint_tower") {
           for (let i = 0; i < ob.w; i++) {
             const px = ob.x + i;
             for (let ty = ob.y; ty <= ob.y + 4 && ty < height - 2; ty++) {
               if (px < width) {
-                fg[ty * width + px] = 116; // Bricks
-                bg[ty * width + px] = 118; // Brick BG
+                fg[ty * width + px] = 2010; // Glowy Block
+                bg[ty * width + px] = 740;  // Neon Lights BG
               }
             }
           }
-          if (ob.checkpoint && ob.y > 1) {
-            fg[(ob.y - 1) * width + (ob.x + 2)] = 30; // Checkpoint Dungeon Door
-            fg[(ob.y - 1) * width + (ob.x + 5)] = 696; // Torch
+          if (ob.y > 1) {
+            fg[(ob.y - 1) * width + (ob.x + 1)] = 410; // Authentic Checkpoint!
+            fg[(ob.y - 1) * width + (ob.x + 3)] = 30;  // Dungeon Door
+            fg[(ob.y - 1) * width + (ob.x + 5)] = 24;  // Sign "CHECKPOINT " + ob.checkpointNum
           }
         } else if (ob.type === "victory_citadel") {
-          // Grand floating castle in the sky
+          // Grand floating victory castle in the sky
           for (let i = 0; i < ob.w; i++) {
             const px = ob.x + i;
             for (let ty = ob.y; ty <= ob.y + 4; ty++) {
               if (px < width) {
-                fg[ty * width + px] = 116; // Bricks
-                bg[ty * width + px] = 118; // Brick BG
+                fg[ty * width + px] = 2010; // Glowy Block
+                bg[ty * width + px] = 740;  // Neon Lights BG
               }
             }
           }
-          // Battlements, Finish Portcullis & Winner Pedestals
-          fg[(ob.y - 1) * width + ob.x] = 116;
-          fg[(ob.y - 1) * width + (ob.x + ob.w - 1)] = 116;
+          // Battlements, Display Box Trophies, Finish Portcullis
+          fg[(ob.y - 1) * width + ob.x] = 2010;
+          fg[(ob.y - 1) * width + (ob.x + ob.w - 1)] = 2010;
           fg[(ob.y - 2) * width + ob.x] = 696;
           fg[(ob.y - 2) * width + (ob.x + ob.w - 1)] = 696;
-          fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2))] = 60; // Portcullis finish
-          fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2) + 3)] = 24; // Sign "VICTORY! YOU DID IT!"
+          fg[(ob.y - 1) * width + (ob.x + 2)] = 1422; // Trophy Display Box!
+          fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2))] = 60; // Portcullis Finish
+          fg[(ob.y - 1) * width + (ob.x + ob.w - 3)] = 1422; // Trophy Display Box!
+          fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2) + 3)] = 24; // Sign "VICTORY! CHAMPION!"
         }
       });
 
@@ -778,85 +826,95 @@
       const lavaFloorY = height - 3;
       const bedrockY = height - 1;
 
-      // 1. Bedrock base & Subterranean Lava Chasms
+      // 1. Bedrock Base & Subterranean Lava Lakes
       for (let x = 0; x < width; x++) {
         fg[bedrockY * width + x] = 8;
         if (x >= 14 && x <= width - 14) {
           fg[lavaFloorY * width + x] = 4; // Boiling Lava Lake
           fg[(lavaFloorY + 1) * width + x] = 4;
         } else {
-          fg[lavaFloorY * width + x] = 666; // Dark Granite
+          fg[lavaFloorY * width + x] = 680; // Grimstone
         }
       }
 
-      // 2. Full Interior Stone Wall Wallpaper (ID 336)
+      // 2. Full Interior Gothic Building & Haunted House Wallpapers
       for (let y = castleTopY; y < lavaFloorY; y++) {
         for (let x = castleLeft; x <= castleRight; x++) {
-          bg[y * width + x] = 336; // Stone Wall BG
+          if (y < floor1Y) {
+            bg[y * width + x] = 990; // Gothic Building BG
+          } else if (y < floor2Y) {
+            bg[y * width + x] = 1194; // Haunted House BG
+          } else {
+            bg[y * width + x] = 4186; // Haunted Darkness BG
+          }
         }
       }
 
-      // 3. Castle Outer Walls, Towers & Crenellations
+      // 3. Castle Outer Walls: Grimstone, Evil Bricks & Gargoyle Parapets
       for (let y = castleTopY; y <= lavaFloorY; y++) {
-        fg[y * width + castleLeft] = 666; // Granite left wall
+        fg[y * width + castleLeft] = 680; // Grimstone left wall
         fg[y * width + (castleLeft + 1)] = 248; // Evil Bricks
         fg[y * width + (castleRight - 1)] = 248; // Evil Bricks
-        fg[y * width + castleRight] = 666; // Granite right wall
+        fg[y * width + castleRight] = 680; // Grimstone right wall
       }
-      // Top Battlements & Gargoyle Torches
+      // Parapets with Stone Gargoyles & Torches
       for (let x = castleLeft - 2; x <= castleRight + 2; x += 3) {
-        fg[(castleTopY - 1) * width + x] = 666;
+        fg[(castleTopY - 1) * width + x] = 680; // Grimstone battlements
         if (x === castleLeft || x === castleRight) {
-          fg[(castleTopY - 2) * width + x] = 696; // Torch
+          fg[(castleTopY - 2) * width + x] = 988; // Gargoyle statue!
         }
       }
 
-      // 4. Floor 1: Grand Vampire Citadel & Entrance Hall (Y: 20)
+      // 4. Floor 1: Grand Vampire Keep & Graveyard Portal (Y: 20)
       for (let x = castleLeft; x <= castleRight; x++) {
-        fg[floor1Y * width + x] = (x % 4 === 0) ? 666 : 248; // Alternating Granite & Evil Bricks
+        fg[floor1Y * width + x] = (x % 4 === 0) ? 680 : 248; // Grimstone & Evil Bricks
       }
-      // Gothic arched stained windows
+      // Haunted Gothic Windows
       for (let wx = castleLeft + 8; wx <= castleRight - 8; wx += 14) {
-        fg[(floor1Y - 4) * width + wx] = 56; // Glass Pane window
-        fg[(floor1Y - 5) * width + wx] = 56;
+        fg[(floor1Y - 4) * width + wx] = 4188; // Haunted Window
+        fg[(floor1Y - 5) * width + wx] = 4188;
       }
-      // Grand Entrance Dungeon Door & Torches
+      // Spawn: Haunted Door & Graveyard Tombstones
       const spawnX = Math.floor(width / 2);
-      fg[(floor1Y - 1) * width + spawnX] = 30; // Dungeon Door Spawn
-      fg[(floor1Y - 1) * width + (spawnX - 3)] = 696; // Torch
-      fg[(floor1Y - 1) * width + (spawnX + 3)] = 696; // Torch
-      fg[(floor1Y - 1) * width + (spawnX + 6)] = 24; // Pointy Sign "CASTLE OF SHADOWS"
+      fg[(floor1Y - 1) * width + spawnX] = 4190; // Haunted Door Spawn!
+      fg[(floor1Y - 1) * width + (spawnX - 4)] = 784; // Tombstone
+      fg[(floor1Y - 1) * width + (spawnX + 4)] = 784; // Tombstone
+      fg[(floor1Y - 1) * width + (spawnX - 2)] = 696; // Torch
+      fg[(floor1Y - 1) * width + (spawnX + 2)] = 696; // Torch
+      fg[(floor1Y - 1) * width + (spawnX + 7)] = 24;  // Sign "CASTLE RAVENSCROFT"
 
-      // 5. Floor 2: Prison Dungeons & Torture Chambers (Y: 34)
+      // 5. Floor 2: Dungeon Prison Cells, Iron Bars & Cobwebs (Y: 34)
       for (let x = castleLeft; x <= castleRight; x++) {
         if (x < castleLeft + 8 || x > castleRight - 8 || (x > spawnX - 14 && x < spawnX + 14)) {
-          fg[floor2Y * width + x] = 666; // Granite
+          fg[floor2Y * width + x] = 680; // Grimstone floor
         } else {
-          fg[floor2Y * width + x] = 102; // Wooden Platform catwalks over the drop
+          fg[floor2Y * width + x] = 102; // Wooden Platform catwalk
         }
       }
-      // Dungeon Cell Bars (Portcullis ID 60) & Death Spikes (ID 162)
+      // Jail Cells with Iron Bars, Cobwebs, and Death Spikes
       for (let cellX of [castleLeft + 6, castleLeft + 18, castleRight - 18, castleRight - 6]) {
         for (let py = floor2Y - 5; py < floor2Y; py++) {
-          fg[py * width + cellX] = 60; // Portcullis Iron Bars
+          fg[py * width + cellX] = 684; // Iron Bars!
         }
-        fg[(floor2Y - 1) * width + (cellX - 2)] = 162; // Spikes inside cell
+        fg[(floor2Y - 1) * width + (cellX - 2)] = 162; // Death Spikes
+        fg[(floor2Y - 4) * width + (cellX - 2)] = 1238; // Hanging Cobweb!
         fg[(floor2Y - 1) * width + (cellX + 2)] = 696; // Torch
       }
 
       // 6. Floor 3: Ancient Underworld Crypt & Sacrificial Altar (Y: 48)
       for (let x = castleLeft; x <= castleRight; x++) {
         if (x > castleLeft + 12 && x < castleRight - 12) {
-          fg[floor3Y * width + x] = 248; // Evil Bricks altar platform
+          fg[floor3Y * width + x] = 680; // Grimstone crypt platform
         } else {
           fg[floor3Y * width + x] = 102; // Wooden Platforms
         }
       }
-      // Crypt Altar & Torches
-      fg[(floor3Y - 1) * width + spawnX] = 666; // Altar stone
-      fg[(floor3Y - 2) * width + spawnX] = 696; // Altar flame
-      fg[(floor3Y - 1) * width + (spawnX - 4)] = 30; // Crypt Door
-      fg[(floor3Y - 1) * width + (spawnX + 4)] = 162; // Altar spikes
+      // Sacrificial Stone Altar & Crypt Doors
+      fg[(floor3Y - 1) * width + spawnX] = 680; // Altar
+      fg[(floor3Y - 2) * width + spawnX] = 696; // Altar Flame
+      fg[(floor3Y - 1) * width + (spawnX - 4)] = 30; // Dungeon Door
+      fg[(floor3Y - 1) * width + (spawnX + 4)] = 162; // Spikes
+      fg[(floor3Y - 3) * width + (spawnX - 3)] = 1238; // Cobweb
 
       return {
         width,
@@ -892,76 +950,80 @@
       const bridgeFloorY = 22;
       const deck2FloorY = 34;
 
-      // 1. Outer Reinforced Steel Hull Structure (ID 186)
+      // 1. Sleek High-Tech Outer Hull (ID 324 High Tech Block + ID 186 Steel Block)
       for (let y = shipTopY; y <= shipBottomY; y++) {
-        fg[y * width + shipLeft] = 186; // Left outer hull
-        fg[y * width + (shipLeft + 1)] = 186;
+        fg[y * width + shipLeft] = 324; // High Tech Block left hull
+        fg[y * width + (shipLeft + 1)] = 186; // Steel inner plating
         fg[y * width + (shipRight - 1)] = 186;
-        fg[y * width + shipRight] = 186; // Right outer hull
+        fg[y * width + shipRight] = 324; // High Tech Block right hull
       }
       for (let x = shipLeft; x <= shipRight; x++) {
-        fg[shipTopY * width + x] = 186; // Roof hull
-        fg[shipBottomY * width + x] = 186; // Bottom keel hull
+        fg[shipTopY * width + x] = 324; // Roof hull
+        fg[shipBottomY * width + x] = 324; // Keel hull
       }
 
-      // Interior Wallpaper (Glass Pane BG / Windows into Nebula)
+      // Interior Wallpaper (High Tech Wall ID 322 + Space Connector ID 1154)
       for (let y = shipTopY + 1; y < shipBottomY; y++) {
         for (let x = shipLeft + 2; x < shipRight - 1; x++) {
-          bg[y * width + x] = 56; // Glass Pane BG
+          bg[y * width + x] = (y < bridgeFloorY) ? 322 : 1154; // High Tech Wall & Space Connector
         }
       }
 
-      // 2. Main Flight Deck & Command Bridge (Deck 1, Y: 22)
+      // 2. Command Bridge & Flight Deck (Deck 1, Y: 22)
       for (let x = shipLeft + 2; x < shipRight - 1; x++) {
-        fg[bridgeFloorY * width + x] = (x % 6 === 0) ? 186 : 102; // Steel pillars & Platform floors
+        fg[bridgeFloorY * width + x] = (x % 6 === 0) ? 324 : 102; // High Tech pillars & Platform floors
       }
-      // Panoramic Observation Windows
+      // Panoramic Starlight Windows (Glass Panes ID 56)
       for (let wx = shipLeft + 12; wx <= shipRight - 12; wx += 8) {
-        fg[(bridgeFloorY - 4) * width + wx] = 56; // Glass Pane
+        fg[(bridgeFloorY - 4) * width + wx] = 56;
         fg[(bridgeFloorY - 5) * width + wx] = 56;
       }
 
-      // 3. Crew Quarters & Engineering Lab (Deck 2, Y: 34)
+      // 3. Cyber Science Lab & Operations (Deck 2, Y: 34)
       for (let x = shipLeft + 2; x < shipRight - 1; x++) {
-        fg[deck2FloorY * width + x] = 186; // Steel floor
+        fg[deck2FloorY * width + x] = 324; // High Tech floor
       }
 
-      // 4. Left Wing: Airlock & Cargo Docking Bay (X: shipLeft..shipLeft + 20)
+      // 4. Left Wing: Pressurized Airlock Hangar with Forcefield Barrier (X: shipLeft..shipLeft + 20)
       const airlockDoorX = shipLeft + 6;
       fg[(bridgeFloorY - 1) * width + airlockDoorX] = 6; // Main Airlock Door Spawn
-      fg[(bridgeFloorY - 1) * width + (airlockDoorX + 4)] = 28; // Danger Sign "AIRLOCK - DECOMPRESSION HAZARD"
-      fg[(bridgeFloorY - 1) * width + (airlockDoorX + 8)] = 696; // Beacon Torch
+      fg[(bridgeFloorY - 1) * width + (airlockDoorX + 3)] = 1162; // Forcefield energy shield!
+      fg[(bridgeFloorY - 2) * width + (airlockDoorX + 3)] = 1162; // Forcefield energy shield!
+      fg[(bridgeFloorY - 1) * width + (airlockDoorX + 6)] = 2586; // Holographic Sign "AIRLOCK SEALED"
 
-      // 5. Center Core: Command Hologram & Computer Consoles
+      // 5. Center Bridge: Space Command Seat, Science Station & Plasma Globe
       const centerBridgeX = Math.floor(width / 2);
-      fg[(bridgeFloorY - 1) * width + centerBridgeX] = 24; // Pointy Sign "USS STARGAZER - BRIDGE"
-      fg[(bridgeFloorY - 1) * width + (centerBridgeX - 3)] = 56; // Hologram display
-      fg[(bridgeFloorY - 1) * width + (centerBridgeX + 3)] = 56;
+      fg[(bridgeFloorY - 1) * width + centerBridgeX] = 2068; // Space Command Seat (Captain's Chair)
+      fg[(bridgeFloorY - 1) * width + (centerBridgeX - 3)] = 928;  // Science Station Supercomputer
+      fg[(bridgeFloorY - 1) * width + (centerBridgeX + 3)] = 5204; // Pulsing Plasma Globe
+      fg[(bridgeFloorY - 1) * width + (centerBridgeX + 6)] = 2586; // Holographic Sign "USS HYPERION"
 
-      // 6. Right Wing: Superheated Fusion Core Reactor (X: shipRight - 22..shipRight - 4, Y: 24..33)
+      // 6. Right Wing: Plasma Reactor Core & Time-Space Warp Rupture (X: shipRight - 22..shipRight - 4)
       const reactorLeft = shipRight - 18;
       const reactorRight = shipRight - 4;
       for (let ry = bridgeFloorY + 2; ry <= deck2FloorY - 2; ry++) {
         for (let rx = reactorLeft; rx <= reactorRight; rx++) {
           const isContainment = (rx === reactorLeft || rx === reactorRight || ry === bridgeFloorY + 2 || ry === deck2FloorY - 2);
           if (isContainment) {
-            fg[ry * width + rx] = 186; // Steel containment
+            fg[ry * width + rx] = 324; // High Tech containment
           } else {
-            fg[ry * width + rx] = 4; // Glowing Lava Plasma Core!
+            fg[ry * width + rx] = 4; // Superheated Lava Plasma Core!
           }
         }
       }
-      fg[(deck2FloorY - 1) * width + (reactorLeft - 2)] = 28; // Danger Sign "CORE OVERLOAD HAZARD"
-      fg[(deck2FloorY - 1) * width + (reactorLeft - 4)] = 30; // Reactor Chamber Door
+      // Forcefield barrier on reactor door & Time-Space Rupture
+      fg[(deck2FloorY - 1) * width + (reactorLeft - 2)] = 1162; // Forcefield barrier
+      fg[(deck2FloorY - 1) * width + (reactorLeft - 5)] = 382;  // Time-Space Rupture anomaly!
+      fg[(deck2FloorY - 1) * width + (reactorLeft - 8)] = 28;   // Danger Sign "REACTOR OVERLOAD HAZARD"
 
-      // 7. External Radiator Solar Panels & Antenna Arrays
+      // 7. External Solar Panel Wings (ID 1130 Solar Panel)
       for (let ax = shipLeft - 6; ax < shipLeft; ax++) {
-        fg[bridgeFloorY * width + ax] = 102; // Solar wing platform
-        if (ax % 2 === 0) fg[(bridgeFloorY - 1) * width + ax] = 56; // Solar cell
+        fg[bridgeFloorY * width + ax] = 1130; // Solar Panel
+        fg[(bridgeFloorY - 1) * width + ax] = 1130; // Solar Panel
       }
       for (let ax = shipRight + 1; ax <= shipRight + 6 && ax < width; ax++) {
-        fg[bridgeFloorY * width + ax] = 102;
-        if (ax % 2 === 0) fg[(bridgeFloorY - 1) * width + ax] = 56;
+        fg[bridgeFloorY * width + ax] = 1130; // Solar Panel
+        fg[(bridgeFloorY - 1) * width + ax] = 1130; // Solar Panel
       }
 
       return {

@@ -81,27 +81,40 @@ test("GTWorldCatalog: World Presets generation", () => {
   assert.strictEqual(nature.weather, "SPRING");
   assert.strictEqual(nature.name, "Nature World");
   assert.ok(nature.fg.some(id => id === 16), "Nature world should contain Grass");
-  assert.ok(nature.fg.some(id => id === 100), "Nature world should contain Wood Trees");
+  assert.ok(nature.fg.some(id => id === 1046), "Nature world should contain Rustic Fence");
+  assert.ok(nature.fg.some(id => id === 1004), "Nature world should contain Hedge");
+  assert.ok(nature.fg.some(id => id === 2964), "Nature world should contain Fountain");
+  assert.ok(nature.bg.some(id => id === 198), "Nature world should contain Flowery Wallpaper");
 
   const parkour = catalog.createParkourWorld(100, 60);
   assert.strictEqual(parkour.weather, "FLOATING_ISLANDS");
   assert.strictEqual(parkour.name, "Parkour Arena");
-  assert.ok(parkour.fg.some(id => id === 4), "Parkour world should contain Lava hazard sea");
-  assert.ok(parkour.fg.some(id => id === 162), "Parkour world should contain Death Spikes");
-  assert.ok(parkour.fg.some(id => id === 728), "Parkour world should contain Clouds");
+  assert.ok(parkour.fg.some(id => id === 410), "Parkour world should contain Checkpoints");
+  assert.ok(parkour.fg.some(id => id === 526), "Parkour world should contain Pinball Bumpers");
+  assert.ok(parkour.fg.some(id => id === 624), "Parkour world should contain Pinball Sproingers");
+  assert.ok(parkour.fg.some(id => id === 2010), "Parkour world should contain Glowy Blocks");
+  assert.ok(parkour.fg.some(id => id === 5666), "Parkour world should contain Laser Grids");
+  assert.ok(parkour.fg.some(id => id === 1422), "Parkour world should contain Display Boxes");
 
   const horror = catalog.createHorrorWorld(100, 60);
   assert.strictEqual(horror.weather, "SPOOKY");
   assert.strictEqual(horror.name, "Horror Dungeon");
-  assert.ok(horror.fg.some(id => id === 666), "Horror world should contain Granite");
-  assert.ok(horror.fg.some(id => id === 696), "Horror world should contain Torches");
-  assert.ok(horror.bg.some(id => id === 336), "Horror world should contain Stone Wall BG");
+  assert.ok(horror.fg.some(id => id === 680), "Horror world should contain Grimstone");
+  assert.ok(horror.fg.some(id => id === 988), "Horror world should contain Gargoyles");
+  assert.ok(horror.fg.some(id => id === 4190), "Horror world should contain Haunted Door");
+  assert.ok(horror.fg.some(id => id === 784), "Horror world should contain Tombstones");
+  assert.ok(horror.fg.some(id => id === 684), "Horror world should contain Iron Bars");
+  assert.ok(horror.bg.some(id => id === 990), "Horror world should contain Gothic Building BG");
 
   const scifi = catalog.createSciFiWorld(100, 60);
   assert.strictEqual(scifi.weather, "NEBULA");
   assert.strictEqual(scifi.name, "Sci-Fi Station");
-  assert.ok(scifi.fg.some(id => id === 186), "Sci-Fi world should contain Steel Blocks");
-  assert.ok(scifi.fg.some(id => id === 56), "Sci-Fi world should contain Glass Panes");
+  assert.ok(scifi.fg.some(id => id === 324), "Sci-Fi world should contain High Tech Blocks");
+  assert.ok(scifi.fg.some(id => id === 1162), "Sci-Fi world should contain Forcefields");
+  assert.ok(scifi.fg.some(id => id === 1130), "Sci-Fi world should contain Solar Panels");
+  assert.ok(scifi.fg.some(id => id === 928), "Sci-Fi world should contain Science Stations");
+  assert.ok(scifi.fg.some(id => id === 2068), "Sci-Fi world should contain Space Command Seat");
+  assert.ok(scifi.bg.some(id => id === 322), "Sci-Fi world should contain High Tech Wall BG");
 });
 
 test("GTWorldPlanner: Engine initialization, tools, and undo/redo", () => {
@@ -683,30 +696,34 @@ test("GTWorldPlanner: Themed World Templates Loading & Automatic Weather Assignm
   const natureWorld = engine.getWorldState();
   assert.strictEqual(natureWorld.name, "Nature World");
   assert.ok(natureWorld.fg.some(id => id === 16), "Contains Grass");
-  assert.ok(natureWorld.fg.some(id => id === 100), "Contains Trees");
+  assert.ok(natureWorld.fg.some(id => id === 1046), "Contains Rustic Fence");
+  assert.ok(natureWorld.fg.some(id => id === 2964), "Contains Fountain");
 
   // 2. Parkour Preset -> FLOATING_ISLANDS weather
   engine.loadPreset("parkour");
   assert.strictEqual(engine.getWeather(), "FLOATING_ISLANDS");
   const parkourWorld = engine.getWorldState();
   assert.strictEqual(parkourWorld.name, "Parkour Arena");
-  assert.ok(parkourWorld.fg.some(id => id === 162), "Contains Death Spikes");
-  assert.ok(parkourWorld.fg.some(id => id === 728), "Contains Clouds");
+  assert.ok(parkourWorld.fg.some(id => id === 410), "Contains Checkpoints");
+  assert.ok(parkourWorld.fg.some(id => id === 526), "Contains Pinball Bumpers");
+  assert.ok(parkourWorld.fg.some(id => id === 2010), "Contains Glowy Blocks");
 
   // 3. Horror Preset -> SPOOKY weather
   engine.loadPreset("horror");
   assert.strictEqual(engine.getWeather(), "SPOOKY");
   const horrorWorld = engine.getWorldState();
   assert.strictEqual(horrorWorld.name, "Horror Dungeon");
-  assert.ok(horrorWorld.fg.some(id => id === 666), "Contains Granite");
-  assert.ok(horrorWorld.fg.some(id => id === 696), "Contains Torches");
+  assert.ok(horrorWorld.fg.some(id => id === 680), "Contains Grimstone");
+  assert.ok(horrorWorld.fg.some(id => id === 988), "Contains Gargoyles");
+  assert.ok(horrorWorld.fg.some(id => id === 4190), "Contains Haunted Door");
 
   // 4. Sci-Fi Preset -> NEBULA weather
   engine.loadPreset("scifi");
   assert.strictEqual(engine.getWeather(), "NEBULA");
   const scifiWorld = engine.getWorldState();
   assert.strictEqual(scifiWorld.name, "Sci-Fi Station");
-  assert.ok(scifiWorld.fg.some(id => id === 186), "Contains Steel Blocks");
+  assert.ok(scifiWorld.fg.some(id => id === 324), "Contains High Tech Blocks");
+  assert.ok(scifiWorld.fg.some(id => id === 1162), "Contains Forcefields");
 
   // 5. Custom Dimensions with Themed Presets
   engine.createCustomWorld(50, 40, "nature", "Mini Nature");
