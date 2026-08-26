@@ -2756,7 +2756,10 @@
  // Player movement controls (Play Mode)
  if (player.active) {
  const k = event.key.toLowerCase();
- if (k === "a" || event.key === "ArrowLeft") {
+ if (k === "m" && !event.ctrlKey) {
+ toggleModeratorMode();
+ event.preventDefault();
+ } else if (k === "a" || event.key === "ArrowLeft") {
  player.keys.left = true;
  event.preventDefault();
  } else if (k === "d" || event.key === "ArrowRight") {

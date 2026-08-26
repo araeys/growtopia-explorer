@@ -2722,19 +2722,32 @@
 
  // ── Keyboard Shortcuts ──
  document.addEventListener('keydown', (e) => {
- if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
- const k = e.key.toLowerCase();
- if (k === 'b') engine.setTool('pencil');
- else if (k === 'e') engine.setTool('eraser');
- else if (k === 'i') engine.setTool('picker');
- else if (k === 'g') engine.setTool('bucket');
- else if (k === 'f') engine.toggleFlip();
- else if (k === '+' || k === '=') engine.zoomIn();
- else if (k === '-') engine.zoomOut();
- else if (k === '0') engine.resetZoom();
- else if (e.ctrlKey && k === 'z') { e.preventDefault(); engine.undo(); }
- else if (e.ctrlKey && (k === 'y' || (e.shiftKey && k === 'z'))) { e.preventDefault(); engine.redo(); }
- else if (k >= '1' && k <= '9') engine.setActiveHotbarIndex(parseInt(k) - 1);
+   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+   const k = e.key.toLowerCase();
+   if (k === 'm' && !e.ctrlKey) {
+     e.preventDefault();
+     if (engine && typeof engine.toggleModeratorMode === 'function') {
+       const isMod = engine.toggleModeratorMode();
+       const modBtn = document.getElementById('mobile-mod-btn');
+       if (modBtn) {
+         modBtn.classList.toggle('active', isMod);
+         modBtn.innerHTML = isMod ?
+           '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD: ON</span>' :
+           '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD</span>';
+       }
+     }
+   }
+   else if (k === 'b') engine.setTool('pencil');
+   else if (k === 'e') engine.setTool('eraser');
+   else if (k === 'i') engine.setTool('picker');
+   else if (k === 'g') engine.setTool('bucket');
+   else if (k === 'f') engine.toggleFlip();
+   else if (k === '+' || k === '=') engine.zoomIn();
+   else if (k === '-') engine.zoomOut();
+   else if (k === '0') engine.resetZoom();
+   else if (e.ctrlKey && k === 'z') { e.preventDefault(); engine.undo(); }
+   else if (e.ctrlKey && (k === 'y' || (e.shiftKey && k === 'z'))) { e.preventDefault(); engine.redo(); }
+   else if (k >= '1' && k <= '9') engine.setActiveHotbarIndex(parseInt(k) - 1);
  });
 
 
