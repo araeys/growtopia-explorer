@@ -985,7 +985,7 @@
  if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
  else playPunchSound(tileX, tileY);
  spawnPunchImpactEffect(tileX, tileY);
- playSfx("door_open", 1.0, 0.7);
+ playSfx("knock", 1.0, 0.85);
  spawnFloatingText(tileX, tileY, ` Knock Knock!`, "#a7f3d0");
  onStatusMessage(` Interacted with ${fgItem.name}!`);
  return true;
@@ -3077,7 +3077,7 @@
  if (!item) return false;
  const name = (item.name || "").toLowerCase();
  const action = Number(item.action);
- if ([1, 2, 26, 43, 84, 104, 105, 106, 142].includes(action)) return true;
+ if ([1, 2, 13, 26, 43, 84, 104, 105, 106, 142].includes(action)) return true;
  if (
  name.includes("door") || name.includes("portal") || name.includes("entrance") ||
  name.includes("gate") || name.includes("passage") || name.includes("gateway") ||
@@ -3723,19 +3723,29 @@
  }
  }
 
- // ── Authentic Growtopia Door / Entrance Enter Logic ──
- if (player.doorWarpCooldown > 0) {
- player.doorWarpCooldown = Math.max(0, player.doorWarpCooldown - dt);
- }
+   // ── Authentic Growtopia Door / Entrance Enter & Pass-Through Logic ──
+  if (player.doorWarpCooldown > 0) {
+    player.doorWarpCooldown = Math.max(0, player.doorWarpCooldown - dt);
+  }
 
- const playerCenterTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
- const playerCenterTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
- const playerOverIdx = (playerCenterTileX >= 0 && playerCenterTileX < world.width && playerCenterTileY >= 0 && playerCenterTileY < world.height) ? (playerCenterTileY * world.width + playerCenterTileX) : -1;
- const standingFgId = playerOverIdx !== -1 ? world.fg[playerOverIdx] : 0;
- const standingFgItem = standingFgId > 0 ? getItem(standingFgId) : null;
- const isAtDoor = standingFgItem && (standingFgId === 6 || isDoorItem(standingFgItem));
+  const playerCenterTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+  const playerCenterTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+  const playerOverIdx = (playerCenterTileX >= 0 && playerCenterTileX < world.width && playerCenterTileY >= 0 && playerCenterTileY < world.height) ? (playerCenterTileY * world.width + playerCenterTileX) : -1;
+  const standingFgId = playerOverIdx !== -1 ? world.fg[playerOverIdx] : 0;
+  const standingFgItem = standingFgId > 0 ? getItem(standingFgId) : null;
+  const isAtDoor = standingFgItem && (standingFgId === 6 || isDoorItem(standingFgItem));
 
- // Pressing UP / W while standing in front of a door enters the door!
+  // Play Entrance / Door SFX when character physically passes through / penetrates the door!
+  const currentDoorKey = isAtDoor ? (playerCenterTileX + ',' + playerCenterTileY) : null;
+  if (currentDoorKey && currentDoorKey !== player.lastDoorTileKey) {
+    player.lastDoorTileKey = currentDoorKey;
+    playSfx("door_open", 1.0, 0.85);
+  } else if (!isAtDoor && player.lastDoorTileKey) {
+    player.lastDoorTileKey = null;
+    playSfx("door_shut", 1.0, 0.70);
+  }
+
+  // Pressing UP / W while standing in front of a door enters the door!
  if (isAtDoor && player.keys.up && !player.jumpConsumed && player.doorWarpCooldown === 0) {
  const entered = warpThroughDoor(playerCenterTileX, playerCenterTileY);
  if (entered) {
@@ -5344,7 +5354,7 @@
 
  function preloadFootstepSounds() {
  // Preload all essential gameplay SFX for zero-delay instant playback
- const coreSounds = ["door_open", "door_shut", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+ const coreSounds = ["door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
