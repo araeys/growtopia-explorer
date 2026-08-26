@@ -3082,17 +3082,38 @@
         return false;
       }
 
+      function isPassThroughPlant(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        if (
+          name.includes("grass") || name.includes("daisy") || name.includes("rose") ||
+          name.includes("poppy") || name.includes("flower") || name.includes("bush") ||
+          name.includes("mushroom") || name.includes("clover") || name.includes("seaweed") ||
+          name.includes("wheat") || name.includes("foliage") || name.includes("vine") ||
+          name.includes("fern") || name.includes("weed") || name.includes("tulip") ||
+          name.includes("dahlia") || name.includes("orchid") || name.includes("lily") ||
+          name.includes("shrub") || name.includes("bamboo shoot") || name.includes("sunflower")
+        ) {
+          // If it's a solid block variation like "Grass Block" or "Wallpaper"
+          if (name.includes("wallpaper") || name.includes("wall") || name.includes("block") || name.includes("seed")) return false;
+          return true;
+        }
+        return false;
+      }
+
       function isSolidBlock(item) {
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
         const action = Number(item.action);
-        // In Growtopia: All doors, entrances, gateways, and portals are PASS-THROUGH (non-solid)!
+        // In Growtopia: Doors, Entrances, Portals, Plants, Grass, Flowers, Signs, Checkpoints are PASS-THROUGH (non-solid)!
         if (isDoorItem(item)) return false;
+        if (isPassThroughPlant(item)) return false;
         // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89)
         if ([0, 1, 2, 3, 6, 18, 21, 27, 28, 81, 89, 134].includes(action)) return false;
         if (
           name.includes("platform") || name.includes("sign") || name.includes("water") ||
-          name.includes("fire") || name.includes("checkpoint") || name.includes("flag")
+          name.includes("fire") || name.includes("checkpoint") || name.includes("flag") ||
+          name.includes("banner") || name.includes("bannister")
         ) return false;
         return true;
       }
@@ -3240,7 +3261,16 @@
       }
 
       function respawnPlayer(msg = "") {
-        const spawn = findSpawnPosition();
+        let spawn;
+        if (player.lastCheckpoint) {
+          spawn = {
+            x: player.lastCheckpoint.x * TILE_SIZE + 6,
+            y: player.lastCheckpoint.y * TILE_SIZE + 4
+          };
+          if (!msg) msg = `🔄 Respawned at ${player.lastCheckpoint.name || "Checkpoint"}!`;
+        } else {
+          spawn = findSpawnPosition();
+        }
         player.x = spawn.x;
         player.y = spawn.y;
         player.vx = 0;
@@ -3600,6 +3630,40 @@
           } else {
             // When user stops moving, immediately reset timer to 0.19 so next step starts promptly
             player.stepParticleTimer = 0.19;
+          }
+
+          // ── Authentic Growtopia Checkpoint Detection & Save ──
+          const cpTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+          const cpTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+          const cpIdx = (cpTileX >= 0 && cpTileX < world.width && cpTileY >= 0 && cpTileY < world.height) ? (cpTileY * world.width + cpTileX) : -1;
+          const cpFgId = cpIdx !== -1 ? world.fg[cpIdx] : 0;
+          const cpItem = cpFgId > 0 ? getItem(cpFgId) : null;
+          const isCheckpointTile = cpItem && (cpItem.action === 27 || (cpItem.name || "").toLowerCase().includes("checkpoint"));
+
+          if (isCheckpointTile) {
+            if (!player.lastCheckpoint || player.lastCheckpoint.x !== cpTileX || player.lastCheckpoint.y !== cpTileY) {
+              player.lastCheckpoint = { x: cpTileX, y: cpTileY, name: cpItem.name };
+              playSfx("success", 1.0, 0.85);
+              spawnFloatingText(cpTileX, cpTileY, "🚩 Checkpoint Saved!", "#4ade80");
+              onStatusMessage(`🚩 Checkpoint activated at (${cpTileX}, ${cpTileY})!`);
+              // Golden sparkles on checkpoint activation
+              for (let i = 0; i < 8; i++) {
+                gameParticles.push({
+                  type: "gem_sparkle",
+                  x: cpTileX * TILE_SIZE + 16 + (Math.random() - 0.5) * 16,
+                  y: cpTileY * TILE_SIZE + 16 + (Math.random() - 0.5) * 16,
+                  vx: (Math.random() - 0.5) * 2.0,
+                  vy: -1.5 - Math.random() * 1.5,
+                  scale: 0.6 + Math.random() * 0.4,
+                  rot: Math.random() * Math.PI,
+                  rotSpeed: (Math.random() - 0.5) * 3,
+                  life: 0.5 + Math.random() * 0.3,
+                  maxLife: 0.8,
+                  color: "#4ade80"
+                });
+              }
+              requestRender();
+            }
           }
 
           // ── Authentic Growtopia Door / Entrance Enter Logic ──
@@ -5121,6 +5185,23 @@
       }
 
       function preloadFootstepSounds() {
+        // Preload all essential gameplay SFX for zero-delay instant playback
+        const coreSounds = ["door_open", "door_shut", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+        coreSounds.forEach(s => {
+          const key = `sfx_${s}`;
+          if (!audioBufferCache.has(key)) {
+            fetch(`audio/${s}.wav`)
+              .then(r => r.arrayBuffer())
+              .then(ab => {
+                const ctx = getAudioContext();
+                return ctx ? ctx.decodeAudioData(ab) : null;
+              })
+              .then(buf => {
+                if (buf) audioBufferCache.set(key, buf);
+              })
+              .catch(() => {});
+          }
+        });
         for (let i = 1; i <= 7; i++) {
           const key = `sfx_footstep${i}`;
           if (!audioBufferCache.has(key)) {
