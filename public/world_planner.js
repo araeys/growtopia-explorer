@@ -2903,7 +2903,7 @@
 
       function triggerPlayerPlace(targetTileX, targetTileY) {
         if (!player.active) return;
-        player.placeTimer = 0.20;
+        player.placeTimer = 0.28;
         if (typeof targetTileX === "number") {
           const playerTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
           if (targetTileX > playerTileX) player.facing = 1;
@@ -3820,18 +3820,17 @@
         const jumpSpinAngleBack = jumpSpinProgress * Math.PI * 2;   // 1x 360-degree forward spin
         const jumpSpinAngleFront = -jumpSpinProgress * Math.PI * 2; // 1x 360-degree INVERTED spin
 
-        // Placing Kinematics (Normal block placing arm gesture)
-        const isPlacing = player.placeTimer > 0;
-        const placeProg = isPlacing ? (1.0 - (player.placeTimer / 0.20)) : 0;
-        const placeThrustX = isPlacing ? Math.sin(placeProg * Math.PI) * 6.5 : 0;
-        const placeSnapAngle = isPlacing ? (-0.35 - Math.sin(placeProg * Math.PI) * 1.35 + (1.0 - placeProg) * 0.2) : 0;
-
-        // Punch Kinematics (Stretched Fist Action)
+        // Placing & Punch Dynamic Thrust & Snap Kinematics
         const isPunching = player.punchTimer > 0;
-        const punchProg = isPunching ? (1.0 - (player.punchTimer / (player.punchMaxTimer || 0.24))) : 0;
-        const punchTorsoLean = isPunching ? Math.sin(punchProg * Math.PI) * 0.14 : 0;
-        const punchHeadDip = isPunching ? Math.sin(punchProg * Math.PI) * 0.08 : 0;
-        const punchStepX = isPunching ? Math.sin(punchProg * Math.PI) * 2.5 : 0;
+        const isPlacing = player.placeTimer > 0;
+        const isActionActive = isPunching || isPlacing;
+        const actionProg = isPunching ? (1.0 - (player.punchTimer / (player.punchMaxTimer || 0.24))) : (isPlacing ? (1.0 - (player.placeTimer / 0.28)) : 0);
+
+        const actionThrustX = isActionActive ? Math.sin(actionProg * Math.PI) * 7.5 : 0;
+        const actionSnapAngle = isActionActive ? (-0.35 - Math.sin(actionProg * Math.PI) * 1.45 + (1.0 - actionProg) * 0.3) : 0;
+        const actionTorsoLean = isActionActive ? Math.sin(actionProg * Math.PI) * 0.14 : 0;
+        const actionHeadDip = isActionActive ? Math.sin(actionProg * Math.PI) * 0.08 : 0;
+        const actionStepX = isActionActive ? Math.sin(actionProg * Math.PI) * 2.5 : 0;
 
         // Jump Thrust Leg Extension
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
@@ -3983,10 +3982,8 @@
             let backArmAngle = 0;
             if (isJumpSpinning) {
               backArmAngle = jumpSpinAngleBack;
-            } else if (isPunching) {
-              backArmAngle = 0.55 + Math.sin(punchProg * Math.PI) * 0.40;
-            } else if (isPlacing) {
-              backArmAngle = 0.35 + Math.sin(placeProg * Math.PI) * 0.25;
+            } else if (isActionActive) {
+              backArmAngle = 0.55 + Math.sin(actionProg * Math.PI) * 0.40;
             } else if (afkBackArmAngle !== null) {
               backArmAngle = afkBackArmAngle;
             } else {
@@ -4043,14 +4040,14 @@
             }
             tCtx.restore();
 
-            // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Punch Lunge
+            // 4. Torso & Shirt with Forward Run Lean, Walk Twist & Placing/Punch Lunge
             const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
 
             tCtx.save();
-            tCtx.translate(afkTorsoX + sxShirt + punchStepX, breatheBob + syShirt);
-            tCtx.rotate(afkTorsoAngle + runLean + torsoTwist + punchTorsoLean);
+            tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt);
+            tCtx.rotate(afkTorsoAngle + runLean + torsoTwist + actionTorsoLean);
             if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
               tCtx.drawImage(imgBody, -16, -16, 32, 32);
             }
@@ -4060,8 +4057,8 @@
             const headBobLag = (Math.sin(walkPhase - 0.5) * 0.85 * wBlend);
             const fallHeadTilt = (0.12 + fallIntensity * 0.10) * fBlend;
             const jumpHeadTilt = (-0.10 * jumpIntensity) * jBlend;
-            tCtx.translate(afkHeadX - sxShirt + punchStepX * 0.5, afkHeadY - syShirt + headBobLag);
-            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + punchHeadDip + (-walkCycleSin * 0.05 * wBlend));
+            tCtx.translate(afkHeadX - sxShirt + actionStepX * 0.5, afkHeadY - syShirt + headBobLag);
+            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend));
 
             if (player.moderatorMode) {
               // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -4258,8 +4255,8 @@
               let frontArmAngle = 0;
               if (isJumpSpinning) {
                 frontArmAngle = jumpSpinAngleFront;
-              } else if (isPlacing) {
-                frontArmAngle = placeSnapAngle;
+              } else if (isActionActive) {
+                frontArmAngle = actionSnapAngle;
               } else if (afkFrontArmAngle !== null) {
                 frontArmAngle = afkFrontArmAngle;
               } else {
@@ -4272,7 +4269,7 @@
               }
 
               tCtx.save();
-              tCtx.translate(-7 + afkTorsoX + placeThrustX, 4 + breatheBob);
+              tCtx.translate(-7 + afkTorsoX + actionThrustX, 4 + breatheBob);
               tCtx.rotate(frontArmAngle);
               if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
                 tCtx.drawImage(imgArmL, -9, -20, 32, 32);
