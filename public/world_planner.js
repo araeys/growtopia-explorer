@@ -4147,7 +4147,7 @@
             // 6. Front Arm (Tangan Kiri - Growtopia Stretched Punch Arm & Official Fist Asset)
             if (isPunching) {
               // ── AUTHENTIC GROWTOPIA STRETCHED PUNCH ARM & GIANT FIST ──
-              const shoulderX = -4 + afkTorsoX + punchStepX;
+              const shoulderX = -4 + afkTorsoX + actionStepX;
               const shoulderY = 4 + breatheBob;
 
               // Compute target in character local coordinate space (considering player.facing)
