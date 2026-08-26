@@ -463,7 +463,7 @@
       const baseGroundY = Math.floor(height * 0.60);
       const bedrockCutoff = height - Math.max(1, Math.min(5, Math.floor(height * 0.1)));
 
-      // 1. Natural Rolling Hills Terrain (Grass 16 + Soil 2 + Cave BG 14)
+      // 1. Natural Rolling Valley Landscape (Grass 16 + Dirt 2 + Cave BG 14)
       const surfaceProfile = new Int32Array(width);
       for (let x = 0; x < width; x++) {
         const hillOffset = Math.round(
@@ -490,7 +490,7 @@
         }
       }
 
-      // 2. Modern Garden Landscape: Rustic Fences, Topiary Hedges, and Wildflowers
+      // 2. Garden Landscape: Rustic Fences, Topiary Hedges, and Wildflowers
       const flowerIds = [190, 22, 188, 194]; // Rose, Daisy, Poppy, Mushroom
       for (let x = 2; x < width - 2; x++) {
         const sy = surfaceProfile[x];
@@ -505,14 +505,25 @@
         }
       }
 
-      // 3. Central Fairytale Estate / Cottage (X: center - 12 .. center + 12)
-      const lodgeLeft = Math.floor(width / 2) - 11;
+      // 3. Central Town Square: Grand Marble Fountain & Lanterns (X: center - 20 .. center - 14)
+      const squareCenterX = Math.floor(width / 2) - 16;
+      if (squareCenterX > 4) {
+        const sqY = surfaceProfile[squareCenterX];
+        fg[(sqY - 1) * width + squareCenterX] = 2964; // Grand Marble Fountain
+        fg[(sqY - 1) * width + (squareCenterX - 2)] = 1004; // Hedge
+        fg[(sqY - 1) * width + (squareCenterX + 2)] = 1004; // Hedge
+        fg[(sqY - 2) * width + (squareCenterX - 3)] = 1054; // Chinese Lantern
+        fg[(sqY - 2) * width + (squareCenterX + 3)] = 1054; // Chinese Lantern
+      }
+
+      // 4. Central Fairytale Manor & Conservatory (X: center - 10 .. center + 14)
+      const lodgeLeft = Math.floor(width / 2) - 8;
       const lodgeRight = lodgeLeft + 22;
       const lodgeGroundY = surfaceProfile[Math.floor(width / 2)];
       const lodgeFloorY = lodgeGroundY - 1;
       const lodgeRoofY = lodgeFloorY - 10;
 
-      // Foundation & Brick Base
+      // Manor Foundation & Hearth Chimney
       for (let x = lodgeLeft; x <= lodgeRight; x++) {
         for (let y = lodgeFloorY; y <= lodgeGroundY; y++) {
           fg[y * width + x] = 116; // Bricks
@@ -550,26 +561,21 @@
           fg[ry * width + rx] = 100; // Wood Block roof
         }
       }
+      // Brick Chimney extending from hearth
+      for (let cy = lodgeRoofY - 4; cy <= lodgeFloorY; cy++) {
+        fg[cy * width + (lodgeRight - 2)] = 116; // Brick Chimney
+      }
       // Hanging Chinese Lanterns under eaves
       fg[(lodgeRoofY + 1) * width + (lodgeLeft - 1)] = 1054; // Chinese Lantern
       fg[(lodgeRoofY + 1) * width + (lodgeRight + 1)] = 1054; // Chinese Lantern
 
       // Entrance Porch: Main Door, House Entrance, and Welcome Sign
-      const spawnX = lodgeLeft + 6;
+      const spawnX = lodgeLeft + 5;
       fg[(lodgeFloorY - 1) * width + spawnX] = 6; // Main Door
       fg[(lodgeFloorY - 1) * width + (spawnX + 6)] = 224; // House Entrance
-      fg[(lodgeFloorY - 1) * width + (spawnX + 11)] = 24; // Pointy Sign "FAIRYTALE MANOR"
+      fg[(lodgeFloorY - 1) * width + (spawnX + 11)] = 24; // Pointy Sign "RIVERDALE BOTANICAL MANOR"
 
-      // Grand Garden Fountain in the courtyard (Right side of manor)
-      const fountainX = lodgeRight + 5;
-      if (fountainX + 3 < width) {
-        const fGroundY = surfaceProfile[fountainX];
-        fg[(fGroundY - 1) * width + fountainX] = 2964; // Grand Fountain
-        fg[(fGroundY - 1) * width + (fountainX - 1)] = 1004; // Hedge
-        fg[(fGroundY - 1) * width + (fountainX + 1)] = 1004; // Hedge
-      }
-
-      // 4. Ancient Canopy Great Trees with Climbing Vines & Treehouses
+      // 5. Ancient Canopy Great Tree with Treehouses & Climbing Vines (Left Side: X: 10)
       function buildGreatTree(trunkX) {
         const tGroundY = surfaceProfile[trunkX];
         const trunkH = 11;
@@ -602,20 +608,41 @@
             }
           }
         }
-        // Hanging Lantern from tree branches
-        fg[(tGroundY - trunkH + 1) * width + (trunkX - 3)] = 1054; // Chinese Lantern
-        fg[(tGroundY - trunkH + 1) * width + (trunkX + 4)] = 1054; // Chinese Lantern
+        // Hanging Lanterns
+        fg[(tGroundY - trunkH + 1) * width + (trunkX - 3)] = 1054;
+        fg[(tGroundY - trunkH + 1) * width + (trunkX + 4)] = 1054;
       }
 
       buildGreatTree(10);
-      buildGreatTree(width - 14);
 
-      // 5. Wooden Suspension Bridges connecting trees to Manor roof
+      // 6. Hillside Windmill & Farmstead (Right Side: X: width - 14)
+      const millX = width - 14;
+      const millGroundY = surfaceProfile[millX];
+      const millH = 10;
+      for (let y = millGroundY - millH; y < millGroundY; y++) {
+        fg[y * width + millX] = 100; // Windmill wood tower
+        fg[y * width + (millX + 1)] = 100;
+        bg[y * width + millX] = 118;
+        bg[y * width + (millX + 1)] = 118;
+      }
+      // Windmill Sails (Wooden Platforms & Glass)
+      const sailCenterY = millGroundY - millH;
+      fg[sailCenterY * width + (millX - 2)] = 102; // Sail Left
+      fg[sailCenterY * width + (millX - 1)] = 102;
+      fg[sailCenterY * width + (millX + 2)] = 102; // Sail Right
+      fg[sailCenterY * width + (millX + 3)] = 102;
+      fg[(sailCenterY - 2) * width + millX] = 102; // Sail Up
+      fg[(sailCenterY - 1) * width + millX] = 102;
+      fg[(sailCenterY + 2) * width + millX] = 102; // Sail Down
+      fg[(sailCenterY + 1) * width + millX] = 102;
+      fg[sailCenterY * width + millX] = 56; // Hub Glass
+
+      // 7. Wooden Suspension Bridges Connecting the Valley
       for (let bx = 14; bx < lodgeLeft - 1; bx++) {
         const by = lodgeRoofY + 2;
         fg[by * width + bx] = 102; // Wooden Platform Bridge
       }
-      for (let bx = lodgeRight + 2; bx < width - 14; bx++) {
+      for (let bx = lodgeRight + 2; bx < millX - 2; bx++) {
         const by = lodgeRoofY + 2;
         fg[by * width + bx] = 102; // Wooden Platform Bridge
       }
@@ -650,7 +677,7 @@
         fg[lavaY * width + x] = 4;   // Lava sea
       }
 
-      // 2. High-Tech Pro Lobby (X: 3..16, Y: 46..54)
+      // 2. High-Tech Pro Lobby Hub (X: 3..16, Y: 46..54)
       const lobbyLeft = 4;
       const lobbyRight = 16;
       const lobbyFloorY = height - 8;
@@ -671,7 +698,7 @@
       const spawnX = lobbyLeft + 4;
       fg[(lobbyFloorY - 1) * width + spawnX] = 6; // Main Door
       fg[(lobbyFloorY - 1) * width + (spawnX + 3)] = 410; // Authentic Checkpoint
-      fg[(lobbyFloorY - 1) * width + (spawnX + 6)] = 24; // Pointy Sign "PRO PARKOUR ARENA - Good Luck!"
+      fg[(lobbyFloorY - 1) * width + (spawnX + 6)] = 24; // Pointy Sign "THE APEX GAUNTLET - 4 STAGES"
 
       // 3. Pro Parkour Stages (Ascending Multi-Level Gauntlet)
       const parkourObstacles = [
@@ -792,6 +819,14 @@
           fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2))] = 60; // Portcullis Finish
           fg[(ob.y - 1) * width + (ob.x + ob.w - 3)] = 1422; // Trophy Display Box!
           fg[(ob.y - 1) * width + (ob.x + Math.floor(ob.w / 2) + 3)] = 24; // Sign "VICTORY! CHAMPION!"
+
+          // 1-Way Return Chute down to start lobby (Wooden Platforms drop shaft)
+          const chuteX = ob.x - 2;
+          if (chuteX >= 2) {
+            for (let cy = ob.y; cy < height - 8; cy += 4) {
+              fg[cy * width + chuteX] = 102; // Wooden Platform drop
+            }
+          }
         }
       });
 
