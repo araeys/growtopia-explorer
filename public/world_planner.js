@@ -13,6 +13,16 @@
  const MAX_HISTORY = 40;
  const AUTOSAVE_KEY = "gt-world-planner-autosave-v1";
 
+ const AMETHYST_PLACE_SFX_POOL = [
+    "Amethyst_break1.ogg",
+    "Amethyst_break2.ogg",
+    "Amethyst_break3.ogg",
+    "Amethyst_break4.ogg",
+    "Amethyst_step3.ogg",
+    "Amethyst_step7.ogg",
+    "Amethyst_step9.ogg"
+  ];
+
  function createEngine(options = {}) {
  const {
  canvas,
