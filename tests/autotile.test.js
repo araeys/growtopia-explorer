@@ -103,7 +103,34 @@ console.log('🧪 Starting Autotiling & Categorization Test Suite...');
   console.log('✅ ST7 Vertical Connectables tests passed!');
 }
 
-// 5. Test World Catalog Categorization & Layer Isolation
+// 5. Test ST4 Directional Surface Attachment (Spikes, Crystal Spikes, Gargoyles)
+{
+  const spikeItem = { id: 162, name: 'Death Spikes', spread_type: 4, action: 6 };
+
+  // Case A: Placed on Floor (Solid block below -> bit 64)
+  const floorSpike = autotile.getTileOffset(spikeItem, autotile.BIT_B);
+  assert.deepStrictEqual(floorSpike, { offsetX: 3, offsetY: 0 }, 'Floor spike must point UP with offsetX 3');
+
+  // Case B: Placed on Ceiling (Solid block above -> bit 2)
+  const ceilingSpike = autotile.getTileOffset(spikeItem, autotile.BIT_T);
+  assert.deepStrictEqual(ceilingSpike, { offsetX: 1, offsetY: 0 }, 'Ceiling spike must point DOWN with offsetX 1');
+
+  // Case C: Placed on Left Wall (Solid block left -> bit 8)
+  const leftWallSpike = autotile.getTileOffset(spikeItem, autotile.BIT_L);
+  assert.deepStrictEqual(leftWallSpike, { offsetX: 0, offsetY: 0 }, 'Left wall spike must point RIGHT with offsetX 0');
+
+  // Case D: Placed on Right Wall (Solid block right -> bit 16)
+  const rightWallSpike = autotile.getTileOffset(spikeItem, autotile.BIT_R);
+  assert.deepStrictEqual(rightWallSpike, { offsetX: 2, offsetY: 0 }, 'Right wall spike must point LEFT with offsetX 2');
+
+  // Case E: Solo floating block -> Default upright (offsetX 3)
+  const soloSpike = autotile.getTileOffset(spikeItem, 0);
+  assert.deepStrictEqual(soloSpike, { offsetX: 3, offsetY: 0 }, 'Solo spike defaults to upright with offsetX 3');
+
+  console.log('✅ ST4 Directional Spikes tests passed!');
+}
+
+// 6. Test World Catalog Categorization & Layer Isolation
 {
   const dirt = { id: 2, name: 'Dirt', action: 17, spread_type: 2, category: 'Blocks & Building', texture: 'tiles_page1.png' };
   const caveBg = { id: 14, name: 'Cave Background', action: 18, spread_type: 2, category: 'Weather & Backgrounds', texture: 'tiles_page1.png' };

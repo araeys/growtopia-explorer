@@ -1287,9 +1287,10 @@
         const id = Number(item.id);
         const st = Number(item.spread_type) || 0;
 
-        // Use official Growtopia 8-neighbor bitmask solver if spread_type is 2, 5, 3, 14, or 7
-        if (autotileEngine && [2, 5, 3, 14, 7].includes(st)) {
-          const mask = autotileEngine.computeNeighborMask(layer, world.width, world.height, x, y, id);
+        // Use official Growtopia 8-neighbor bitmask solver if spread_type is 2, 5, 3, 14, 7, or 4
+        if (autotileEngine && [2, 5, 3, 14, 7, 4].includes(st)) {
+          const matchAnySolid = (st === 4);
+          const mask = autotileEngine.computeNeighborMask(layer, world.width, world.height, x, y, id, matchAnySolid);
           return autotileEngine.getTileOffset(item, mask);
         }
 

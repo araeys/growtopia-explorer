@@ -128,7 +128,7 @@
     /**
      * Compute 8-neighbor bitmask for a tile at (x, y) in a 1D grid array.
      */
-    function computeNeighborMask(grid, width, height, x, y, targetId) {
+    function computeNeighborMask(grid, width, height, x, y, targetId, matchAnySolid = false) {
       if (!grid || x < 0 || y < 0 || x >= width || y >= height) return 0;
       let mask = 0;
 
@@ -136,7 +136,8 @@
         if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
           return false;
         }
-        return grid[ny * width + nx] === targetId;
+        const val = grid[ny * width + nx];
+        return matchAnySolid ? (val > 0) : (val === targetId);
       };
 
       if (matches(x - 1, y - 1)) mask |= BIT_TL;
@@ -179,6 +180,25 @@
         else if (hasTop && !hasBot) c = 0;// Bottom tip
         else if (!hasTop && hasBot) c = 2;// Top tip
         return { offsetX: c, offsetY: r };
+      }
+      if (st === 4) {
+        // Directional Surface Attachment (Spikes, Rocket Thruster, Gargoyle, Tavern Sign)
+        // Priority: Floor (Bottom) > Ceiling (Top) > Left Wall > Right Wall > Default (Upright)
+        const hasBot   = Boolean(activeMask & BIT_B);
+        const hasTop   = Boolean(activeMask & BIT_T);
+        const hasLeft  = Boolean(activeMask & BIT_L);
+        const hasRight = Boolean(activeMask & BIT_R);
+
+        if (hasBot) {
+          return { offsetX: 3, offsetY: 0 }; // Attached to floor -> Points UP
+        } else if (hasTop) {
+          return { offsetX: 1, offsetY: 0 }; // Attached to ceiling -> Points DOWN
+        } else if (hasLeft) {
+          return { offsetX: 0, offsetY: 0 }; // Attached to left wall -> Points RIGHT
+        } else if (hasRight) {
+          return { offsetX: 2, offsetY: 0 }; // Attached to right wall -> Points LEFT
+        }
+        return { offsetX: 3, offsetY: 0 }; // Default: Points UP
       }
 
       return { offsetX: 0, offsetY: 0 };
