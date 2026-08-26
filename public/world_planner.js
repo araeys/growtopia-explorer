@@ -3054,15 +3054,57 @@
       }
 
       function findSpawnPosition() {
+        let fallbackDoor = null;
+
+        // 1. Scan for White Door (ID 6) or any Door Block (action 1, 2, 26, 43, 84, 142)
         for (let y = 0; y < world.height; y++) {
           for (let x = 0; x < world.width; x++) {
             const idx = y * world.width + x;
-            if (world.fg[idx] === 6 || world.fg[idx] === 8) { // Main Door or White Door
-              return { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
+            const fgId = world.fg[idx];
+            if (fgId > 0) {
+              if (fgId === 6) { // Official White Door / Main Spawn Door
+                return { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
+              }
+              const item = getItem(fgId);
+              if (item) {
+                const name = (item.name || "").toLowerCase();
+                const isDoor = item.action === 1 || item.action === 2 || [26, 43, 84, 104, 105, 106, 142].includes(item.action) || name.includes("door") || name.includes("portal") || name.includes("entrance");
+                if (isDoor && !fallbackDoor) {
+                  fallbackDoor = { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
+                }
+              }
             }
           }
         }
-        return { x: Math.floor(world.width / 2) * TILE_SIZE + 6, y: 32 };
+
+        if (fallbackDoor) return fallbackDoor;
+
+        // 2. If NO door exists in the world: Find safe solid ground near the horizontal center of the world
+        const centerX = Math.floor(world.width / 2);
+        // Scan downwards at center column, and neighboring columns outward (+-1, +-2, ...)
+        for (let offset = 0; offset <= Math.floor(world.width / 2); offset++) {
+          const checkCols = offset === 0 ? [centerX] : [centerX - offset, centerX + offset];
+          for (const tx of checkCols) {
+            if (tx < 0 || tx >= world.width) continue;
+            for (let ty = 0; ty < world.height; ty++) {
+              const idx = ty * world.width + tx;
+              const fgId = world.fg[idx];
+              if (fgId > 0) {
+                const item = getItem(fgId);
+                if (item && (isSolidBlock(item) || isPlatformBlock(item)) && !isHazardItem(item)) {
+                  // Found safe solid ground! Stand on top of this block
+                  return { x: tx * TILE_SIZE + 6, y: Math.max(0, (ty - 1) * TILE_SIZE + 4) };
+                }
+              }
+            }
+          }
+        }
+
+        // 3. Completely empty blank world: Spawn in the exact center of the world
+        return {
+          x: Math.floor(world.width / 2) * TILE_SIZE + 6,
+          y: Math.floor(world.height / 2) * TILE_SIZE + 4
+        };
       }
 
       function killPlayer(reason = "Ouch! Hit a lethal hazard!") {
@@ -5294,6 +5336,9 @@
         }
         world.name = name || "World";
 
+        const spawn = findSpawnPosition();
+        player.x = spawn.x;
+        player.y = spawn.y;
         centerViewport();
         render();
         onWorldChange(world);
@@ -5309,6 +5354,9 @@
         } else {
           world = catalog.createStandardWorld(world.width, world.height);
         }
+        const spawn = findSpawnPosition();
+        player.x = spawn.x;
+        player.y = spawn.y;
         centerViewport();
         render();
         onWorldChange(world);
@@ -5317,6 +5365,9 @@
       return {
         init: () => {
           setupEventHandlers();
+          const spawn = findSpawnPosition();
+          player.x = spawn.x;
+          player.y = spawn.y;
           centerViewport();
           getSpriteImage("character_base_assets/gt_parts/gt_punch_fist.png");
         },
@@ -5461,6 +5512,8 @@
         },
         spawnBlockPlaceEffect,
         respawnPlayer,
+        getPlayer: () => ({ ...player }),
+        findSpawnPosition,
         toggleMusic,
         setMusicBpm,
         getMusicState: () => ({ ...sequencer }),

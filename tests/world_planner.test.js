@@ -600,3 +600,42 @@ test("GTWorldPlanner: Shape Tools (Line, Box, Filled Box, Circle)", () => {
   }
 });
 
+test("GTWorldPlanner: Intelligent Spawn Positioning (Door, Safe Ground, Blank Fallback)", () => {
+  const engine = planner.createEngine({
+    canvas: createTestCanvas(),
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.init();
+
+  // 1. Standard World with White Door (ID 6) -> Spawns exactly at door
+  engine.loadPreset("standard");
+  engine.togglePlayMode(true);
+  const playerPos1 = engine.getPlayer();
+  assert.ok(playerPos1.x > 0, "Player x should be valid");
+  assert.ok(playerPos1.y > 0, "Player y should be valid");
+  engine.togglePlayMode(false);
+
+  // 2. Flat World (no doors, but solid dirt ground across bottom) -> Spawns standing on center ground
+  engine.loadPreset("flat");
+  engine.togglePlayMode(true);
+  const playerPos2 = engine.getPlayer();
+  const worldState2 = engine.getWorldState();
+  const centerTileX = Math.floor(worldState2.width / 2);
+  assert.strictEqual(Math.floor(playerPos2.x / 32), centerTileX, "Should spawn in center horizontal column");
+  assert.ok(playerPos2.y > 100, "Should spawn on ground, not in top ceiling or corner");
+  engine.togglePlayMode(false);
+
+  // 3. Blank World (Bedrock only at bottom row) -> Spawns standing on the bottom bedrock at center
+  engine.loadPreset("blank");
+  engine.togglePlayMode(true);
+  const playerPos3 = engine.getPlayer();
+  const worldState3 = engine.getWorldState();
+  assert.strictEqual(Math.floor(playerPos3.x / 32), Math.floor(worldState3.width / 2));
+  assert.strictEqual(Math.floor(playerPos3.y / 32), worldState3.height - 2, "Should spawn standing on the bottom bedrock layer");
+  engine.togglePlayMode(false);
+});
+
+
