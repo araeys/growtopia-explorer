@@ -2756,13 +2756,18 @@
  window.addEventListener("keydown", event => {
  if (["INPUT", "TEXTAREA", "SELECT"].includes(document?.activeElement?.tagName)) return;
 
+ const k = event.key.toLowerCase();
+
+ // Global M key shortcut to toggle Mod Mode ON/OFF
+ if (k === "m" && !event.ctrlKey && !event.altKey && !event.metaKey) {
+ event.preventDefault();
+ toggleModeratorMode();
+ return;
+ }
+
  // Player movement controls (Play Mode)
  if (player.active) {
- const k = event.key.toLowerCase();
- if (k === "m" && !event.ctrlKey) {
- toggleModeratorMode();
- event.preventDefault();
- } else if (k === "a" || event.key === "ArrowLeft") {
+ if (k === "a" || event.key === "ArrowLeft") {
  player.keys.left = true;
  event.preventDefault();
  } else if (k === "d" || event.key === "ArrowRight") {
@@ -3422,11 +3427,13 @@
  playSfx("boo_ghost_be_gone", 1.05, 0.80);
  playSfx("already_used", 1.30, 0.70);
  }
- onStatusMessage("Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
+ onStatusMessage("Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to exit.");
  } else {
  player.modTransformTimer = 0;
+ player.vx = 0;
+ player.vy = 0;
  if (player.active) playSfx("switch", 1.1, 0.5);
- onStatusMessage("Moderator Mode Disabled. Solid block collisions restored.");
+ onStatusMessage("Moderator Mode Disabled. Solid block collisions restored. Press M to enter.");
  }
 
  if (typeof document !== "undefined" && typeof document.getElementById === "function") {
@@ -3443,6 +3450,13 @@
  modBtn.style.color = "";
  modBtn.style.boxShadow = "";
  }
+ }
+ const mobileModBtn = document.getElementById("mobile-mod-btn");
+ if (mobileModBtn) {
+ mobileModBtn.classList.toggle("active", player.moderatorMode);
+ mobileModBtn.innerHTML = player.moderatorMode ?
+ '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD: ON</span>' :
+ '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD</span>';
  }
  }
  render();
