@@ -847,9 +847,11 @@
  spawnBlockPlaceEffect(x, y, item);
  }
  spawnTileBreakParticle(x, y);
- // Combine authentic pop and tile_created sounds on block placement
- playSfx("pop", 0.95 + Math.random() * 0.15, 0.45);
- playSfx("tile_created", 0.98 + Math.random() * 0.08, 0.55);
+      // 1. Main Place SFX: Wood_dig3.ogg
+      playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 0.70);
+      // 2. Secondary Combined Place SFX: Randomized Amethyst pool (break1-4 & step3-9)
+      const randomAmethyst = AMETHYST_PLACE_SFX_POOL[Math.floor(Math.random() * AMETHYST_PLACE_SFX_POOL.length)];
+      playSfx(randomAmethyst, 0.94 + Math.random() * 0.12, 0.65);
  }
  return true;
  }
@@ -5288,7 +5290,7 @@
           ctx.resume().catch(() => {});
         }
 
-        const ext = (name.endsWith(".ogg") || name.endsWith(".wav")) ? "" : ".wav";
+        const ext = (name.endsWith(".ogg") || name.endsWith(".wav") || name.endsWith(".mp3")) ? "" : ".wav";
         const url = "audio/" + name + ext;
         const key = "sfx_" + name;
 
@@ -5356,7 +5358,7 @@
 
  function preloadFootstepSounds() {
  // Preload all essential gameplay SFX for zero-delay instant playback
- const coreSounds = ["door_open", "door_shut", "knock", "piano_nice", "tile_created", "pop", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+ const coreSounds = ["Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
