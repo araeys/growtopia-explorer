@@ -276,6 +276,7 @@
           name,
           fg: new Uint16Array(world.fg),
           bg: new Uint16Array(world.bg),
+          paint: world.paint ? new Uint16Array(world.paint) : new Uint16Array(world.fg.length),
           flags: new Uint8Array(world.flags)
         });
         redoStack.length = 0;
@@ -286,11 +287,14 @@
         redoStack.push({
           fg: new Uint16Array(world.fg),
           bg: new Uint16Array(world.bg),
+          paint: world.paint ? new Uint16Array(world.paint) : new Uint16Array(world.fg.length),
           flags: new Uint8Array(world.flags)
         });
         const prev = undoStack.pop();
         world.fg.set(prev.fg);
         world.bg.set(prev.bg);
+        if (!world.paint) world.paint = new Uint16Array(world.fg.length);
+        if (prev.paint) world.paint.set(prev.paint);
         world.flags.set(prev.flags);
         render();
         onWorldChange(world);
@@ -302,11 +306,14 @@
         undoStack.push({
           fg: new Uint16Array(world.fg),
           bg: new Uint16Array(world.bg),
+          paint: world.paint ? new Uint16Array(world.paint) : new Uint16Array(world.fg.length),
           flags: new Uint8Array(world.flags)
         });
         const next = redoStack.pop();
         world.fg.set(next.fg);
         world.bg.set(next.bg);
+        if (!world.paint) world.paint = new Uint16Array(world.fg.length);
+        if (next.paint) world.paint.set(next.paint);
         world.flags.set(next.flags);
         render();
         onWorldChange(world);
@@ -779,6 +786,24 @@
         const idx = getTileIndex(x, y);
         if (idx === -1) return false;
 
+        // Special Paint Bucket handling: Paints tile overlay with semi-transparent color tint
+        if (item && catalog.isPaintItem(item)) {
+          if (!world.paint) world.paint = new Uint16Array(world.width * world.height);
+          const col = catalog.getPaintColor(item);
+          if (col === null) {
+            // Varnish clears paint on this tile
+            world.paint[idx] = 0;
+          } else {
+            world.paint[idx] = Number(item.id);
+          }
+          if (player.active) {
+            triggerPlayerPunch(x, y);
+          }
+          spawnTileBreakParticle(x, y);
+          playSfx("pop", 1.15 + Math.random() * 0.20, 0.50);
+          return true;
+        }
+
         const determineBg = isBg !== null ? isBg : catalog.isBackgroundItem(item);
         if (determineBg) {
           world.bg[idx] = item ? Number(item.id) : 0;
@@ -804,13 +829,16 @@
       function eraseTile(x, y) {
         const idx = getTileIndex(x, y);
         if (idx === -1) return false;
-        const hadTile = world.fg[idx] !== 0 || world.bg[idx] !== 0;
+        const hadTile = world.fg[idx] !== 0 || world.bg[idx] !== 0 || (world.paint && world.paint[idx] !== 0);
         if (!hadTile) return false;
 
         if (player.active) {
           triggerPlayerPunch(x, y);
         }
         spawnTileBreakParticle(x, y);
+        if (world.paint && world.paint[idx] !== 0) {
+          world.paint[idx] = 0;
+        }
         if (world.fg[idx] !== 0) {
           world.fg[idx] = 0;
           world.flags[idx] = 0;
@@ -824,6 +852,37 @@
       function floodFill(startX, startY, newItem) {
         const startIdx = getTileIndex(startX, startY);
         if (startIdx === -1) return;
+
+        // Paint Bucket Flood Fill
+        if (newItem && catalog.isPaintItem(newItem)) {
+          if (!world.paint) world.paint = new Uint16Array(world.width * world.height);
+          const targetVal = world.paint[startIdx];
+          const col = catalog.getPaintColor(newItem);
+          const newVal = (col === null) ? 0 : Number(newItem.id);
+          if (targetVal === newVal) return;
+
+          pushUndoSnapshot("Bucket Paint Fill");
+          const queue = [[startX, startY]];
+          const visited = new Uint8Array(world.width * world.height);
+
+          while (queue.length > 0) {
+            const [cx, cy] = queue.pop();
+            const idx = cy * world.width + cx;
+            if (visited[idx]) continue;
+            visited[idx] = 1;
+
+            if (world.paint[idx] === targetVal) {
+              world.paint[idx] = newVal;
+              if (cx > 0 && !visited[idx - 1]) queue.push([cx - 1, cy]);
+              if (cx < world.width - 1 && !visited[idx + 1]) queue.push([cx + 1, cy]);
+              if (cy > 0 && !visited[idx - world.width]) queue.push([cx, cy - 1]);
+              if (cy < world.height - 1 && !visited[idx + world.width]) queue.push([cx, cy + 1]);
+            }
+          }
+          render();
+          onWorldChange(world);
+          return;
+        }
 
         const isBg = catalog.isBackgroundItem(newItem);
         const targetLayer = isBg ? world.bg : world.fg;
@@ -1075,6 +1134,29 @@
               if (item && item.texture) {
                 const flipX = (world.flags[idx] & 1) === 1;
                 drawTileSprite(ctx, item, x * TILE_SIZE, y * TILE_SIZE, flipX, false, x, y, world.fg);
+              }
+            }
+          }
+        }
+
+        // 3.5 Paint Tint Overlay Layer
+        if (world.paint) {
+          for (let y = visibleMinY; y <= visibleMaxY; y++) {
+            for (let x = visibleMinX; x <= visibleMaxX; x++) {
+              const idx = y * world.width + x;
+              const paintId = world.paint[idx];
+              if (paintId > 0) {
+                const pItem = getItem(paintId);
+                if (pItem) {
+                  const col = catalog.getPaintColor(pItem);
+                  if (col) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.45;
+                    ctx.fillStyle = col;
+                    ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    ctx.restore();
+                  }
+                }
               }
             }
           }
@@ -1489,6 +1571,29 @@
               }
             }
           }
+
+          // Draw Paint Overlay
+          if (world.paint) {
+            for (let y = minY; y <= maxY; y++) {
+              for (let x = minX; x <= maxX; x++) {
+                const idx = y * world.width + x;
+                const paintId = world.paint[idx];
+                if (paintId > 0) {
+                  const pItem = getItem(paintId);
+                  if (pItem) {
+                    const col = catalog.getPaintColor(pItem);
+                    if (col) {
+                      offCtx.save();
+                      offCtx.globalAlpha = 0.45;
+                      offCtx.fillStyle = col;
+                      offCtx.fillRect((x - minX) * tileSize, (y - minY) * tileSize, tileSize, tileSize);
+                      offCtx.restore();
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
 
         const suffix = onlySelection ? "selection" : "full";
@@ -1666,6 +1771,7 @@
           weatherCode: weatherCode,
           fg,
           bg,
+          paint: new Uint16Array(total),
           flags
         };
 
@@ -1697,6 +1803,7 @@
           weatherCode: world.weatherCode,
           fg: Array.from(world.fg),
           bg: Array.from(world.bg),
+          paint: world.paint ? Array.from(world.paint) : [],
           flags: Array.from(world.flags),
           hotbar: hotbar.filter(Boolean).map(i => i.id)
         };
@@ -1721,6 +1828,7 @@
 
         const fg = new Uint16Array(data.fg || total);
         const bg = new Uint16Array(data.bg || total);
+        const paint = new Uint16Array(data.paint && data.paint.length ? data.paint : total);
         const flags = new Uint8Array(data.flags || total);
 
         world = {
@@ -1731,6 +1839,7 @@
           weatherCode: data.weatherCode || 1,
           fg,
           bg,
+          paint,
           flags
         };
 
@@ -4522,6 +4631,7 @@
           weatherCode: world.weatherCode,
           fg: Array.from(world.fg),
           bg: Array.from(world.bg),
+          paint: world.paint ? Array.from(world.paint) : [],
           flags: Array.from(world.flags),
           hotbar: hotbar.filter(Boolean).map(i => Number(i.id))
         };
@@ -4580,6 +4690,7 @@
             weatherCode: payload.weatherCode || 1,
             fg: new Uint16Array(payload.fg.slice(0, total)),
             bg: new Uint16Array(payload.bg ? payload.bg.slice(0, total) : total),
+            paint: new Uint16Array(payload.paint ? payload.paint.slice(0, total) : total),
             flags: new Uint8Array(payload.flags ? payload.flags.slice(0, total) : total)
           };
 
@@ -4794,6 +4905,11 @@
         getCameraShake: () => cameraShakeEnabled,
         loadPreset,
         createCustomWorld,
+        setTile,
+        eraseTile,
+        floodFill,
+        undo,
+        redo,
         saveToLocalStorage,
         loadFromLocalStorage,
         exportToDAT,

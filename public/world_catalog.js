@@ -17,14 +17,49 @@
       { key: "all", label: "All", icon: "🌐" },
       { key: "building", label: "Building Blocks", icon: "🧱" },
       { key: "wallpaper", label: "Wallpaper", icon: "🖼️" },
-      { key: "hazard", label: "Hazard", icon: "🔥" },
+      { key: "platform", label: "Platform & Stairs", icon: "🪜" },
       { key: "door", label: "Door & Portal", icon: "🚪" },
       { key: "sign", label: "Sign & Board", icon: "🪧" },
-      { key: "platform", label: "Platform & Stairs", icon: "🪜" },
+      { key: "hazard", label: "Hazard", icon: "🔥" },
+      { key: "paint", label: "Paint & Colors", icon: "🎨" },
       { key: "lock", label: "Lock & Machine", icon: "🔒" },
       { key: "furniture", label: "Furniture & Items", icon: "🪑" },
       { key: "music", label: "Music", icon: "🎵" }
     ]);
+
+    const PAINT_COLORS = Object.freeze({
+      3478: "#ff2222", // Red
+      3480: "#ffea00", // Yellow
+      3482: "#00e676", // Green
+      3484: "#00e5ff", // Aqua
+      3486: "#2979ff", // Blue
+      3488: "#d500f9", // Purple
+      3490: "#212121", // Charcoal
+      3492: null       // Varnish (Removes paint)
+    });
+
+    function isPaintItem(item) {
+      if (!item) return false;
+      const id = Number(item.id);
+      if (PAINT_COLORS.hasOwnProperty(id)) return true;
+      const name = String(item.name || "").toLowerCase();
+      return name.includes("paint bucket") || name === "varnish";
+    }
+
+    function getPaintColor(item) {
+      if (!item) return null;
+      const id = Number(item.id);
+      if (PAINT_COLORS.hasOwnProperty(id)) return PAINT_COLORS[id];
+      const name = String(item.name || "").toLowerCase();
+      if (name.includes("red")) return "#ff2222";
+      if (name.includes("yellow")) return "#ffea00";
+      if (name.includes("green")) return "#00e676";
+      if (name.includes("aqua")) return "#00e5ff";
+      if (name.includes("blue")) return "#2979ff";
+      if (name.includes("purple")) return "#d500f9";
+      if (name.includes("charcoal")) return "#212121";
+      return null;
+    }
 
     const WEATHERS = Object.freeze([
       { id: "TRANSPARENT", name: "✨ Transparent (No Background)", file: "", code: 999 },
@@ -100,6 +135,9 @@
       const name = String(item.name).trim();
       if (name.startsWith("Item #") || name === "") return false;
 
+      // Paint Buckets are always placeable
+      if (isPaintItem(item)) return true;
+
       const act = item.action || 0;
       const tex = String(item.texture || "").toLowerCase();
       const cat = String(item.category || "");
@@ -130,6 +168,11 @@
       const action = Number(item.action) || 0;
       const name = String(item.name || "").toLowerCase();
       const cat = String(item.category || "").toLowerCase();
+
+      // 0. Paint Buckets & Colors
+      if (isPaintItem(item)) {
+        return "paint";
+      }
 
       // 1. Wallpaper / Background
       if (action === 18 || isBackgroundItem(item)) {
@@ -240,6 +283,7 @@
       const total = width * height;
       const fg = new Uint16Array(total);
       const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
       const flags = new Uint8Array(total);
 
       const airCutoff = Math.floor(height * 0.4);
@@ -277,6 +321,7 @@
         weatherCode: 1,
         fg,
         bg,
+        paint,
         flags
       };
     }
@@ -287,6 +332,7 @@
       const total = width * height;
       const fg = new Uint16Array(total);
       const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
       const flags = new Uint8Array(total);
 
       // Bedrock only at bottom row
@@ -303,6 +349,7 @@
         weatherCode: 1,
         fg,
         bg,
+        paint,
         flags
       };
     }
@@ -313,6 +360,7 @@
       const total = width * height;
       const fg = new Uint16Array(total);
       const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
       const flags = new Uint8Array(total);
 
       const airCutoff = Math.floor(height * 0.55);
@@ -350,6 +398,7 @@
         weatherCode: 1,
         fg,
         bg,
+        paint,
         flags
       };
     }
@@ -367,10 +416,13 @@
       WORLD_HEIGHT,
       TILE_SIZE,
       CATEGORIES,
+      PAINT_COLORS,
       WEATHERS,
       getWeathers,
       isPlaceableItem,
       isBackgroundItem,
+      isPaintItem,
+      getPaintColor,
       getItemCategoryKey,
       isFlippableItem,
       filterPlaceableItems,

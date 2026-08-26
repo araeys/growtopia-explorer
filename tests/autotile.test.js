@@ -162,7 +162,16 @@ console.log('🧪 Starting Autotiling & Categorization Test Suite...');
   assert.strictEqual(catalog.isPlaceableItem(seed), false, 'Seed should NOT be placeable in World Planner');
   assert.strictEqual(catalog.isPlaceableItem(shirt), false, 'Shirt should NOT be placeable in World Planner');
 
-  console.log('✅ World Catalog Categorization tests passed!');
+  // Paint item checks
+  const redPaint = { id: 3478, name: 'Paint Bucket - Red', action: 8, category: 'Blocks & Building' };
+  const varnish = { id: 3492, name: 'Paint Bucket - Varnish', action: 8, category: 'Blocks & Building' };
+  assert.strictEqual(catalog.isPaintItem(redPaint), true, 'Red Paint is paint item');
+  assert.strictEqual(catalog.isPaintItem(varnish), true, 'Varnish is paint item');
+  assert.strictEqual(catalog.getPaintColor(redPaint), '#ff2222', 'Red paint color should be #ff2222');
+  assert.strictEqual(catalog.getPaintColor(varnish), null, 'Varnish paint color should be null');
+  assert.strictEqual(catalog.getItemCategoryKey(redPaint), 'paint', 'Red paint category should be paint');
+
+  console.log('✅ World Catalog Categorization & Paint tests passed!');
 }
 
-console.log('🎉 ALL 5 AUTOTILING & CATEGORIZATION TEST SUITES PASSED PERFECTLY!');
+console.log('🎉 ALL 6 AUTOTILING, CATEGORIZATION & PAINT TEST SUITES PASSED PERFECTLY!');

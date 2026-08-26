@@ -24,7 +24,7 @@ test("GTWorldCatalog: Category classification and placeable filter", () => {
   assert.strictEqual(catalog.WORLD_HEIGHT, 60);
   assert.strictEqual(catalog.TILE_SIZE, 32);
 
-  assert.strictEqual(catalog.CATEGORIES.length, 10);
+  assert.strictEqual(catalog.CATEGORIES.length, 11);
   assert.strictEqual(catalog.WEATHERS.length >= 60, true);
 
   // Dirt should be placeable building block
@@ -449,4 +449,49 @@ test("GTWorldPlanner: Music Sheet Sequencer", () => {
   // Stop Music
   engine.toggleMusic(false);
   assert.strictEqual(engine.getMusicState().isPlaying, false);
+});
+
+test("GTWorldPlanner: Paint Bucket Coloring & Varnish", () => {
+  const engine = planner.createEngine({
+    canvas: createTestCanvas(),
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.init();
+  engine.loadPreset("blank");
+
+  const redPaint = itemsDb.find(i => i.id === 3478);
+  const yellowPaint = itemsDb.find(i => i.id === 3480);
+  const varnish = itemsDb.find(i => i.id === 3492);
+  const dirt = itemsDb.find(i => i.id === 2);
+
+  // 1. Place a Dirt block at (10, 10)
+  engine.setTile(10, 10, dirt);
+  const state = engine.getWorldState();
+  assert.strictEqual(state.fg[10 * state.width + 10], 2);
+
+  // 2. Paint it Red (ID 3478)
+  engine.setTile(10, 10, redPaint);
+  assert.strictEqual(state.paint[10 * state.width + 10], 3478);
+
+  // 3. Paint another tile with Yellow at (11, 10)
+  engine.setTile(11, 10, yellowPaint);
+  assert.strictEqual(state.paint[10 * state.width + 11], 3480);
+
+  // 4. Undo paint
+  engine.undo();
+  assert.strictEqual(state.paint[10 * state.width + 11], 0);
+
+  // 5. Redo paint
+  engine.redo();
+  assert.strictEqual(state.paint[10 * state.width + 11], 3480);
+
+  // 6. Use Varnish to clear paint
+  engine.setTile(10, 10, varnish);
+  assert.strictEqual(state.paint[10 * state.width + 10], 0);
+
+  // 7. Verify Dirt tile is still preserved underneath
+  assert.strictEqual(state.fg[10 * state.width + 10], 2);
 });
