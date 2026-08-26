@@ -980,8 +980,8 @@
           }
         }
 
-        // 4. Doors & Portals (Action 1, 2, 26, 43, 84, 142)
-        if (fgItem && [1, 2, 26, 43, 84, 104, 105, 106, 142].includes(fgItem.action)) {
+        // 4. Doors, Portals & Entrances (Authentic Growtopia Door Knock)
+        if (fgItem && (fgId === 6 || isDoorItem(fgItem))) {
           if (player.active) triggerPlayerPunch(tileX, tileY, preciseWorldX, preciseWorldY);
           else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
@@ -3040,13 +3040,32 @@
       }
 
       // ── Playable Avatar & Game Mode Tester (Live Physics) ──
+      function isDoorItem(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        if ([1, 2, 26, 43, 84, 104, 105, 106, 142].includes(action)) return true;
+        if (
+          name.includes("door") || name.includes("portal") || name.includes("entrance") ||
+          name.includes("gate") || name.includes("passage") || name.includes("gateway") ||
+          name.includes("chute") || name.includes("manhole") || name.includes("teleporter") ||
+          name.includes("warp")
+        ) return true;
+        return false;
+      }
+
       function isSolidBlock(item) {
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
         const action = Number(item.action);
+        // In Growtopia: All doors, entrances, gateways, and portals are PASS-THROUGH (non-solid)!
+        if (isDoorItem(item)) return false;
         // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89)
         if ([0, 1, 2, 3, 6, 18, 21, 27, 28, 81, 89, 134].includes(action)) return false;
-        if (name.includes("door") || name.includes("platform") || name.includes("sign") || name.includes("water") || name.includes("fire")) return false;
+        if (
+          name.includes("platform") || name.includes("sign") || name.includes("water") ||
+          name.includes("fire") || name.includes("checkpoint") || name.includes("flag")
+        ) return false;
         return true;
       }
 
@@ -3062,10 +3081,70 @@
         return item.action === 16 || name.includes("lava") || name.includes("spike") || name.includes("hazard") || name.includes("death");
       }
 
+      function getAllDoorTiles() {
+        const doors = [];
+        for (let y = 0; y < world.height; y++) {
+          for (let x = 0; x < world.width; x++) {
+            const idx = y * world.width + x;
+            const fgId = world.fg[idx];
+            if (fgId > 0) {
+              const item = getItem(fgId);
+              if (item && (fgId === 6 || isDoorItem(item))) {
+                doors.push({ x, y, id: fgId, item });
+              }
+            }
+          }
+        }
+        return doors;
+      }
+
+      function warpThroughDoor(currentTileX, currentTileY) {
+        if (player.doorWarpCooldown > 0) return false;
+        const allDoors = getAllDoorTiles();
+        if (allDoors.length === 0) return false;
+
+        const curIdx = allDoors.findIndex(d => d.x === currentTileX && d.y === currentTileY);
+        let targetDoor = null;
+
+        if (allDoors.length === 1) {
+          targetDoor = allDoors[0];
+          spawnFloatingText(targetDoor.x, targetDoor.y, `🚪 ${targetDoor.item.name}`, "#67e8f9");
+          playSfx("door_open", 1.0, 0.85);
+          player.doorWarpCooldown = 0.5;
+          return true;
+        }
+
+        if (curIdx !== -1) {
+          // Warp to the NEXT door in cycle
+          const nextIdx = (curIdx + 1) % allDoors.length;
+          targetDoor = allDoors[nextIdx];
+        } else {
+          targetDoor = allDoors[0];
+        }
+
+        if (targetDoor) {
+          player.x = targetDoor.x * TILE_SIZE + 6;
+          player.y = targetDoor.y * TILE_SIZE + 4;
+          player.vx = 0;
+          player.vy = 0;
+          player.jumpCount = 0;
+          player.jumpConsumed = true;
+          player.doorWarpCooldown = 0.55;
+          player.respawnRingRadius = 1;
+          playSfx("door_open", 1.0, 0.85);
+          playSfx("teleport", 1.0, 0.6);
+          spawnFloatingText(targetDoor.x, targetDoor.y, `🚪 ${targetDoor.item.name}`, "#67e8f9");
+          onStatusMessage(`🚪 Entered door -> Exited at ${targetDoor.item.name} (${targetDoor.x}, ${targetDoor.y})`);
+          requestRender();
+          return true;
+        }
+        return false;
+      }
+
       function findSpawnPosition() {
         let fallbackDoor = null;
 
-        // 1. Scan for White Door (ID 6) or any Door Block (action 1, 2, 26, 43, 84, 142)
+        // 1. Scan for White Door (ID 6) or any Door / Entrance Block
         for (let y = 0; y < world.height; y++) {
           for (let x = 0; x < world.width; x++) {
             const idx = y * world.width + x;
@@ -3075,10 +3154,8 @@
                 return { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
               }
               const item = getItem(fgId);
-              if (item) {
-                const name = (item.name || "").toLowerCase();
-                const isDoor = item.action === 1 || item.action === 2 || [26, 43, 84, 104, 105, 106, 142].includes(item.action) || name.includes("door") || name.includes("portal") || name.includes("entrance");
-                if (isDoor && !fallbackDoor) {
+              if (item && isDoorItem(item)) {
+                if (!fallbackDoor) {
                   fallbackDoor = { x: x * TILE_SIZE + 6, y: y * TILE_SIZE + 4 };
                 }
               }
@@ -3497,8 +3574,28 @@
             player.stepParticleTimer = 0.19;
           }
 
+          // ── Authentic Growtopia Door / Entrance Enter Logic ──
+          if (player.doorWarpCooldown > 0) {
+            player.doorWarpCooldown = Math.max(0, player.doorWarpCooldown - dt);
+          }
+
+          const playerCenterTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+          const playerCenterTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+          const playerOverIdx = (playerCenterTileX >= 0 && playerCenterTileX < world.width && playerCenterTileY >= 0 && playerCenterTileY < world.height) ? (playerCenterTileY * world.width + playerCenterTileX) : -1;
+          const standingFgId = playerOverIdx !== -1 ? world.fg[playerOverIdx] : 0;
+          const standingFgItem = standingFgId > 0 ? getItem(standingFgId) : null;
+          const isAtDoor = standingFgItem && (standingFgId === 6 || isDoorItem(standingFgItem));
+
+          // Pressing UP / W while standing in front of a door enters the door!
+          if (isAtDoor && player.keys.up && !player.jumpConsumed && player.doorWarpCooldown === 0) {
+            const entered = warpThroughDoor(playerCenterTileX, playerCenterTileY);
+            if (entered) {
+              // Handled by door entry
+            }
+          }
+
           // Jump & Double Jump
-          const wantsJump = player.keys.jump || player.keys.up;
+          const wantsJump = player.keys.jump || (player.keys.up && !isAtDoor);
           if (wantsJump && !player.jumpConsumed) {
             if (player.isGrounded || player.jumpCount === 0) {
               player.vy = -10.5;

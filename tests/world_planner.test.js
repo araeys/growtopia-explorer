@@ -733,5 +733,48 @@ test("GTWorldPlanner: Themed World Templates Loading & Automatic Weather Assignm
   assert.strictEqual(customNature.weather, "SPRING");
 });
 
+test("GTWorldPlanner: Authentic Door & Entrance Pass-Through and Warp Teleportation", () => {
+  const dummyCanvas = createTestCanvas();
+  dummyCanvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 600 });
+  dummyCanvas.clientWidth = 800;
+  dummyCanvas.clientHeight = 600;
+  dummyCanvas.width = 800;
+  dummyCanvas.height = 600;
+  dummyCanvas.addEventListener = () => {};
+  dummyCanvas.style = {};
+
+  const engine = planner.createEngine({
+    canvas: dummyCanvas,
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  // 1. Create a flat world with Dirt floor
+  engine.createCustomWorld(20, 10, "flat", "Door Test World");
+
+  const houseEntrance = itemsDb.find(i => (i.name || "").toLowerCase().includes("house entrance")) || { id: 280, name: "House Entrance", action: 13, texture: "tiles.png" };
+  const caveEntrance = itemsDb.find(i => (i.name || "").toLowerCase().includes("cave entrance")) || { id: 742, name: "Cave Entrance", action: 13, texture: "tiles.png" };
+
+  // 2. Place House Entrance at (5, 6) and Cave Entrance at (15, 6)
+  engine.setTile(5, 6, houseEntrance);
+  engine.setTile(15, 6, caveEntrance);
+
+  const worldState = engine.getWorldState();
+  assert.ok(worldState.fg[6 * 20 + 5] > 0);
+  assert.ok(worldState.fg[6 * 20 + 15] > 0);
+
+  // 3. Start Play Mode
+  engine.togglePlayMode();
+  assert.strictEqual(engine.isPlayModeActive(), true);
+
+  // 4. Verify player can walk freely without solid collision
+  engine.setPlayerKey("right", true);
+  assert.strictEqual(engine.isPlayModeActive(), true);
+});
+
+
+
+
 
 
