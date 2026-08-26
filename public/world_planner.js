@@ -1759,6 +1759,11 @@
 
         // ── 0. Authentic Growtopia Door & Entrance Open/Close Sprite Animation ──
         if (isDoorItem(item)) {
+          // White Door (Main Door, ID 6) is a single static frame in Growtopia (no 2nd open sprite)
+          if (Number(item.id) === 6 || (item.name || "").toLowerCase() === "main door") {
+            return { offsetX: 0, offsetY: 0 };
+          }
+
           let isOpen = false;
           if (player.active) {
             // In Game Mode: Door swings open when player approaches or stands at the entrance!
@@ -3082,20 +3087,76 @@
         return false;
       }
 
+      function isBouncyBlock(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        const id = Number(item.id);
+        return (
+          id === 194 || // Mushroom
+          id === 526 || // Pinball Bumper
+          id === 624 || // Pinball Sproinger
+          id === 1448 || // Trampoline
+          action === 24 || // Bouncy Action
+          name.includes("mushroom") ||
+          name.includes("pinball") ||
+          name.includes("trampoline") ||
+          name.includes("bouncy") ||
+          name.includes("spring") ||
+          name.includes("sproinger") ||
+          name.includes("bumper") ||
+          name.includes("slime block") ||
+          name.includes("jelly") ||
+          name.includes("rubber")
+        );
+      }
+
+      function isPlatformBlock(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        // Vines, Ladders, Platforms, Clouds, Bannisters, Bridges, Ropes, Chains, Climbing walls
+        return (
+          action === 21 || action === 14 || action === 145 ||
+          name.includes("platform") || name.includes("cloud") || name.includes("bridge") ||
+          name.includes("bannister") || name.includes("ledge") || name.includes("vine") ||
+          name.includes("ladder") || name.includes("rope") || name.includes("chain") ||
+          name.includes("lattice") || name.includes("climbing") || name.includes("scaffolding")
+        );
+      }
+
       function isPassThroughPlant(item) {
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
+        const id = Number(item.id);
+        // Specifically delicate floor plants & flowers (NOT solid blocks, NOT vines, NOT mushrooms)
         if (
-          name.includes("grass") || name.includes("daisy") || name.includes("rose") ||
-          name.includes("poppy") || name.includes("flower") || name.includes("bush") ||
-          name.includes("mushroom") || name.includes("clover") || name.includes("seaweed") ||
-          name.includes("wheat") || name.includes("foliage") || name.includes("vine") ||
-          name.includes("fern") || name.includes("weed") || name.includes("tulip") ||
-          name.includes("dahlia") || name.includes("orchid") || name.includes("lily") ||
-          name.includes("shrub") || name.includes("bamboo shoot") || name.includes("sunflower")
+          id === 16 || // Grass
+          id === 22 || // Daisy
+          id === 188 || // Poppy
+          id === 190 || // Rose
+          id === 528 || // Lucky Clover
+          id === 846 || // Seaweed
+          id === 880 || // Wheat
+          id === 1104 || // Foliage
+          name.includes("grass") ||
+          name.includes("daisy") ||
+          name.includes("rose") ||
+          name.includes("poppy") ||
+          name.includes("clover") ||
+          name.includes("seaweed") ||
+          name.includes("wheat") ||
+          name.includes("tulip") ||
+          name.includes("dahlia") ||
+          name.includes("orchid") ||
+          name.includes("sunflower")
         ) {
-          // If it's a solid block variation like "Grass Block" or "Wallpaper"
-          if (name.includes("wallpaper") || name.includes("wall") || name.includes("block") || name.includes("seed")) return false;
+          // Exclude solid block variants, wallpapers, vines, trees, and mushrooms
+          if (
+            name.includes("wallpaper") || name.includes("wall") || name.includes("block") ||
+            name.includes("seed") || name.includes("hedge") || name.includes("vine") ||
+            name.includes("tree") || name.includes("wood") || name.includes("mushroom")
+          ) return false;
           return true;
         }
         return false;
@@ -3105,23 +3166,18 @@
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
         const action = Number(item.action);
-        // In Growtopia: Doors, Entrances, Portals, Plants, Grass, Flowers, Signs, Checkpoints are PASS-THROUGH (non-solid)!
+        // Bouncy blocks like Mushroom (ID 194) and Pinball are SOLID!
+        if (isBouncyBlock(item)) return true;
+        // Non-solids: Doors, Platforms/Vines (handled by platform physics), delicate Plants/Grass, Signs, Checkpoints
         if (isDoorItem(item)) return false;
+        if (isPlatformBlock(item)) return false;
         if (isPassThroughPlant(item)) return false;
-        // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89)
         if ([0, 1, 2, 3, 6, 18, 21, 27, 28, 81, 89, 134].includes(action)) return false;
         if (
-          name.includes("platform") || name.includes("sign") || name.includes("water") ||
-          name.includes("fire") || name.includes("checkpoint") || name.includes("flag") ||
-          name.includes("banner") || name.includes("bannister")
+          name.includes("sign") || name.includes("water") || name.includes("fire") ||
+          name.includes("checkpoint") || name.includes("flag") || name.includes("banner")
         ) return false;
         return true;
-      }
-
-      function isPlatformBlock(item) {
-        if (!item) return false;
-        const name = (item.name || "").toLowerCase();
-        return item.action === 21 || name.includes("platform") || name.includes("cloud") || name.includes("bridge") || name.includes("bannister") || name.includes("ledge");
       }
 
       function isHazardItem(item) {
@@ -3892,12 +3948,26 @@
             }
 
             if (isSolidBlock(item)) {
-              if (player.vx > 0) {
-                player.x = tx * TILE_SIZE - player.width - 0.01;
-                player.vx = 0;
-              } else if (player.vx < 0) {
-                player.x = (tx + 1) * TILE_SIZE + 0.01;
-                player.vx = 0;
+              if (isBouncyBlock(item)) {
+                // Horizontal Pinball Bumper Bounce!
+                if (player.vx > 0) {
+                  player.x = tx * TILE_SIZE - player.width - 2;
+                  player.vx = -Math.max(5.0, Math.abs(player.vx) * 1.35);
+                } else if (player.vx < 0) {
+                  player.x = (tx + 1) * TILE_SIZE + 2;
+                  player.vx = Math.max(5.0, Math.abs(player.vx) * 1.35);
+                }
+                playSfx("pinball", 1.0, 0.85);
+                spawnPunchImpactEffect(tx, ty);
+                requestRender();
+              } else {
+                if (player.vx > 0) {
+                  player.x = tx * TILE_SIZE - player.width - 0.01;
+                  player.vx = 0;
+                } else if (player.vx < 0) {
+                  player.x = (tx + 1) * TILE_SIZE + 0.01;
+                  player.vx = 0;
+                }
               }
             }
           }
@@ -3929,11 +3999,28 @@
 
             if (isSolid) {
               if (player.vy > 0) {
-                player.y = ty * TILE_SIZE - player.height;
-                player.vy = 0;
-                player.isGrounded = true;
-                player.jumpCount = 0;
-                player.jumpConsumed = false;
+                if (isBouncyBlock(item)) {
+                  // Super Bouncy Block / Mushroom / Pinball Spring Launch!
+                  const isSproinger = (item.name || "").toLowerCase().includes("sproinger") || Number(item.id) === 624;
+                  const bounceStrength = isSproinger ? -15.5 : -13.2;
+                  player.vy = bounceStrength;
+                  player.y = ty * TILE_SIZE - player.height - 2;
+                  player.isGrounded = false;
+                  player.jumpCount = 1;
+                  player.jumpConsumed = false;
+                  player.jumpSpinTimer = 0.38; // 360 acrobatic power spin!
+                  playSfx("trampoline", 1.0, 0.9);
+                  playSfx("pinball", 1.0, 0.85);
+                  spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+                  spawnFloatingText(tx, ty, "BOING!", "#38bdf8");
+                  requestRender();
+                } else {
+                  player.y = ty * TILE_SIZE - player.height;
+                  player.vy = 0;
+                  player.isGrounded = true;
+                  player.jumpCount = 0;
+                  player.jumpConsumed = false;
+                }
               } else if (player.vy < 0) {
                 player.y = (ty + 1) * TILE_SIZE;
                 player.vy = 0;
@@ -5138,6 +5225,50 @@
         return audioContext;
       }
 
+      function playSynthFallbackSfx(ctx, name, volume = 0.6) {
+        try {
+          const now = ctx.currentTime;
+          if (name === "door_open" || name === "teleport") {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(580, now + 0.18);
+            gain.gain.setValueAtTime(volume * 0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.23);
+          } else if (name === "trampoline" || name === "pinball") {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(240, now);
+            osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
+            gain.gain.setValueAtTime(volume * 0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.19);
+          } else if (name === "success") {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = "triangle";
+              osc.frequency.value = freq;
+              gain.gain.setValueAtTime(volume * 0.35, now + i * 0.05);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.25);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + i * 0.05);
+              osc.stop(now + i * 0.05 + 0.26);
+            });
+          }
+        } catch(e) {}
+      }
+
       function playSfx(name, playbackRate = 1.0, volume = 0.6) {
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -5170,7 +5301,9 @@
             audioBufferCache.set(key, buf);
             playBuffer(buf);
           })
-          .catch(() => {});
+          .catch(() => {
+            playSynthFallbackSfx(ctx, name, volume);
+          });
       }
 
       let lastFootstepIdx = -1;
