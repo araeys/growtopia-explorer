@@ -13,9 +13,6 @@
  const MAX_HISTORY = 40;
  const AUTOSAVE_KEY = "gt-world-planner-autosave-v1";
 
-   const JUMP_VOCAL_POOL = ["jump_vocal1", "jump_vocal2", "jump_vocal3"];
-  const LAND_GRUNT_POOL = ["land_grunt1", "land_grunt2", "land_grunt3", "character_land_ugh.mp3"];
-
   const AMETHYST_PLACE_SFX_POOL = [
     "Amethyst_break1.ogg",
     "Amethyst_break2.ogg",
@@ -5387,8 +5384,8 @@
  }
 
  function preloadFootstepSounds() {
- // Preload all essential gameplay SFX for zero-delay instant playback
- const coreSounds = [...JUMP_VOCAL_POOL, ...LAND_GRUNT_POOL, "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "hitground", "ouch"];
+        // Preload all essential gameplay SFX for zero-delay instant playback
+        const coreSounds = ["jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
@@ -5496,35 +5493,10 @@
  }
  }
 
-       function playJumpSound(isDoubleJump = false) {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-
-        // 1. Play authentic Growtopia jump sound sample
-        playSfx("jump", isDoubleJump ? 1.28 : 1.0, 0.65);
-
-        // 2. Play human jump vocal effort sound
-        const jumpVocal = JUMP_VOCAL_POOL[Math.floor(Math.random() * JUMP_VOCAL_POOL.length)];
-        playSfx(jumpVocal, isDoubleJump ? 1.15 : (0.95 + Math.random() * 0.10), 0.70);
-
- // 2. Play immediate synth chirp fallback for zero-latency response
- try {
- const now = ctx.currentTime;
- const osc = ctx.createOscillator();
- const gain = ctx.createGain();
- osc.type = "sine";
- const startF = isDoubleJump ? 380 : 250;
- const endF = isDoubleJump ? 600 : 440;
- osc.frequency.setValueAtTime(startF, now);
- osc.frequency.exponentialRampToValueAtTime(endF, now + 0.08);
- gain.gain.setValueAtTime(0.18, now);
- gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
- osc.connect(gain);
- gain.connect(ctx.destination);
- osc.start(now);
- osc.stop(now + 0.1);
- } catch(e) {}
- }
+      function playJumpSound(isDoubleJump = false) {
+        // Play clean authentic Growtopia jump sound (jump.wav)
+        playSfx("jump", isDoubleJump ? 1.25 : 1.0, 0.75);
+      }
 
  function startBgm() {
  if (typeof Audio !== "undefined") {
