@@ -3827,6 +3827,7 @@
         const actionProg = isPunching ? (1.0 - (player.punchTimer / (player.punchMaxTimer || 0.24))) : (isPlacing ? (1.0 - (player.placeTimer / 0.28)) : 0);
 
         const actionThrustX = isActionActive ? Math.sin(actionProg * Math.PI) * 7.5 : 0;
+        const placeSpinAngle = isPlacing ? (-actionProg * Math.PI * 2) : 0;
         const actionSnapAngle = isActionActive ? (-0.35 - Math.sin(actionProg * Math.PI) * 1.45 + (1.0 - actionProg) * 0.3) : 0;
         const actionTorsoLean = isActionActive ? Math.sin(actionProg * Math.PI) * 0.14 : 0;
         const actionHeadDip = isActionActive ? Math.sin(actionProg * Math.PI) * 0.08 : 0;
@@ -4255,6 +4256,8 @@
               let frontArmAngle = 0;
               if (isJumpSpinning) {
                 frontArmAngle = jumpSpinAngleFront;
+              } else if (isPlacing) {
+                frontArmAngle = placeSpinAngle;
               } else if (isActionActive) {
                 frontArmAngle = actionSnapAngle;
               } else if (afkFrontArmAngle !== null) {
