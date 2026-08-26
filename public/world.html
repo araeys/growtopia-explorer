@@ -1490,10 +1490,14 @@
 
 <!-- World Settings Dropdown -->
 <div id="world-menu-dropdown" class="hidden">
-  <div class="world-menu-header">World Management</div>
-  <button class="world-menu-item" id="world-menu-new-std">New Standard (100×60)</button>
-  <button class="world-menu-item" id="world-menu-new-flat">New Flat World</button>
-  <button class="world-menu-item" id="world-menu-new-blank">New Blank World</button>
+  <div class="world-menu-header">World Templates & Presets</div>
+  <button class="world-menu-item" id="world-menu-new-std">☀️ Standard World (Sunny)</button>
+  <button class="world-menu-item" id="world-menu-new-nature">🌿 Nature Paradise (Spring)</button>
+  <button class="world-menu-item" id="world-menu-new-parkour">🏃 Parkour Arena (Floating)</button>
+  <button class="world-menu-item" id="world-menu-new-horror">👻 Horror Dungeon (Spooky)</button>
+  <button class="world-menu-item" id="world-menu-new-scifi">🚀 Sci-Fi Station (Nebula)</button>
+  <button class="world-menu-item" id="world-menu-new-flat">🟦 New Flat World</button>
+  <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
   <button class="world-menu-item" id="world-menu-custom-size">Custom World Size...</button>
   <div class="world-menu-divider"></div>
   <button class="world-menu-item" id="world-menu-open-file">Open World (.DAT / .gtworld)</button>
@@ -1740,9 +1744,13 @@
       <div class="input-field-group">
         <label for="custom-world-type">World Preset:</label>
         <select id="custom-world-type">
-          <option value="standard">Standard World (Dirt & Bedrock)</option>
-          <option value="flat">Flat World (Bedrock Floor)</option>
-          <option value="blank">Blank World (Empty)</option>
+          <option value="standard">☀️ Standard World (Sunny Sky)</option>
+          <option value="nature">🌿 Nature Paradise (Spring Hills & Trees)</option>
+          <option value="parkour">🏃 Parkour Arena (Floating Islands & Spikes)</option>
+          <option value="horror">👻 Horror Dungeon (Spooky Castle & Lava)</option>
+          <option value="scifi">🚀 Sci-Fi Station (Nebula & Steel Hull)</option>
+          <option value="flat">🟦 Flat World (Bedrock Floor)</option>
+          <option value="blank">⬜ Blank World (Empty)</option>
         </select>
       </div>
     </div>
@@ -2101,6 +2109,10 @@
     }
   });
   document.getElementById('world-menu-new-std')?.addEventListener('click', () => { engine.loadPreset('standard'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-nature')?.addEventListener('click', () => { engine.loadPreset('nature'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-parkour')?.addEventListener('click', () => { engine.loadPreset('parkour'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-horror')?.addEventListener('click', () => { engine.loadPreset('horror'); menuDropdown?.classList.add('hidden'); });
+  document.getElementById('world-menu-new-scifi')?.addEventListener('click', () => { engine.loadPreset('scifi'); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-new-flat')?.addEventListener('click', () => { engine.loadPreset('flat'); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-new-blank')?.addEventListener('click', () => { engine.loadPreset('blank'); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-save-dat')?.addEventListener('click', () => { engine.exportToDAT(); menuDropdown?.classList.add('hidden'); });

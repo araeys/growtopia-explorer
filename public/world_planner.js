@@ -5331,10 +5331,24 @@
           world = catalog.createBlankWorld(width, height);
         } else if (preset === "flat") {
           world = catalog.createFlatWorld(width, height);
+        } else if (preset === "nature") {
+          world = catalog.createNatureWorld(width, height);
+        } else if (preset === "parkour") {
+          world = catalog.createParkourWorld(width, height);
+        } else if (preset === "horror") {
+          world = catalog.createHorrorWorld(width, height);
+        } else if (preset === "scifi") {
+          world = catalog.createSciFiWorld(width, height);
         } else {
           world = catalog.createStandardWorld(width, height);
         }
         world.name = name || "World";
+
+        // Auto-load matching weather background texture
+        const wObj = catalog.getWeatherById(world.weather);
+        if (wObj && wObj.file) {
+          loadWeatherImage(wObj.file).then(() => render());
+        }
 
         const spawn = findSpawnPosition();
         player.x = spawn.x;
@@ -5351,15 +5365,31 @@
           world = catalog.createBlankWorld(world.width, world.height);
         } else if (presetName === "flat") {
           world = catalog.createFlatWorld(world.width, world.height);
+        } else if (presetName === "nature") {
+          world = catalog.createNatureWorld(world.width, world.height);
+        } else if (presetName === "parkour") {
+          world = catalog.createParkourWorld(world.width, world.height);
+        } else if (presetName === "horror") {
+          world = catalog.createHorrorWorld(world.width, world.height);
+        } else if (presetName === "scifi") {
+          world = catalog.createSciFiWorld(world.width, world.height);
         } else {
           world = catalog.createStandardWorld(world.width, world.height);
         }
+
+        // Auto-load matching weather background texture
+        const wObj = catalog.getWeatherById(world.weather);
+        if (wObj && wObj.file) {
+          loadWeatherImage(wObj.file).then(() => render());
+        }
+
         const spawn = findSpawnPosition();
         player.x = spawn.x;
         player.y = spawn.y;
         centerViewport();
         render();
         onWorldChange(world);
+        onStatusMessage(`Loaded ${world.name || presetName} template with ${world.weather || 'SUNNY'} weather!`);
       }
 
       return {

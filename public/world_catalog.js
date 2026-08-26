@@ -403,6 +403,348 @@
       };
     }
 
+    function createNatureWorld(width = WORLD_WIDTH, height = WORLD_HEIGHT) {
+      width = Math.max(10, Math.min(200, parseInt(width, 10) || WORLD_WIDTH));
+      height = Math.max(10, Math.min(200, parseInt(height, 10) || WORLD_HEIGHT));
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      const baseGroundY = Math.floor(height * 0.50);
+      const bedrockCutoff = height - Math.max(1, Math.min(5, Math.floor(height * 0.1)));
+
+      // 1. Generate Rolling Hills of Dirt & Grass
+      for (let x = 0; x < width; x++) {
+        const hillOffset = Math.round(Math.sin((x / width) * Math.PI * 4) * 3 + Math.cos((x / width) * Math.PI * 2) * 2);
+        const surfaceY = Math.max(8, baseGroundY + hillOffset);
+
+        for (let y = 0; y < height; y++) {
+          const idx = y * width + x;
+          if (y < surfaceY) {
+            fg[idx] = 0;
+            bg[idx] = 0;
+          } else if (y === surfaceY) {
+            fg[idx] = 16; // Grass on surface
+            bg[idx] = (y >= surfaceY + 1) ? 14 : 0;
+          } else if (y < bedrockCutoff) {
+            fg[idx] = 2; // Dirt
+            bg[idx] = 14; // Cave BG
+          } else {
+            fg[idx] = 8; // Bedrock
+            bg[idx] = 14;
+          }
+        }
+
+        // Add decorative flowers on grass (Rose 190, Daisy 22, Poppy 188, Mushroom 194)
+        if (surfaceY > 2 && x % 4 === 1) {
+          const flowerIds = [190, 22, 188, 194];
+          const chosenFlower = flowerIds[(x * 7) % flowerIds.length];
+          const flowerIdx = (surfaceY - 1) * width + x;
+          fg[flowerIdx] = chosenFlower;
+        }
+      }
+
+      // 2. Add Trees (Wood trunk + leaves/platforms)
+      for (let tx = 8; tx < width - 8; tx += 14) {
+        let groundY = baseGroundY;
+        for (let y = 0; y < height; y++) {
+          if (fg[y * width + tx] === 16 || fg[y * width + tx] === 2) {
+            groundY = y;
+            break;
+          }
+        }
+
+        const trunkHeight = 5;
+        for (let h = 1; h <= trunkHeight; h++) {
+          const trunkY = groundY - h;
+          if (trunkY >= 0) {
+            fg[trunkY * width + tx] = 100; // Wood Block
+          }
+        }
+
+        // Tree canopy foliage & platforms
+        const topY = groundY - trunkHeight;
+        for (let cx = tx - 2; cx <= tx + 2; cx++) {
+          for (let cy = topY - 2; cy <= topY; cy++) {
+            if (cx >= 0 && cx < width && cy >= 0) {
+              const cIdx = cy * width + cx;
+              if (fg[cIdx] === 0) {
+                fg[cIdx] = (cy === topY && (cx === tx - 1 || cx === tx + 1)) ? 102 : 16; // Wooden Platform or Grass
+              }
+            }
+          }
+        }
+      }
+
+      // 3. Wooden suspension bridges connecting hill ridges
+      for (let bx = 20; bx < width - 20; bx += 25) {
+        const bridgeY = baseGroundY - 2;
+        for (let x = bx; x < bx + 8 && x < width; x++) {
+          const bIdx = bridgeY * width + x;
+          if (fg[bIdx] === 0) fg[bIdx] = 102; // Wooden Platform
+        }
+      }
+
+      // 4. Main Spawn Door on a clean central surface
+      const spawnX = Math.floor(width / 2);
+      let spawnGroundY = baseGroundY;
+      for (let y = 0; y < height; y++) {
+        if (fg[y * width + spawnX] === 16 || fg[y * width + spawnX] === 2) {
+          spawnGroundY = y;
+          break;
+        }
+      }
+      const doorIdx = (spawnGroundY - 1) * width + spawnX;
+      fg[doorIdx] = 6; // Main Door
+      bg[doorIdx] = 0;
+
+      return {
+        width,
+        height,
+        name: "Nature World",
+        weather: "SPRING",
+        weatherCode: 10,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
+    function createParkourWorld(width = WORLD_WIDTH, height = WORLD_HEIGHT) {
+      width = Math.max(10, Math.min(200, parseInt(width, 10) || WORLD_WIDTH));
+      height = Math.max(10, Math.min(200, parseInt(height, 10) || WORLD_HEIGHT));
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      // 1. Deadly Lava Sea at Bottom
+      const bedrockY = height - 1;
+      const lavaY = height - 2;
+      for (let x = 0; x < width; x++) {
+        fg[bedrockY * width + x] = 8; // Bedrock
+        fg[lavaY * width + x] = 4;   // Lava
+      }
+
+      // 2. Starting Spawn Island (Left)
+      const startX = 4;
+      const startY = height - 8;
+      for (let x = startX; x < startX + 6; x++) {
+        fg[startY * width + x] = 116; // Bricks
+        fg[(startY + 1) * width + x] = 116;
+      }
+      fg[(startY - 1) * width + (startX + 2)] = 6; // Main Door
+
+      // 3. Step-by-step Parkour Obstacle Course (Ascending zigzag)
+      const stages = [
+        { x: 14, y: height - 10, w: 3, type: "platform" },
+        { x: 20, y: height - 13, w: 2, type: "cloud", hazard: true },
+        { x: 26, y: height - 15, w: 4, type: "brick" },
+        { x: 33, y: height - 18, w: 2, type: "platform" },
+        { x: 38, y: height - 22, w: 3, type: "cloud", spike: true },
+        { x: 45, y: height - 24, w: 5, type: "brick", checkpoint: true },
+        { x: 53, y: height - 27, w: 2, type: "platform" },
+        { x: 59, y: height - 31, w: 3, type: "cloud", spike: true },
+        { x: 65, y: height - 33, w: 2, type: "platform" },
+        { x: 71, y: height - 37, w: 3, type: "brick", hazard: true },
+        { x: 77, y: height - 40, w: 2, type: "cloud" },
+        { x: 83, y: height - 43, w: 6, type: "finish" }
+      ];
+
+      stages.forEach(st => {
+        const blockId = st.type === "cloud" ? 728 : (st.type === "platform" ? 102 : 116);
+        for (let i = 0; i < st.w; i++) {
+          const px = st.x + i;
+          if (px >= 0 && px < width && st.y >= 0 && st.y < height) {
+            fg[st.y * width + px] = blockId;
+            if (st.type === "brick" || st.type === "finish") {
+              if (st.y + 1 < height) fg[(st.y + 1) * width + px] = 118; // Brick BG
+            }
+          }
+        }
+
+        // Spikes on certain platforms
+        if (st.spike && st.y > 1) {
+          const spX = st.x + Math.floor(st.w / 2);
+          if (spX < width) fg[(st.y - 1) * width + spX] = 162; // Death Spikes
+        }
+
+        // Checkpoint / Dungeon Door
+        if (st.checkpoint && st.y > 1) {
+          const cpX = st.x + 2;
+          if (cpX < width) fg[(st.y - 1) * width + cpX] = 30; // Dungeon Door
+        }
+
+        // Finish Platform: Victory Gateway & Torches
+        if (st.type === "finish" && st.y > 2) {
+          const exitX = st.x + 3;
+          if (exitX < width) {
+            fg[(st.y - 1) * width + exitX] = 60; // Portcullis / Finish Door
+            fg[(st.y - 1) * width + (st.x + 1)] = 696; // Torch
+            fg[(st.y - 1) * width + (st.x + st.w - 2)] = 696; // Torch
+          }
+        }
+      });
+
+      return {
+        width,
+        height,
+        name: "Parkour Arena",
+        weather: "FLOATING_ISLANDS",
+        weatherCode: 16,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
+    function createHorrorWorld(width = WORLD_WIDTH, height = WORLD_HEIGHT) {
+      width = Math.max(10, Math.min(200, parseInt(width, 10) || WORLD_WIDTH));
+      height = Math.max(10, Math.min(200, parseInt(height, 10) || WORLD_HEIGHT));
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      // 1. Dark Castle Architecture & Dungeon Chambers
+      const floorY1 = Math.floor(height * 0.40);
+      const floorY2 = Math.floor(height * 0.65);
+      const bedrockY = height - 1;
+
+      // Bedrock base & Lava pit
+      for (let x = 0; x < width; x++) {
+        fg[bedrockY * width + x] = 8;
+        if ((x >= 20 && x <= 45) || (x >= 65 && x <= 85)) {
+          fg[(bedrockY - 1) * width + x] = 4; // Lava pits
+        } else {
+          fg[(bedrockY - 1) * width + x] = 666; // Granite
+        }
+      }
+
+      // Stone Wall background for whole dungeon interior
+      for (let y = floorY1 - 2; y < height - 1; y++) {
+        for (let x = 0; x < width; x++) {
+          bg[y * width + x] = 336; // Stone Wall BG
+        }
+      }
+
+      // Floor 1 (Catacomb Upper Hall)
+      for (let x = 0; x < width; x++) {
+        if (x < 15 || (x > 25 && x < 55) || (x > 65 && x < 90)) {
+          fg[floorY1 * width + x] = 248; // Evil Bricks
+        } else if (x === 15 || x === 25 || x === 55 || x === 65 || x === 90) {
+          for (let py = floorY1 - 4; py <= floorY1; py++) {
+            fg[py * width + x] = 666; // Granite Pillars
+          }
+        }
+      }
+
+      // Floor 2 (Dungeon Cells & Spikes)
+      for (let x = 0; x < width; x++) {
+        if ((x > 10 && x < 40) || (x > 50 && x < 85)) {
+          fg[floorY2 * width + x] = 666; // Granite
+        }
+        if (x === 20 || x === 28 || x === 68 || x === 76) {
+          fg[(floorY2 - 1) * width + x] = 162; // Spikes
+        }
+      }
+
+      // Torches & Dungeon Doors
+      for (let tx = 6; tx < width; tx += 12) {
+        if (floorY1 > 2) fg[(floorY1 - 2) * width + tx] = 696; // Torch
+        if (floorY2 > 2) fg[(floorY2 - 2) * width + tx] = 696; // Torch
+      }
+
+      // Dungeon entrance door (Top Center)
+      const spawnX = Math.floor(width / 2);
+      fg[(floorY1 - 1) * width + spawnX] = 30; // Dungeon Door
+
+      return {
+        width,
+        height,
+        name: "Horror Dungeon",
+        weather: "SPOOKY",
+        weatherCode: 11,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
+    function createSciFiWorld(width = WORLD_WIDTH, height = WORLD_HEIGHT) {
+      width = Math.max(10, Math.min(200, parseInt(width, 10) || WORLD_WIDTH));
+      height = Math.max(10, Math.min(200, parseInt(height, 10) || WORLD_HEIGHT));
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      // Bedrock at base
+      for (let x = 0; x < width; x++) {
+        fg[(height - 1) * width + x] = 8;
+      }
+
+      // Orbital Space Station Structure (Modules & Air corridors)
+      const stationMidY = Math.floor(height * 0.45);
+      const moduleWidth = 24;
+
+      // Central Command Module
+      const cx = Math.floor(width / 2) - Math.floor(moduleWidth / 2);
+      const cy = stationMidY - 6;
+
+      for (let y = cy; y <= cy + 12; y++) {
+        for (let x = cx; x <= cx + moduleWidth; x++) {
+          const idx = y * width + x;
+          const isBorder = (y === cy || y === cy + 12 || x === cx || x === cx + moduleWidth);
+          if (isBorder) {
+            fg[idx] = 186; // Steel Block
+          } else if (y === cy + 6) {
+            fg[idx] = (x % 3 === 0) ? 56 : 102; // Glass Panes & Platforms
+          } else if (y === cy + 2 && (x === cx + 4 || x === cx + moduleWidth - 4)) {
+            fg[idx] = 56; // Glass Observation Window
+          }
+        }
+      }
+
+      // Left & Right Solar Docking Wings
+      for (let lx = cx - 18; lx < cx; lx++) {
+        if (lx >= 0) {
+          fg[stationMidY * width + lx] = 102; // Wooden Platform catwalk
+          if (lx % 4 === 0) fg[(stationMidY - 2) * width + lx] = 186; // Steel Support
+        }
+      }
+      for (let rx = cx + moduleWidth + 1; rx <= cx + moduleWidth + 18; rx++) {
+        if (rx < width) {
+          fg[stationMidY * width + rx] = 102;
+          if (rx % 4 === 0) fg[(stationMidY - 2) * width + rx] = 186;
+        }
+      }
+
+      // Airlock Entrance Door (Center of station)
+      const spawnX = Math.floor(width / 2);
+      fg[(cy + 11) * width + spawnX] = 6; // Main Airlock Door
+
+      return {
+        width,
+        height,
+        name: "Sci-Fi Station",
+        weather: "NEBULA",
+        weatherCode: 18,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
     function getWeathers() {
       return WEATHERS;
     }
@@ -429,6 +771,10 @@
       createStandardWorld,
       createBlankWorld,
       createFlatWorld,
+      createNatureWorld,
+      createParkourWorld,
+      createHorrorWorld,
+      createSciFiWorld,
       getWeatherById
     });
   }
