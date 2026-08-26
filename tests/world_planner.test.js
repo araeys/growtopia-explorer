@@ -532,3 +532,71 @@ test("GTWorldPlanner: Interactive Punch Tool (Fist)", () => {
   engine.punchInteract(20, 20);
   assert.strictEqual(engine.getWeather(), "NIGHT", "Punching Weather Machine - Night should set world weather to NIGHT");
 });
+
+test("GTWorldPlanner: Shape Tools (Line, Box, Filled Box, Circle)", () => {
+  const engine = planner.createEngine({
+    canvas: createTestCanvas(),
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.init();
+  engine.loadPreset("blank");
+
+  const dirt = itemsDb.find(i => i.id === 2);
+  const rock = itemsDb.find(i => i.id === 10) || { id: 10, name: "Rock", action: 17, texture: "tiles_page1.png" };
+  engine.setHotbarItem(0, dirt);
+
+  // 1. Test Bresenham's Line Algorithm
+  const lineH = engine.getLineTiles(2, 5, 8, 5);
+  assert.strictEqual(lineH.length, 7, "Horizontal line from 2 to 8 should have 7 tiles");
+  const lineDiag = engine.getLineTiles(0, 0, 4, 4);
+  assert.strictEqual(lineDiag.length, 5, "Diagonal 45-deg line (0,0)->(4,4) should have 5 tiles");
+
+  // 2. Test Box & Filled Box Algorithms
+  const boxHollow = engine.getBoxTiles(10, 10, 14, 14);
+  assert.strictEqual(boxHollow.length, 16, "5x5 Hollow Box should have 16 perimeter tiles (5*4 - 4)");
+  const boxFilled = engine.getFilledBoxTiles(10, 10, 14, 14);
+  assert.strictEqual(boxFilled.length, 25, "5x5 Filled Box should have 25 total tiles");
+
+  // 3. Test Circle & Filled Circle Algorithms
+  const circleHollow = engine.getCircleTiles(20, 20, 26, 26, false);
+  assert.ok(circleHollow.length > 0, "Hollow circle should generate perimeter tiles");
+  const circleFilled = engine.getCircleTiles(20, 20, 26, 26, true);
+  assert.ok(circleFilled.length >= circleHollow.length, "Filled circle should contain more tiles than hollow circle");
+
+  // 4. Test commitShape with active hotbar item
+  engine.setTool("line");
+  engine.commitShape("line", { x: 5, y: 10 }, { x: 9, y: 10 });
+  const state1 = engine.getWorldState();
+  for (let x = 5; x <= 9; x++) {
+    assert.strictEqual(state1.fg[10 * state1.width + x], 2, `Tile (${x}, 10) should be placed with Dirt`);
+  }
+
+  // 5. Test 1-Step Undo removes the entire shape
+  engine.undo();
+  const state2 = engine.getWorldState();
+  for (let x = 5; x <= 9; x++) {
+    assert.strictEqual(state2.fg[10 * state2.width + x], 0, `Tile (${x}, 10) should be empty after single Undo`);
+  }
+
+  // 6. Test Redo restores the entire shape
+  engine.redo();
+  const state3 = engine.getWorldState();
+  for (let x = 5; x <= 9; x++) {
+    assert.strictEqual(state3.fg[10 * state3.width + x], 2, `Tile (${x}, 10) should be restored after Redo`);
+  }
+
+  // 7. Test commitShape with Filled Box
+  engine.setHotbarItem(0, rock);
+  engine.setTool("filled_box");
+  engine.commitShape("filled_box", { x: 15, y: 15 }, { x: 17, y: 17 });
+  const state4 = engine.getWorldState();
+  for (let y = 15; y <= 17; y++) {
+    for (let x = 15; x <= 17; x++) {
+      assert.strictEqual(state4.fg[y * state4.width + x], 10, `Tile (${x}, ${y}) should be placed with Rock`);
+    }
+  }
+});
+

@@ -72,6 +72,11 @@
         flags: null
       };
 
+      // Shape Dragging State (Line, Box, Filled Box, Circle, Filled Circle)
+      let isShapeDragging = false;
+      let shapeStartTile = null;
+      let shapeCurrentTile = null;
+
       // Block Placement Pop & Particle Effects
       const activeBlockEffects = [];
       const activeParticles = [];
@@ -1099,6 +1104,172 @@
         return item;
       }
 
+      // ── SHAPE GENERATION ALGORITHMS (Line, Box, Filled Box, Circle, Filled Circle) ──
+      function getLineTiles(x0, y0, x1, y1) {
+        const tiles = [];
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        const sx = x0 < x1 ? 1 : -1;
+        const sy = y0 < y1 ? 1 : -1;
+        let err = dx - dy;
+
+        let currX = x0;
+        let currY = y0;
+
+        while (true) {
+          tiles.push({ x: currX, y: currY });
+          if (currX === x1 && currY === y1) break;
+          const e2 = 2 * err;
+          if (e2 > -dy) {
+            err -= dy;
+            currX += sx;
+          }
+          if (e2 < dx) {
+            err += dx;
+            currY += sy;
+          }
+        }
+        return tiles;
+      }
+
+      function getBoxTiles(x0, y0, x1, y1) {
+        const minX = Math.min(x0, x1);
+        const maxX = Math.max(x0, x1);
+        const minY = Math.min(y0, y1);
+        const maxY = Math.max(y0, y1);
+        const tiles = [];
+        const seen = new Set();
+
+        function add(x, y) {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            tiles.push({ x, y });
+          }
+        }
+
+        for (let x = minX; x <= maxX; x++) {
+          add(x, minY);
+          add(x, maxY);
+        }
+        for (let y = minY; y <= maxY; y++) {
+          add(minX, y);
+          add(maxX, y);
+        }
+        return tiles;
+      }
+
+      function getFilledBoxTiles(x0, y0, x1, y1) {
+        const minX = Math.min(x0, x1);
+        const maxX = Math.max(x0, x1);
+        const minY = Math.min(y0, y1);
+        const maxY = Math.max(y0, y1);
+        const tiles = [];
+
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            tiles.push({ x, y });
+          }
+        }
+        return tiles;
+      }
+
+      function getCircleTiles(x0, y0, x1, y1, filled = false) {
+        const minX = Math.min(x0, x1);
+        const maxX = Math.max(x0, x1);
+        const minY = Math.min(y0, y1);
+        const maxY = Math.max(y0, y1);
+
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const rx = Math.max(0.5, (maxX - minX + 1) / 2);
+        const ry = Math.max(0.5, (maxY - minY + 1) / 2);
+
+        const tiles = [];
+        const seen = new Set();
+
+        function add(x, y) {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            tiles.push({ x, y });
+          }
+        }
+
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            const normX = (x + 0.5 - cx) / rx;
+            const normY = (y + 0.5 - cy) / ry;
+            const distSq = normX * normX + normY * normY;
+
+            if (filled) {
+              if (distSq <= 1.05) {
+                add(x, y);
+              }
+            } else {
+              // Hollow circle / ellipse perimeter
+              if (distSq <= 1.15) {
+                let isEdge = false;
+                for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                  const nx = (x + dx + 0.5 - cx) / rx;
+                  const ny = (y + dy + 0.5 - cy) / ry;
+                  if (nx * nx + ny * ny > 1.0) {
+                    isEdge = true;
+                    break;
+                  }
+                }
+                if (isEdge || distSq >= 0.55) {
+                  add(x, y);
+                }
+              }
+            }
+          }
+        }
+        return tiles;
+      }
+
+      function getShapeTiles(tool, x0, y0, x1, y1) {
+        if (tool === "line") return getLineTiles(x0, y0, x1, y1);
+        if (tool === "box") return getBoxTiles(x0, y0, x1, y1);
+        if (tool === "filled_box") return getFilledBoxTiles(x0, y0, x1, y1);
+        if (tool === "circle") return getCircleTiles(x0, y0, x1, y1, false);
+        if (tool === "filled_circle") return getCircleTiles(x0, y0, x1, y1, true);
+        return [];
+      }
+
+      function commitShape(tool, startTile, endTile) {
+        if (!startTile || !endTile) return;
+        const tiles = getShapeTiles(tool, startTile.x, startTile.y, endTile.x, endTile.y);
+        if (tiles.length === 0) return;
+
+        const activeItem = hotbar[activeHotbarIndex];
+        const toolLabel = tool === "line" ? "Draw Line" :
+                          tool === "box" ? "Draw Box" :
+                          tool === "filled_box" ? "Draw Filled Box" :
+                          tool === "circle" ? "Draw Circle" :
+                          tool === "filled_circle" ? "Draw Filled Circle" : "Draw Shape";
+
+        pushUndoSnapshot(toolLabel);
+
+        let placedCount = 0;
+        for (const pt of tiles) {
+          if (pt.x >= 0 && pt.x < world.width && pt.y >= 0 && pt.y < world.height) {
+            setTile(pt.x, pt.y, activeItem);
+            placedCount++;
+          }
+        }
+
+        if (placedCount > 0) {
+          if (player.active) {
+            triggerPlayerPlace(endTile.x, endTile.y);
+          }
+          playSfx("pop", 1.0, 0.7);
+          render();
+          onWorldChange(world);
+          onStatusMessage(`✨ Placed ${placedCount} blocks with ${toolLabel}`);
+        }
+      }
+
       // Convert Screen Pixel to World Tile (x, y)
       function screenToWorldTile(screenX, screenY) {
         const rect = canvas.getBoundingClientRect();
@@ -1355,6 +1526,63 @@
             (maxX - minX + 1) * TILE_SIZE,
             (maxY - minY + 1) * TILE_SIZE
           );
+        }
+
+        // 5b. Live Shape Drag Preview (Line, Box, Filled Box, Circle, Filled Circle)
+        if (isShapeDragging && shapeStartTile && shapeCurrentTile && ["line", "box", "filled_box", "circle", "filled_circle"].includes(activeTool)) {
+          const shapeTiles = getShapeTiles(activeTool, shapeStartTile.x, shapeStartTile.y, shapeCurrentTile.x, shapeCurrentTile.y);
+          const activeItem = hotbar[activeHotbarIndex];
+          const isBg = activeItem ? catalog.isBackgroundItem(activeItem) : false;
+
+          ctx.save();
+          ctx.globalAlpha = 0.65;
+          for (const pt of shapeTiles) {
+            if (pt.x >= 0 && pt.x < world.width && pt.y >= 0 && pt.y < world.height) {
+              if (activeItem) {
+                drawTileSprite(ctx, activeItem, pt.x * TILE_SIZE, pt.y * TILE_SIZE, isFlipped, isBg, pt.x, pt.y);
+              } else {
+                ctx.fillStyle = "rgba(56, 189, 248, 0.4)";
+                ctx.fillRect(pt.x * TILE_SIZE, pt.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              }
+              ctx.strokeStyle = "rgba(56, 189, 248, 0.9)";
+              ctx.lineWidth = 1.5 / viewport.zoom;
+              ctx.strokeRect(pt.x * TILE_SIZE, pt.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+          }
+          ctx.restore();
+
+          // Dimension Badge overlay at shapeCurrentTile
+          const shapeW = Math.abs(shapeCurrentTile.x - shapeStartTile.x) + 1;
+          const shapeH = Math.abs(shapeCurrentTile.y - shapeStartTile.y) + 1;
+          const badgeText = `${shapeW} × ${shapeH} (${shapeTiles.length})`;
+
+          ctx.save();
+          ctx.font = `bold ${Math.max(10, Math.min(14, 12 / viewport.zoom))}px sans-serif`;
+          const badgeMetrics = ctx.measureText(badgeText);
+          const badgePadX = 6 / viewport.zoom;
+          const badgePadY = 3 / viewport.zoom;
+          const badgeW = badgeMetrics.width + badgePadX * 2;
+          const badgeH = 18 / viewport.zoom;
+          const badgeX = (shapeCurrentTile.x + 1) * TILE_SIZE + 4 / viewport.zoom;
+          const badgeY = (shapeCurrentTile.y) * TILE_SIZE - 4 / viewport.zoom;
+
+          ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 1 / viewport.zoom;
+          if (typeof ctx.roundRect === "function") {
+            ctx.beginPath();
+            ctx.roundRect(badgeX, badgeY - badgeH, badgeW, badgeH, 4 / viewport.zoom);
+            ctx.fill();
+            ctx.stroke();
+          } else {
+            ctx.fillRect(badgeX, badgeY - badgeH, badgeW, badgeH);
+            ctx.strokeRect(badgeX, badgeY - badgeH, badgeW, badgeH);
+          }
+
+          ctx.fillStyle = "#38bdf8";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(badgeText, badgeX + badgePadX, badgeY - badgePadY);
+          ctx.restore();
         }
 
         // 6. Ghost Paste Preview
@@ -2064,6 +2292,14 @@
 
           // Left Click Tool Handling
           if (event.button === 0) {
+            if (["line", "box", "filled_box", "circle", "filled_circle"].includes(activeTool)) {
+              isShapeDragging = true;
+              shapeStartTile = { x: tileX, y: tileY };
+              shapeCurrentTile = { x: tileX, y: tileY };
+              requestRender();
+              return;
+            }
+
             if (activeTool === "select") {
               isSelecting = true;
               selection.active = true;
@@ -2194,7 +2430,12 @@
             }
 
             if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
-              if (activeTool === "pencil") {
+              if (["line", "box", "filled_box", "circle", "filled_circle"].includes(activeTool)) {
+                isShapeDragging = true;
+                shapeStartTile = { x: tileX, y: tileY };
+                shapeCurrentTile = { x: tileX, y: tileY };
+                requestRender();
+              } else if (activeTool === "pencil") {
                 isTouchDrawing = true;
                 pushUndoSnapshot("Place Tile");
                 setTile(tileX, tileY, hotbar[activeHotbarIndex]);
@@ -2245,7 +2486,12 @@
               return;
             }
 
-            if (isTouchDrawing) {
+            if (isShapeDragging) {
+              event.preventDefault();
+              const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
+              shapeCurrentTile = { x: tileX, y: tileY };
+              requestRender();
+            } else if (isTouchDrawing) {
               event.preventDefault();
               const { tileX, tileY } = screenToWorldTile(t.clientX, t.clientY);
               if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
@@ -2285,6 +2531,15 @@
         }, { passive: false });
 
         canvas.addEventListener("touchend", () => {
+          if (isShapeDragging) {
+            isShapeDragging = false;
+            if (shapeStartTile && shapeCurrentTile) {
+              commitShape(activeTool, shapeStartTile, shapeCurrentTile);
+            }
+            shapeStartTile = null;
+            shapeCurrentTile = null;
+            requestRender();
+          }
           if (isTouchDrawing) {
             isTouchDrawing = false;
             lastDrawTile = null;
@@ -2296,6 +2551,9 @@
         });
 
         canvas.addEventListener("touchcancel", () => {
+          isShapeDragging = false;
+          shapeStartTile = null;
+          shapeCurrentTile = null;
           isTouchDrawing = false;
           isTouchPanning = false;
           isSelecting = false;
@@ -2389,7 +2647,10 @@
               hoveredTile.x = tileX;
               hoveredTile.y = tileY;
 
-              if (isSelecting) {
+              if (isShapeDragging) {
+                shapeCurrentTile = { x: tileX, y: tileY };
+                requestRender();
+              } else if (isSelecting) {
                 selection.endX = Math.max(0, Math.min(world.width - 1, tileX));
                 selection.endY = Math.max(0, Math.min(world.height - 1, tileY));
                 requestRender();
@@ -2413,6 +2674,15 @@
               isPanning = false;
               canvas.style.cursor = "default";
             }
+            if (isShapeDragging) {
+              isShapeDragging = false;
+              if (shapeStartTile && shapeCurrentTile) {
+                commitShape(activeTool, shapeStartTile, shapeCurrentTile);
+              }
+              shapeStartTile = null;
+              shapeCurrentTile = null;
+              requestRender();
+            }
             if (isDrawing) {
               isDrawing = false;
               lastDrawTile = null;
@@ -2423,7 +2693,7 @@
             }
           });
 
-          // Keyboard Shortcuts (1-9 for Hotbar, B=Pencil, E=Eraser, I=Picker, G=Bucket, S=Select, F=Flip, Z=Undo, Y=Redo)
+          // Keyboard Shortcuts (1-9 for Hotbar, B=Box, Shift+B=Filled Box, L=Line, C=Circle, E=Eraser, I=Picker, G=Bucket, S=Select, F=Flip, Z=Undo, Y=Redo)
           window.addEventListener("keydown", event => {
             if (["INPUT", "TEXTAREA", "SELECT"].includes(document?.activeElement?.tagName)) return;
 
@@ -2490,21 +2760,36 @@
             }
 
             // Tool Keys
-            if (event.key.toLowerCase() === "b") {
+            const kLow = event.key.toLowerCase();
+            if (kLow === "l" && !event.ctrlKey) {
+              setTool("line");
+            } else if (kLow === "b" && !event.ctrlKey) {
+              if (event.shiftKey) {
+                setTool("filled_box");
+              } else {
+                setTool("box");
+              }
+            } else if (kLow === "c" && !event.ctrlKey) {
+              if (event.shiftKey) {
+                setTool("filled_circle");
+              } else {
+                setTool("circle");
+              }
+            } else if (kLow === "n" && !event.ctrlKey) {
               setTool("pencil");
-            } else if (event.key.toLowerCase() === "e") {
+            } else if (kLow === "e" && !event.ctrlKey) {
               setTool("eraser");
-            } else if (event.key.toLowerCase() === "i") {
+            } else if (kLow === "i" && !event.ctrlKey) {
               setTool("picker");
-            } else if (event.key.toLowerCase() === "g") {
+            } else if (kLow === "g" && !event.ctrlKey) {
               setTool("bucket");
-            } else if (event.key.toLowerCase() === "f") {
+            } else if (kLow === "f" && !event.ctrlKey) {
               isFlipped = !isFlipped;
               onStatusMessage(`Flipped items: ${isFlipped ? "ON (Flipped)" : "OFF (Normal)"}`);
               render();
-            } else if (event.key.toLowerCase() === "p" && !event.ctrlKey) {
+            } else if (kLow === "p" && !event.ctrlKey) {
               togglePlayMode();
-            } else if (event.key.toLowerCase() === "m" && !event.ctrlKey) {
+            } else if (kLow === "m" && !event.ctrlKey) {
               toggleMusic();
             }
 
@@ -5192,6 +5477,12 @@
         eraseTile,
         punchInteract,
         floodFill,
+        getLineTiles,
+        getBoxTiles,
+        getFilledBoxTiles,
+        getCircleTiles,
+        getShapeTiles,
+        commitShape,
         undo,
         redo,
         saveToLocalStorage,
