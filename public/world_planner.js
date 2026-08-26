@@ -5254,60 +5254,70 @@
  osc.start(now);
  osc.stop(now + 0.19);
  } else if (name === "success") {
- [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
- const osc = ctx.createOscillator();
- const gain = ctx.createGain();
- osc.type = "triangle";
- osc.frequency.value = freq;
- gain.gain.setValueAtTime(volume * 0.35, now + i * 0.05);
- gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.25);
- osc.connect(gain);
- gain.connect(ctx.destination);
- osc.start(now + i * 0.05);
- osc.stop(now + i * 0.05 + 0.26);
- });
- }
- } catch(e) {}
- }
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = "triangle";
+              osc.frequency.value = freq;
+              gain.gain.setValueAtTime(volume * 0.35, now + i * 0.05);
+              gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.25);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + i * 0.05);
+              osc.stop(now + i * 0.05 + 0.26);
+            });
+          }
+        } catch(e) {}
+      }
 
- function playSfx(name, playbackRate = 1.0, volume = 0.6) {
- const ctx = getAudioContext();
- if (!ctx) return;
- if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      function playSfx(name, playbackRate = 1.0, volume = 0.6) {
+        const ext = (name.endsWith(".ogg") || name.endsWith(".wav")) ? "" : ".wav";
+        const url = "audio/" + name + ext;
 
- const key = `sfx_${name}`;
- const playBuffer = (buffer) => {
- try {
- const src = ctx.createBufferSource();
- const gain = ctx.createGain();
- gain.gain.value = volume;
- src.buffer = buffer;
- src.playbackRate.value = playbackRate;
- src.connect(gain);
- gain.connect(ctx.destination);
- src.start(0);
- } catch(e) {}
- };
+        // 1. Direct HTML5 Audio element for instant playback on any protocol/browser
+        try {
+          const directAudio = new Audio(url);
+          directAudio.volume = Math.max(0, Math.min(1, volume));
+          directAudio.playbackRate = playbackRate;
+          directAudio.play().catch(() => {});
+        } catch(e) {}
 
- if (audioBufferCache.has(key)) {
- playBuffer(audioBufferCache.get(key));
- return;
- }
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
 
- const ext = (name.endsWith('.ogg') || name.endsWith('.wav')) ? '' : '.wav';
- fetch(`audio/${name}${ext}`)
- .then(r => r.arrayBuffer())
- .then(ab => ctx.decodeAudioData(ab))
- .then(buf => {
- audioBufferCache.set(key, buf);
- playBuffer(buf);
- })
- .catch(() => {
- playSynthFallbackSfx(ctx, name, volume);
- });
- }
+        const key = "sfx_" + name;
+        const playBuffer = (buffer) => {
+          try {
+            const src = ctx.createBufferSource();
+            const gain = ctx.createGain();
+            gain.gain.value = volume;
+            src.buffer = buffer;
+            src.playbackRate.value = playbackRate;
+            src.connect(gain);
+            gain.connect(ctx.destination);
+            src.start(0);
+          } catch(e) {}
+        };
 
- let lastFootstepIdx = -1;
+        if (audioBufferCache.has(key)) {
+          playBuffer(audioBufferCache.get(key));
+          return;
+        }
+
+        fetch(url)
+          .then(r => r.arrayBuffer())
+          .then(ab => ctx.decodeAudioData(ab))
+          .then(buf => {
+            audioBufferCache.set(key, buf);
+            playBuffer(buf);
+          })
+          .catch(() => {
+            playSynthFallbackSfx(ctx, name, volume);
+          });
+      }
+
+      let lastFootstepIdx = -1;
  function playRandomFootstepSfx(volume = 0.85) {
  let idx = Math.floor(Math.random() * 7) + 1; // 1 to 7
  if (idx === lastFootstepIdx) {

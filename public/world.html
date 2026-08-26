@@ -1926,11 +1926,11 @@
  .weather-thumb { width: 100%; height: 54px; border-radius: 4px; display: block; margin-bottom: 6px; object-fit: cover; background: #090f1b; }
  .weather-card-label { font-size: 11px; color: #e2e8f0; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
-<script src="lz-string.min.js"></script>
-<script src="world_catalog.js"></script>
-<script src="autotile.js"></script>
-<script src="render_converter.js"></script>
-<script src="world_planner.js"></script>
+<script src="lz-string.min.js?v=2.6.6"></script>
+<script src="world_catalog.js?v=2.6.6"></script>
+<script src="autotile.js?v=2.6.6"></script>
+<script src="render_converter.js?v=2.6.6"></script>
+<script src="world_planner.js?v=2.6.6"></script>
 <script>
 (function initWorldPage() {
  const loadingOverlay = document.getElementById('loading-overlay');
@@ -3235,11 +3235,14 @@
  if (wAck) {
  wAck.addEventListener('click', () => {
  hideWelcomeDialog();
- try {
- const audio = new Audio("audio/piano_nice.wav");
- audio.volume = 0.75;
- audio.play().catch(() => {});
- } catch (e) {}
+      try {
+        const audio = new Audio("audio/piano_nice.wav");
+        audio.volume = 0.75;
+        audio.play().catch(() => {});
+        const door = new Audio("audio/door_shut.wav");
+        door.volume = 0.85;
+        door.play().catch(() => {});
+      } catch (e) {}
  if (engine && typeof engine.togglePlayMode === 'function') {
  engine.togglePlayMode(true);
  }
