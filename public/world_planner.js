@@ -857,8 +857,8 @@
  spawnBlockPlaceEffect(x, y, item);
  }
  spawnTileBreakParticle(x, y);
-      // 1. Main Place SFX: Wood_dig3.ogg (+50% louder volume)
-      playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 1.05);
+      // 1. Main Place SFX: Wood_dig3.ogg (boosted +50% to 1.60)
+      playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 1.60);
       // 2. Secondary Combined Place SFX: Randomized Amethyst pool (+50% louder volume)
       const randomAmethyst = AMETHYST_PLACE_SFX_POOL[Math.floor(Math.random() * AMETHYST_PLACE_SFX_POOL.length)];
       playSfx(randomAmethyst, 0.94 + Math.random() * 0.12, 1.00);
