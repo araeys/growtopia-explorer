@@ -8,9 +8,13 @@
 
 <br>
 
+<!-- github-showcase:start -->
 <a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/live-demo.svg" alt="Open Growtopia Explorer Live Demo" width="100%">
+  <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer: search items, inspect sprites, style an avatar, build a world, and playtest it" width="100%">
 </a>
+
+<sub><strong>Explore → Inspect → Style → Build → Play</strong> · 15-second live product showcase · 1280×720</sub>
+<!-- github-showcase:end -->
 
 ### **[🚀 OPEN THE LIVE PROJECT → growtopia-explorer.vercel.app](https://growtopia-explorer.vercel.app)**
 
