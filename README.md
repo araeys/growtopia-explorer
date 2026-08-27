@@ -2,18 +2,28 @@
 
 <div align="center">
 
-![Growtopia Explorer Logo](public/logo.png)
-
 **A high-performance, feature-rich web suite for Growtopia asset exploration, avatar set planning, and 2D world map building with live physics simulation.**
 
 <br>
 
 <!-- github-showcase:start -->
+### Product walkthrough
+
 <a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer: search items, inspect sprites, style an avatar, build a world, and playtest it" width="100%">
+  <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer product walkthrough: Explore, Inspect, Style, Build, and Play" width="100%">
 </a>
 
-<sub><strong>Explore → Inspect → Style → Build → Play</strong> · 24-second edited product showcase · 30 FPS · 1280×720</sub>
+<sub><strong>Explore → Inspect → Style → Build → Play</strong> · original browser showcase · 1280×720</sub>
+
+<br>
+
+### Feature highlights
+
+<a href="https://growtopia-explorer.vercel.app">
+  <img src="docs/assets/growtopia-explorer-showcase-edited.gif" alt="Growtopia Explorer edited feature highlights with world building, physics, hazards, and moderator mode" width="100%">
+</a>
+
+<sub><strong>World building → Physics → Interaction → Hazards → Moderator mode</strong> · edited showcase · 30 FPS · 1280×720</sub>
 <!-- github-showcase:end -->
 
 ### **[🚀 OPEN THE LIVE PROJECT → growtopia-explorer.vercel.app](https://growtopia-explorer.vercel.app)**
