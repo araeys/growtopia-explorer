@@ -1,0 +1,7 @@
+# Attribution and repository-governance files
+/NOTICE.md @araeys
+/AGENTS.md @araeys
+/README.md @araeys
+/.github/copilot-instructions.md @araeys
+/.github/workflows/attribution-guard.yml @araeys
+/.github/CODEOWNERS @araeys

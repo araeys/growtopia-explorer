@@ -1,0 +1,33 @@
+name: Attribution Guard
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify-attribution:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify original creator attribution
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f NOTICE.md
+          test -f AGENTS.md
+          test -f .github/copilot-instructions.md
+
+          grep -Fq "Raey (@araeys)" NOTICE.md
+          grep -Fq "Raey (@araeys)" AGENTS.md
+          grep -Fq "Raey (@araeys)" .github/copilot-instructions.md
+          grep -Fq "[@araeys](https://github.com/araeys)" README.md
+
+          echo "Original creator attribution is present."

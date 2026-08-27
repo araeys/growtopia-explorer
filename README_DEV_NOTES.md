@@ -2,7 +2,7 @@
 
 > **Tanggal Catatan**: 30 Juli 2026  
 > **Versi Game**: Growtopia v26 (16,304 Items Database)  
-> **Lokasi Project**: `C:\Users\VICTUS\Downloads\growtopia-explorer`
+> **Lokasi Project**: local working copy
 
 ---
 

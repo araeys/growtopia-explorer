@@ -16,6 +16,23 @@ test_sprites/
 gtsetplanner_src/
 items_parsed.json
 
+# Local environment, credentials & private keys
+.env
+.env.*
+!.env.example
+.vercel/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+credentials.json
+secrets.json
+*.secret
+
 # One-off scraper & test scripts
 build_*.py
 clean_*.py
