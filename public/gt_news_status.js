@@ -8,8 +8,9 @@
 
   const PROXY_ENDPOINTS = [
     '/api/gt-detail',
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.growtopiagame.com/detail'),
-    'https://corsproxy.io/?' + encodeURIComponent('https://www.growtopiagame.com/detail'),
+    'https://growtopia-explorer.vercel.app/api/gt-detail',
+    'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.growtopiagame.com/detail'),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://www.growtopiagame.com/detail'),
     'https://www.growtopiagame.com/detail'
   ];
 
@@ -67,7 +68,14 @@
           clearTimeout(timeoutId);
 
           if (!res.ok) continue;
-          const data = await res.json();
+          let data = await res.json();
+
+          // Handle allorigins wrapper
+          if (data && typeof data.contents === 'string') {
+            try {
+              data = JSON.parse(data.contents);
+            } catch(e) {}
+          }
 
           // Reject any fake fallback data
           if (data && data.fallback) continue;
