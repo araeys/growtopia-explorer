@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="180" viewBox="0 0 1200 180" role="img" aria-labelledby="title desc">
+  <title id="title">Open Growtopia Explorer live demo</title>
+  <desc id="desc">Animated purple and cyan call-to-action banner linking to growtopia-explorer.vercel.app.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070a12"/>
+      <stop offset="0.5" stop-color="#151025"/>
+      <stop offset="1" stop-color="#080b14"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="0.45" stop-color="#55d8ff"/>
+      <stop offset="0.7" stop-color="#ad79ff"/>
+      <stop offset="1" stop-color="#7c5cff"/>
+      <animate attributeName="x1" values="0;1;0" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="1;2;1" dur="3s" repeatCount="indefinite"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="4" y="4" width="1192" height="172" rx="32" fill="url(#bg)" stroke="url(#stroke)" stroke-width="3"/>
+  <rect x="12" y="12" width="1176" height="156" rx="26" fill="none" stroke="#ffffff" stroke-opacity="0.06"/>
+  <circle cx="66" cy="90" r="10" fill="#8b6dff" filter="url(#glow)">
+    <animate attributeName="r" values="9;16;9" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.55;1;0.55" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <text x="104" y="78" fill="#f8f6ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="1">OPEN LIVE DEMO</text>
+  <text x="106" y="116" fill="#bfc7dd" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22">growtopia-explorer.vercel.app  •  click this banner to launch</text>
+  <g transform="translate(1080 58)" filter="url(#glow)">
+    <rect width="72" height="64" rx="20" fill="#7557ff">
+      <animate attributeName="fill" values="#7557ff;#4ecfff;#7557ff" dur="2.4s" repeatCount="indefinite"/>
+    </rect>
+    <path d="M21 32h29M40 21l11 11-11 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <animateTransform attributeName="transform" type="translate" values="0 0;5 0;0 0" dur="1s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <rect x="-220" y="4" width="140" height="172" fill="#ffffff" opacity="0.06" transform="skewX(-18)">
+    <animate attributeName="x" values="-220;1320" dur="3.5s" repeatCount="indefinite"/>
+  </rect>
+</svg>

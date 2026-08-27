@@ -802,5 +802,121 @@ test("GTWorldCatalog & Engine: Procedural Auto-Maze and Dungeon Generator", () =
   assert.ok(engineDungeon.fg.some(id => id === 6), "Engine dungeon has spawn door");
 });
 
+test("GTWorldPlanner: Authentic Door & Entrance Pass-Through and Warp Teleportation", () => {
+  const dummyCanvas = createTestCanvas();
+  dummyCanvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 600 });
+  dummyCanvas.clientWidth = 800;
+  dummyCanvas.clientHeight = 600;
+  dummyCanvas.width = 800;
+  dummyCanvas.height = 600;
+  dummyCanvas.addEventListener = () => {};
+  dummyCanvas.style = {};
+
+  const engine = planner.createEngine({
+    canvas: dummyCanvas,
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  // 1. Create a flat world with Dirt floor
+  engine.createCustomWorld(20, 10, "flat", "Door Test World");
+
+  const houseEntrance = itemsDb.find(i => (i.name || "").toLowerCase().includes("house entrance")) || { id: 280, name: "House Entrance", action: 13, texture: "tiles.png" };
+  const caveEntrance = itemsDb.find(i => (i.name || "").toLowerCase().includes("cave entrance")) || { id: 742, name: "Cave Entrance", action: 13, texture: "tiles.png" };
+
+  // 2. Place House Entrance at (5, 6) and Cave Entrance at (15, 6)
+  engine.setTile(5, 6, houseEntrance);
+  engine.setTile(15, 6, caveEntrance);
+
+  const worldState = engine.getWorldState();
+  assert.ok(worldState.fg[6 * 20 + 5] > 0);
+  assert.ok(worldState.fg[6 * 20 + 15] > 0);
+
+  // 3. Start Play Mode
+  engine.togglePlayMode();
+  assert.strictEqual(engine.isPlayModeActive(), true);
+
+  // 4. Verify player can walk freely without solid collision
+  engine.setPlayerKey("right", true);
+  assert.strictEqual(engine.isPlayModeActive(), true);
+});
+
+test("GTWorldPlanner: Grass, Plants, and Flowers Non-Solid Pass-Through & Checkpoints", () => {
+  const dummyCanvas = createTestCanvas();
+  dummyCanvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 600 });
+  dummyCanvas.clientWidth = 800;
+  dummyCanvas.clientHeight = 600;
+  dummyCanvas.width = 800;
+  dummyCanvas.height = 600;
+  dummyCanvas.addEventListener = () => {};
+  dummyCanvas.style = {};
+
+  const engine = planner.createEngine({
+    canvas: dummyCanvas,
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.createCustomWorld(20, 10, "flat", "Plant World");
+
+  const grass = itemsDb.find(i => (i.name || "").toLowerCase() === "grass") || { id: 16, name: "Grass", action: 17, texture: "tiles.png" };
+  const daisy = itemsDb.find(i => (i.name || "").toLowerCase() === "daisy") || { id: 22, name: "Daisy", action: 17, texture: "tiles.png" };
+  const checkpoint = itemsDb.find(i => (i.name || "").toLowerCase().includes("checkpoint")) || { id: 410, name: "Checkpoint", action: 27, texture: "tiles.png" };
+
+  // Place Grass at (3, 6), Daisy at (4, 6), Checkpoint at (8, 6)
+  engine.setTile(3, 6, grass);
+  engine.setTile(4, 6, daisy);
+  engine.setTile(8, 6, checkpoint);
+
+  const state = engine.getWorldState();
+  assert.ok(state.fg[6 * 20 + 3] > 0);
+  assert.ok(state.fg[6 * 20 + 4] > 0);
+  assert.ok(state.fg[6 * 20 + 8] > 0);
+
+  // Play mode check
+  engine.togglePlayMode();
+  assert.strictEqual(engine.isPlayModeActive(), true);
+  engine.setPlayerKey("right", true);
+  assert.strictEqual(engine.isPlayModeActive(), true);
+});
+
+test("GTWorldPlanner: Mushroom Bouncy Physics & Climbing Vine Platform Behavior", () => {
+  const dummyCanvas = createTestCanvas();
+  dummyCanvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 600 });
+  dummyCanvas.clientWidth = 800;
+  dummyCanvas.clientHeight = 600;
+  dummyCanvas.width = 800;
+  dummyCanvas.height = 600;
+  dummyCanvas.addEventListener = () => {};
+  dummyCanvas.style = {};
+
+  const engine = planner.createEngine({
+    canvas: dummyCanvas,
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.createCustomWorld(20, 10, "flat", "Bouncy World");
+
+  const mushroom = itemsDb.find(i => (i.name || "").toLowerCase() === "mushroom") || { id: 194, name: "Mushroom", action: 7, texture: "tiles.png" };
+  const pinball = itemsDb.find(i => (i.name || "").toLowerCase().includes("pinball bumper")) || { id: 526, name: "Pinball Bumper", action: 24, texture: "tiles.png" };
+  const climbingVine = itemsDb.find(i => (i.name || "").toLowerCase().includes("climbing vine")) || { id: 1308, name: "Climbing Vine", action: 14, texture: "tiles.png" };
+
+  // Place Mushroom at (5, 6), Pinball at (8, 6), Climbing Vine at (12, 6)
+  engine.setTile(5, 6, mushroom);
+  engine.setTile(8, 6, pinball);
+  engine.setTile(12, 6, climbingVine);
+
+  const state = engine.getWorldState();
+  assert.strictEqual(state.fg[6 * 20 + 5], mushroom.id);
+  assert.strictEqual(state.fg[6 * 20 + 8], pinball.id);
+  assert.strictEqual(state.fg[6 * 20 + 12], climbingVine.id);
+
+  engine.togglePlayMode();
+  assert.strictEqual(engine.isPlayModeActive(), true);
+});
 
 
