@@ -1398,7 +1398,7 @@
           <button class="btn-sm btn-green" id="world-fill-selection-btn" title="Fill Selection with Active Block">Fill</button>
           <button class="btn-sm btn-primary" id="world-render-selection-btn" title="Render Selection PNG">Render</button>
           <button class="btn-sm btn-danger-lite" id="world-clear-selection-btn" title="Clear (Delete)">Clear</button>
-          <button class="btn-sm btn-secondary" id="world-cancel-selection-btn">✕</button>
+          <button class="btn-sm btn-secondary" id="world-cancel-selection-btn"></button>
         </div>
       </div>
 
@@ -1414,7 +1414,7 @@
           <span id="music-bpm-val" style="font-size:11px;color:#f8fafc;font-weight:600;min-width:28px;">100</span>
         </div>
         <button class="btn-sm btn-secondary" id="music-loop-btn" title="Loop Toggle">Loop</button>
-        <button class="btn-sm btn-secondary" id="music-close-btn">✕</button>
+        <button class="btn-sm btn-secondary" id="music-close-btn"></button>
       </div>
     </div>
 
@@ -1491,14 +1491,14 @@
 <!-- World Settings Dropdown -->
 <div id="world-menu-dropdown" class="hidden">
   <div class="world-menu-header">World Templates & Presets</div>
-  <button class="world-menu-item" id="world-menu-new-std">☀️ Standard World (Sunny)</button>
-  <button class="world-menu-item" id="world-menu-new-nature">🌿 Nature Paradise (Spring)</button>
-  <button class="world-menu-item" id="world-menu-new-parkour">🏃 Parkour Arena (Floating)</button>
-  <button class="world-menu-item" id="world-menu-new-horror">👻 Horror Dungeon (Spooky)</button>
-  <button class="world-menu-item" id="world-menu-new-scifi">🚀 Sci-Fi Station (Nebula)</button>
-  <button class="world-menu-item" id="world-menu-new-flat">🟦 New Flat World</button>
+  <button class="world-menu-item" id="world-menu-new-std">️ Standard World (Sunny)</button>
+  <button class="world-menu-item" id="world-menu-new-nature"> Nature Paradise (Spring)</button>
+  <button class="world-menu-item" id="world-menu-new-parkour"> Parkour Arena (Floating)</button>
+  <button class="world-menu-item" id="world-menu-new-horror"> Horror Dungeon (Spooky)</button>
+  <button class="world-menu-item" id="world-menu-new-scifi"> Sci-Fi Station (Nebula)</button>
+  <button class="world-menu-item" id="world-menu-new-flat"> New Flat World</button>
   <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
-  <button class="world-menu-item" id="world-menu-generate-maze" style="color:#38bdf8;font-weight:bold;">🌀 Auto-Maze / Dungeon Generator...</button>
+  <button class="world-menu-item" id="world-menu-generate-maze" style="color:#38bdf8;font-weight:bold;"> Auto-Maze / Dungeon Generator...</button>
   <button class="world-menu-item" id="world-menu-custom-size">Custom World Size...</button>
   <div class="world-menu-divider"></div>
   <button class="world-menu-item" id="world-menu-open-file">Open World (.DAT / .gtworld)</button>
@@ -1519,7 +1519,7 @@
     <!-- Header -->
     <div style="background:#132639;border-bottom:2px solid #0a1017;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:14px;font-weight:900;color:#f9d342;text-shadow:1px 1px 0 #000,-1px -1px 0 #000;letter-spacing:0.5px;">
-        🌀 PROCEDURAL MAZE & DUNGEON GENERATOR
+         PROCEDURAL MAZE & DUNGEON GENERATOR
       </span>
       <button id="maze-modal-close" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;width:24px;height:24px;line-height:20px;text-align:center;cursor:pointer;padding:0;">
         X
@@ -1532,18 +1532,18 @@
       <div>
         <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">GENERATION MODE:</label>
         <select id="gen-mode" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
-          <option value="maze">🌀 Classic Labyrinth Maze (Recursive Backtracking)</option>
-          <option value="dungeon">🏰 Dungeon Quest (Multi-Room & Interconnected Chambers)</option>
+          <option value="maze"> Classic Labyrinth Maze (Recursive Backtracking)</option>
+          <option value="dungeon"> Dungeon Quest (Multi-Room & Interconnected Chambers)</option>
         </select>
       </div>
 
       <div>
         <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">THEME & MATERIAL PALETTE:</label>
         <select id="gen-theme" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
-          <option value="gothic">👻 Gothic Catacombs (Grimstone, Evil Bricks, Spikes & Torches)</option>
-          <option value="nature">🌿 Garden Topiary (Hedges, Rustic Fences, Fountains & Lanterns)</option>
-          <option value="scifi">🚀 Cyberpunk Station (High Tech Blocks, Forcefields & Laser Grids)</option>
-          <option value="brick">🧱 Classic Brick Crypt (Bricks, Wood Blocks & Platforms)</option>
+          <option value="gothic"> Gothic Catacombs (Grimstone, Evil Bricks, Spikes & Torches)</option>
+          <option value="nature"> Garden Topiary (Hedges, Rustic Fences, Fountains & Lanterns)</option>
+          <option value="scifi"> Cyberpunk Station (High Tech Blocks, Forcefields & Laser Grids)</option>
+          <option value="brick"> Classic Brick Crypt (Bricks, Wood Blocks & Platforms)</option>
         </select>
       </div>
 
@@ -1588,7 +1588,7 @@
         CANCEL
       </button>
       <button id="maze-modal-generate" style="background:#27ae60;border-top:2px solid #58d68d;border-left:2px solid #58d68d;border-bottom:3px solid #196f3d;border-right:3px solid #196f3d;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;padding:6px 22px;cursor:pointer;text-shadow:1px 1px 0 #000;border-radius:2px;">
-        🚀 GENERATE WORLD
+         GENERATE WORLD
       </button>
     </div>
 
@@ -1663,7 +1663,7 @@
         </div>
       </div>
       <button id="welcome-modal-close" class="welcome-close-btn" title="Tutup">
-        ✕
+        
       </button>
     </div>
 
@@ -1828,12 +1828,12 @@
       <div class="input-field-group">
         <label for="custom-world-type">World Preset:</label>
         <select id="custom-world-type">
-          <option value="standard">☀️ Standard World (Sunny Sky)</option>
-          <option value="nature">🌿 Nature Paradise (Spring Hills & Trees)</option>
-          <option value="parkour">🏃 Parkour Arena (Floating Islands & Spikes)</option>
-          <option value="horror">👻 Horror Dungeon (Spooky Castle & Lava)</option>
-          <option value="scifi">🚀 Sci-Fi Station (Nebula & Steel Hull)</option>
-          <option value="flat">🟦 Flat World (Bedrock Floor)</option>
+          <option value="standard">️ Standard World (Sunny Sky)</option>
+          <option value="nature"> Nature Paradise (Spring Hills & Trees)</option>
+          <option value="parkour"> Parkour Arena (Floating Islands & Spikes)</option>
+          <option value="horror"> Horror Dungeon (Spooky Castle & Lava)</option>
+          <option value="scifi"> Sci-Fi Station (Nebula & Steel Hull)</option>
+          <option value="flat"> Flat World (Bedrock Floor)</option>
           <option value="blank">⬜ Blank World (Empty)</option>
         </select>
       </div>

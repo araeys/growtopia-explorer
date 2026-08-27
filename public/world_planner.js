@@ -12,6 +12,16 @@
     const TILE_SIZE = 32;
     const MAX_HISTORY = 40;
     const AUTOSAVE_KEY = "gt-world-planner-autosave-v1";
+  const AMETHYST_PLACE_SFX_POOL = [
+    "Amethyst_break1.ogg",
+    "Amethyst_break2.ogg",
+    "Amethyst_break3.ogg",
+    "Amethyst_break4.ogg",
+    "Amethyst_step3.ogg",
+    "Amethyst_step7.ogg",
+    "Amethyst_step9.ogg"
+  ];
+
 
     function createEngine(options = {}) {
       const {
@@ -847,7 +857,11 @@
             spawnBlockPlaceEffect(x, y, item);
           }
           spawnTileBreakParticle(x, y);
-          playSfx("pop", 0.95 + Math.random() * 0.15, 0.50);
+          // 1. Main Place SFX: Wood_dig3.ogg (boosted +50% to 1.60)
+          playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 1.60);
+          // 2. Secondary Combined Place SFX: Randomized Amethyst pool (+50% louder volume)
+          const randomAmethyst = AMETHYST_PLACE_SFX_POOL[Math.floor(Math.random() * AMETHYST_PLACE_SFX_POOL.length)];
+          playSfx(randomAmethyst, 0.94 + Math.random() * 0.12, 1.00);
         }
         return true;
       }
@@ -946,8 +960,8 @@
           const isRoulette = fgName.includes("roulette");
           const rollVal = isRoulette ? Math.floor(Math.random() * 37) : (Math.floor(Math.random() * 6) + 1);
           playSfx("magic", 1.2, 0.7);
-          spawnFloatingText(tileX, tileY, isRoulette ? `🎰 [ ${rollVal} ]` : `🎲 [ ${rollVal} ]`, "#fde047");
-          onStatusMessage(`🎲 ${fgItem.name} rolled: ${rollVal}!`);
+          spawnFloatingText(tileX, tileY, isRoulette ? ` [ ${rollVal} ]` : ` [ ${rollVal} ]`, "#fde047");
+          onStatusMessage(` ${fgItem.name} rolled: ${rollVal}!`);
           return true;
         }
 
@@ -960,8 +974,8 @@
           if (matchedWeather) {
             setWeather(matchedWeather.id);
             playSfx("magic", 1.1, 0.8);
-            spawnFloatingText(tileX, tileY, `⚡ ${matchedWeather.name}`, "#38bdf8");
-            onStatusMessage(`⚡ Activated Weather Machine: ${matchedWeather.name}!`);
+            spawnFloatingText(tileX, tileY, ` ${matchedWeather.name}`, "#38bdf8");
+            onStatusMessage(` Activated Weather Machine: ${matchedWeather.name}!`);
             return true;
           }
         }
@@ -975,7 +989,7 @@
           if (inst) {
             const pitch = Math.max(0, Math.min(25, 25 - (tileY % 26)));
             playNoteSound(inst, pitch);
-            spawnFloatingText(tileX, tileY, `🎵 ${inst.toUpperCase()}`, "#c084fc");
+            spawnFloatingText(tileX, tileY, ` ${inst.toUpperCase()}`, "#c084fc");
             return true;
           }
         }
@@ -986,8 +1000,8 @@
           else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           playSfx("door_open", 1.0, 0.7);
-          spawnFloatingText(tileX, tileY, `🚪 Knock Knock!`, "#a7f3d0");
-          onStatusMessage(`🚪 Interacted with ${fgItem.name}!`);
+          spawnFloatingText(tileX, tileY, ` Knock Knock!`, "#a7f3d0");
+          onStatusMessage(` Interacted with ${fgItem.name}!`);
           return true;
         }
 
@@ -997,8 +1011,8 @@
           else playPunchSound(tileX, tileY);
           spawnPunchImpactEffect(tileX, tileY);
           playSfx("gem_pickup", 1.0, 0.8);
-          spawnFloatingText(tileX, tileY, `💰 ${fgItem.name}`, "#fbbf24");
-          onStatusMessage(`💰 Interacted with ${fgItem.name}!`);
+          spawnFloatingText(tileX, tileY, ` ${fgItem.name}`, "#fbbf24");
+          onStatusMessage(` Interacted with ${fgItem.name}!`);
           return true;
         }
 
@@ -1275,7 +1289,7 @@
           playSfx("pop", 1.0, 0.7);
           render();
           onWorldChange(world);
-          onStatusMessage(`✨ Placed ${placedCount} blocks with ${toolLabel}`);
+          onStatusMessage(` Placed ${placedCount} blocks with ${toolLabel}`);
         }
       }
 
@@ -2706,9 +2720,17 @@
           window.addEventListener("keydown", event => {
             if (["INPUT", "TEXTAREA", "SELECT"].includes(document?.activeElement?.tagName)) return;
 
+            const k = event.key.toLowerCase();
+
+            // Global M key shortcut to toggle Mod Mode ON/OFF
+            if (k === "m" && !event.ctrlKey && !event.altKey && !event.metaKey) {
+              event.preventDefault();
+              toggleModeratorMode();
+              return;
+            }
+
             // Player movement controls (Play Mode)
             if (player.active) {
-              const k = event.key.toLowerCase();
               if (k === "a" || event.key === "ArrowLeft") {
                 player.keys.left = true;
                 event.preventDefault();
@@ -3040,8 +3062,118 @@
       }
 
       // ── Playable Avatar & Game Mode Tester (Live Physics) ──
+            function isDoorItem(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        if ([1, 2, 13, 26, 43, 84, 104, 105, 106, 142].includes(action)) return true;
+        if (
+          name.includes("door") || name.includes("portal") || name.includes("entrance") ||
+          name.includes("gate") || name.includes("passage") || name.includes("gateway") ||
+          name.includes("chute") || name.includes("manhole") || name.includes("teleporter") ||
+          name.includes("warp")
+        ) return true;
+        return false;
+      }
+
+      function isBouncyBlock(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        const id = Number(item.id);
+        return (
+          id === 194 || // Mushroom
+          id === 526 || // Pinball Bumper
+          id === 624 || // Pinball Sproinger
+          id === 1448 || // Trampoline
+          action === 24 || // Bouncy Action
+          name.includes("mushroom") ||
+          name.includes("pinball") ||
+          name.includes("trampoline") ||
+          name.includes("bouncy") ||
+          name.includes("spring") ||
+          name.includes("sproinger") ||
+          name.includes("bumper") ||
+          name.includes("slime block") ||
+          name.includes("jelly") ||
+          name.includes("rubber")
+        );
+      }
+
+      function isPassThroughPlant(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const id = Number(item.id);
+        if (
+          id === 16 || // Grass
+          id === 22 || // Daisy
+          id === 188 || // Poppy
+          id === 190 || // Rose
+          id === 528 || // Lucky Clover
+          id === 846 || // Seaweed
+          id === 880 || // Wheat
+          id === 1104 || // Foliage
+          name.includes("grass") ||
+          name.includes("daisy") ||
+          name.includes("rose") ||
+          name.includes("poppy") ||
+          name.includes("clover") ||
+          name.includes("seaweed") ||
+          name.includes("wheat") ||
+          name.includes("tulip") ||
+          name.includes("dahlia") ||
+          name.includes("orchid") ||
+          name.includes("sunflower")
+        ) {
+          if (
+            name.includes("wallpaper") || name.includes("wall") || name.includes("block") ||
+            name.includes("seed") || name.includes("hedge") || name.includes("vine") ||
+            name.includes("tree") || name.includes("wood") || name.includes("mushroom")
+          ) return false;
+          return true;
+        }
+        return false;
+      }
+
+      function getAllDoorTiles() {
+        const doors = [];
+        for (let y = 0; y < world.height; y++) {
+          for (let x = 0; x < world.width; x++) {
+            const idx = y * world.width + x;
+            const fgId = world.fg[idx];
+            if (fgId > 0) {
+              const item = getItem(fgId);
+              if (item && (fgId === 6 || isDoorItem(item))) {
+                doors.push({ x, y, id: fgId, item });
+              }
+            }
+          }
+        }
+        return doors;
+      }
+
+      function warpThroughDoor(currentTileX, currentTileY) {
+        if (player.doorWarpCooldown > 0) return false;
+        const allDoors = getAllDoorTiles();
+        if (allDoors.length <= 1) return false;
+        const otherDoors = allDoors.filter(d => !(d.x === currentTileX && d.y === currentTileY));
+        if (otherDoors.length === 0) return false;
+        const targetDoor = otherDoors[Math.floor(Math.random() * otherDoors.length)];
+        player.x = targetDoor.x * TILE_SIZE;
+        player.y = targetDoor.y * TILE_SIZE;
+        player.vx = 0;
+        player.vy = 0;
+        player.doorWarpCooldown = 1.2;
+        playSfx("door_open", 1.0, 0.85);
+        playSfx("teleport", 1.1, 0.70);
+        onStatusMessage(`Warped through door to (${targetDoor.x}, ${targetDoor.y})!`);
+        return true;
+      }
+
       function isSolidBlock(item) {
         if (!item) return false;
+        if (isDoorItem(item)) return false;
+        if (isPassThroughPlant(item)) return false;
         const name = (item.name || "").toLowerCase();
         const action = Number(item.action);
         // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89)
@@ -3210,11 +3342,13 @@
             playSfx("boo_ghost_be_gone", 1.05, 0.80);
             playSfx("already_used", 1.30, 0.70);
           }
-          onStatusMessage("Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to toggle.");
+          onStatusMessage("Moderator Mode Active! [NOCLIP & FREE FLY] WASD/Arrows to fly in all directions & pass through blocks! Press M to exit.");
         } else {
           player.modTransformTimer = 0;
+          player.vx = 0;
+          player.vy = 0;
           if (player.active) playSfx("switch", 1.1, 0.5);
-          onStatusMessage("Moderator Mode Disabled. Solid block collisions restored.");
+          onStatusMessage("Moderator Mode Disabled. Solid block collisions restored. Press M to enter.");
         }
 
         if (typeof document !== "undefined" && typeof document.getElementById === "function") {
@@ -3231,6 +3365,13 @@
               modBtn.style.color = "";
               modBtn.style.boxShadow = "";
             }
+          }
+          const mobileModBtn = document.getElementById("mobile-mod-btn");
+          if (mobileModBtn) {
+            mobileModBtn.classList.toggle("active", player.moderatorMode);
+            mobileModBtn.innerHTML = player.moderatorMode ?
+              '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD: ON</span>' :
+              '<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>MOD</span>';
           }
         }
         render();
@@ -3534,7 +3675,29 @@
           player.isGrounded = false;
           resolvePlayerCollisionY();
 
-          // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX
+                  // Door collision pass-through audio tracking
+        const playerCenterTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+        const playerCenterTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+        const standingIdx = (playerCenterTileY >= 0 && playerCenterTileY < world.height && playerCenterTileX >= 0 && playerCenterTileX < world.width) ? (playerCenterTileY * world.width + playerCenterTileX) : -1;
+        const standingFgId = standingIdx !== -1 ? world.fg[standingIdx] : 0;
+        const standingFgItem = standingFgId > 0 ? getItem(standingFgId) : null;
+        const isAtDoor = standingFgItem && (standingFgId === 6 || isDoorItem(standingFgItem));
+        const currentDoorKey = isAtDoor ? (playerCenterTileX + ',' + playerCenterTileY) : null;
+        if (currentDoorKey && currentDoorKey !== player.lastDoorTileKey) {
+          playSfx("door_open", 1.0, 0.85);
+          player.lastDoorTileKey = currentDoorKey;
+        } else if (!isAtDoor && player.lastDoorTileKey) {
+          playSfx("door_shut", 1.0, 0.70);
+          player.lastDoorTileKey = null;
+        }
+        if (player.doorWarpCooldown > 0) {
+          player.doorWarpCooldown -= dt;
+        }
+        if (isAtDoor && player.keys.up && !player.jumpConsumed) {
+          warpThroughDoor(playerCenterTileX, playerCenterTileY);
+        }
+
+        // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX
           if (!wasGrounded && player.isGrounded) {
             player.landingSquashTimer = 0.14;
             spawnLandingDust(player.x + player.width / 2, player.y + player.height);
@@ -3737,6 +3900,21 @@
 
             const isSolid = isSolidBlock(item);
             const isPlatform = isPlatformBlock(item);
+
+            if (isSolid || isPlatform) {
+              if (player.vy > 0) {
+                if (isBouncyBlock(item)) {
+                  player.y = ty * TILE_SIZE - player.height;
+                  player.vy = -13.5; // Mushroom & Bumper Super Bounce!
+                  player.isGrounded = false;
+                  player.jumpCount = 1;
+                  player.jumpConsumed = false;
+                  playSfx("hitground", 1.2, 0.9);
+                  playSfx("magic", 1.4, 0.6);
+                  return;
+                }
+              }
+            }
 
             if (isSolid) {
               if (player.vy > 0) {
@@ -4973,7 +5151,7 @@
           return;
         }
 
-        const ext = (name.endsWith('.ogg') || name.endsWith('.wav')) ? '' : '.wav';
+        const ext = (name.endsWith('.ogg') || name.endsWith('.wav') || name.endsWith('.mp3')) ? '' : '.wav';
         fetch(`audio/${name}${ext}`)
           .then(r => r.arrayBuffer())
           .then(ab => ctx.decodeAudioData(ab))
@@ -4996,6 +5174,24 @@
       }
 
       function preloadFootstepSounds() {
+        // Preload all essential gameplay SFX for zero-delay instant playback
+        const coreSounds = ["jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch"];
+        coreSounds.forEach(s => {
+          const key = `sfx_${s}`;
+          if (!audioBufferCache.has(key)) {
+            const ext = (s.endsWith('.ogg') || s.endsWith('.wav') || s.endsWith('.mp3')) ? '' : '.wav';
+            fetch(`audio/${s}${ext}`)
+              .then(r => r.arrayBuffer())
+              .then(ab => {
+                const ctx = getAudioContext();
+                return ctx ? ctx.decodeAudioData(ab) : null;
+              })
+              .then(buf => {
+                if (buf) audioBufferCache.set(key, buf);
+              })
+              .catch(() => {});
+          }
+        });
         for (let i = 1; i <= 7; i++) {
           const key = `sfx_footstep${i}`;
           if (!audioBufferCache.has(key)) {
@@ -5501,7 +5697,7 @@
         centerViewport();
         render();
         onWorldChange(world);
-        onStatusMessage(`🌀 Generated ${world.name} with ${world.weather} weather!`);
+        onStatusMessage(` Generated ${world.name} with ${world.weather} weather!`);
         return world;
       }
 
@@ -5527,7 +5723,7 @@
         centerViewport();
         render();
         onWorldChange(world);
-        onStatusMessage(`🏰 Generated ${world.name} with ${world.weather} weather!`);
+        onStatusMessage(` Generated ${world.name} with ${world.weather} weather!`);
         return world;
       }
 

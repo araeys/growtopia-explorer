@@ -14,17 +14,17 @@
     const TILE_SIZE = 32;
 
     const CATEGORIES = Object.freeze([
-      { key: "all", label: "All", icon: "🌐" },
-      { key: "building", label: "Building Blocks", icon: "🧱" },
-      { key: "wallpaper", label: "Wallpaper", icon: "🖼️" },
-      { key: "platform", label: "Platform & Stairs", icon: "🪜" },
-      { key: "door", label: "Door & Portal", icon: "🚪" },
-      { key: "sign", label: "Sign & Board", icon: "🪧" },
-      { key: "hazard", label: "Hazard", icon: "🔥" },
-      { key: "paint", label: "Paint & Colors", icon: "🎨" },
-      { key: "lock", label: "Lock & Machine", icon: "🔒" },
-      { key: "furniture", label: "Furniture & Items", icon: "🪑" },
-      { key: "music", label: "Music", icon: "🎵" }
+      { key: "all", label: "All", icon: "" },
+      { key: "building", label: "Building Blocks", icon: "" },
+      { key: "wallpaper", label: "Wallpaper", icon: "️" },
+      { key: "platform", label: "Platform & Stairs", icon: "" },
+      { key: "door", label: "Door & Portal", icon: "" },
+      { key: "sign", label: "Sign & Board", icon: "" },
+      { key: "hazard", label: "Hazard", icon: "" },
+      { key: "paint", label: "Paint & Colors", icon: "" },
+      { key: "lock", label: "Lock & Machine", icon: "" },
+      { key: "furniture", label: "Furniture & Items", icon: "" },
+      { key: "music", label: "Music", icon: "" }
     ]);
 
     const PAINT_COLORS = Object.freeze({
@@ -62,7 +62,7 @@
     }
 
     const WEATHERS = Object.freeze([
-      { id: "TRANSPARENT", name: "✨ Transparent (No Background)", file: "", code: 999 },
+      { id: "TRANSPARENT", name: " Transparent (No Background)", file: "", code: 999 },
       { id: "EMERALD_CITY", name: "Emerald City", file: "EMERALD_CITY.png", code: 80 },
       { id: "SUNNY", name: "Sunny Sky", file: "SUNNY.png", code: 1 },
       { id: "NIGHT", name: "Night", file: "NIGHT.png", code: 2 },
