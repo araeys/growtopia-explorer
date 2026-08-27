@@ -139,7 +139,9 @@ kbd { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.13)
 .play-toast span { margin-left: 8px; color: rgba(167,243,208,.65); font-weight: 500; }
 .play-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
 
-.asset-error { position: absolute; inset: 48px 0 0; display: grid; place-items: center; align-content: center; gap: 5px; background: rgba(7,11,19,.96); z-index: 20; }
+.asset-error { position: absolute; inset: 48px 0 0; place-items: center; align-content: center; gap: 5px; background: rgba(7,11,19,.96); z-index: 20; }
+.asset-error[hidden] { display: none !important; }
+.asset-error:not([hidden]) { display: grid; }
 .asset-error strong { color: #fecaca; }
 .asset-error span { color: var(--muted); font-size: .78rem; }
 
