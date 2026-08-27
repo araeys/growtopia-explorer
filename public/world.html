@@ -1596,7 +1596,7 @@
 </div>
 
 <!-- Character Skin Selection Modal (Authentic Growtopia Client Dialog) -->
-<div id="character-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999999;display:none;align-items:center;justify-content:center;padding:12px;font-family:'Century Gothic',Arial,sans-serif;">
+<div id="character-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:999999;align-items:center;justify-content:center;padding:12px;font-family:'Century Gothic',Arial,sans-serif;">
   <div style="max-width:440px;width:100%;background:#1c2836;border:2px solid #0a1017;box-shadow:inset 0 0 0 2px #3d566e, 0 10px 30px rgba(0,0,0,0.9);border-radius:4px;overflow:hidden;">
     
     <!-- Dialog Header -->
@@ -3236,25 +3236,31 @@
     const modal = document.getElementById('character-modal');
     if (!modal) return;
 
-    selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
-    selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
-    selectedSkinColorTemp = (engine && typeof engine.getPlayerSkinColor === 'function') ? engine.getPlayerSkinColor() : '#ffc3aa';
+    try {
+      selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
+    } catch(e) { selectedSkinTemp = 'classic'; }
+    try {
+      selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
+    } catch(e) { selectedHairTemp = 'red'; }
+    try {
+      selectedSkinColorTemp = (engine && typeof engine.getPlayerSkinColor === 'function') ? engine.getPlayerSkinColor() : '#ffc3aa';
+    } catch(e) { selectedSkinColorTemp = '#ffc3aa'; }
 
-    try { initSkinTonePalette(); } catch(e) { console.error(e); }
-    try { updateSkinCards(selectedSkinTemp); } catch(e) { console.error(e); }
-    try { updateHairCards(selectedHairTemp); } catch(e) { console.error(e); }
-    try { updateSkinColorSwatches(selectedSkinColorTemp); } catch(e) { console.error(e); }
-    try { updateOffsetDisplay(); } catch(e) { console.error(e); }
+    try { initSkinTonePalette(); } catch(e) {}
+    try { updateSkinCards(selectedSkinTemp); } catch(e) {}
+    try { updateHairCards(selectedHairTemp); } catch(e) {}
+    try { updateSkinColorSwatches(selectedSkinColorTemp); } catch(e) {}
+    try { updateOffsetDisplay(); } catch(e) {}
 
-    modal.style.display = 'flex';
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   }
 
   function closeSkinModal() {
     const modal = document.getElementById('character-modal');
     if (modal) {
-      modal.style.display = 'none';
       modal.classList.add('hidden');
+      modal.style.display = 'none';
     }
   }
 
