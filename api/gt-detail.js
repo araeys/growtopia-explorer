@@ -60,6 +60,7 @@ export default async function handler(req, res) {
     'https://growtopiagame.com/detail'
   ];
 
+  const errors = [];
   for (const targetUrl of urls) {
     try {
       const data = await fetchGTDetail(targetUrl);
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
         return res.status(200).json(data);
       }
     } catch (err) {
-      // Try next url
+      errors.push({ url: targetUrl, error: err.message });
     }
   }
 
@@ -77,6 +78,7 @@ export default async function handler(req, res) {
     error: 'Failed to connect to official Growtopia servers',
     isLive: false,
     online_user: null,
-    world_day_images: null
+    world_day_images: null,
+    debug: errors
   });
 }
