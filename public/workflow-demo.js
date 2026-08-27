@@ -13,6 +13,8 @@
     grass: null,
     textures: new Map(),
     body: null,
+    head: null,
+    eyes: null,
     weather: null,
     equipped: false,
     lastScene: -1,
@@ -89,6 +91,24 @@
     $('database-count').textContent = state.items.length.toLocaleString('en-US');
   }
 
+  async function ensureBaseAvatar() {
+    if (state.body && state.head && state.eyes) return;
+    const [body, head, eyes] = await Promise.all([
+      loadImage('character_base_assets/gtsetplanner/player_idle_body.png'),
+      loadImage('tilesheets/player_head.png'),
+      loadImage('character_base_assets/gtsetplanner/player_eyes.png')
+    ]);
+    state.body = body;
+    state.head = head;
+    state.eyes = eyes;
+  }
+
+  function drawBaseAvatar(ctx, x, y, size) {
+    ctx.drawImage(state.body, 0, 0, TILE, TILE, x, y, size, size);
+    ctx.drawImage(state.head, 0, 0, TILE, TILE, x, y, size, size);
+    ctx.drawImage(state.eyes, 0, 0, TILE, TILE, x, y, size, size);
+  }
+
   async function drawAvatar(equipped) {
     const canvas = $('avatar-demo-canvas');
     const ctx = clearCanvas(canvas);
@@ -111,8 +131,8 @@
       );
     }
 
-    if (!state.body) state.body = await loadImage('character_base_assets/gtsetplanner/player_idle_body.png');
-    ctx.drawImage(state.body, origin.x, origin.y, layerSize, layerSize);
+    await ensureBaseAvatar();
+    drawBaseAvatar(ctx, origin.x, origin.y, layerSize);
   }
 
   async function drawPalette() {
@@ -199,8 +219,8 @@
       const jumpPhase = (t * 3.35) % 1;
       const jump = Math.sin(jumpPhase * Math.PI) * cell * 1.55;
       const y = baseY + cell - 96 - Math.max(0, jump);
-      if (!state.body) state.body = await loadImage('character_base_assets/gtsetplanner/player_idle_body.png');
-      ctx.drawImage(state.body, x, y, 96, 96);
+      await ensureBaseAvatar();
+      drawBaseAvatar(ctx, x, y, 96);
       ctx.fillStyle = 'rgba(34,211,238,.95)';
       ctx.font = '700 18px Inter, sans-serif';
       ctx.fillText('Raey', x + 20, y - 8);
@@ -337,12 +357,13 @@
       setAssetLabels();
       state.weather = await loadImage('weather/AUTUMN.png');
       await Promise.all([
+        ensureBaseAvatar(),
         drawItem($('world-lock-thumb'), state.worldLock, 6),
         drawItem($('world-lock-large'), state.worldLock, 0),
         drawItem($('wing-thumb'), state.wing, 6),
-        drawPalette(),
-        drawAvatar(false)
+        drawPalette()
       ]);
+      await drawAvatar(false);
 
       $('restart-demo').addEventListener('click', restart);
       $('world-lock-card').addEventListener('click', () => { state.startedAt = performance.now() - 2700; });
