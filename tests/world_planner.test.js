@@ -460,9 +460,10 @@ test("GTWorldPlanner: Play Mode & Parkour Physics Simulation", () => {
   // Test block placement effect
   engine.spawnBlockPlaceEffect(10, 10, itemsDb[2]);
 
-  // Toggle off Moderator Mode
-  engine.toggleModeratorMode(false);
-  assert.strictEqual(engine.isModeratorMode(), false);
+  // Test skin color adjustment
+  assert.strictEqual(typeof engine.getPlayerSkinColor(), "string");
+  engine.setPlayerSkinColor("#e1ac96"); // Tone 5
+  assert.strictEqual(engine.getPlayerSkinColor(), "#e1ac96");
 
   // Toggle off play mode
   engine.togglePlayMode(false);

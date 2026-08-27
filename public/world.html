@@ -1623,7 +1623,7 @@
           <div style="font-size:10px;color:#38bdf8;">Official Pixel Art</div>
         </div>
 
-        <!-- Option 2: Cartoon Chibi -->
+      <!-- Option 2: Cartoon Chibi -->
         <div class="skin-card" data-skin="cartoon" style="background:#101923;border:2px solid #0a1017;box-shadow:inset 1px 1px 4px rgba(0,0,0,0.8);border-radius:4px;padding:12px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;">
           <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:rgba(56,189,248,0.1);border-radius:8px;">
             <svg viewBox="0 0 24 24" width="26" height="26" stroke="#38bdf8" stroke-width="2" fill="none"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
@@ -1631,6 +1631,15 @@
           <div style="font-size:12px;font-weight:900;color:#cbd5e1;text-shadow:1px 1px 0 #000;">Cartoon Chibi</div>
           <div style="font-size:10px;color:#64748b;">Illustrated HD</div>
         </div>
+      </div>
+
+      <!-- Skin Color Tone Selector Section -->
+      <div style="margin-top:4px;">
+        <div style="font-size:12px;font-weight:900;color:#00ffff;text-shadow:1px 1px 0 #000;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+          <span>SKIN COLOR TONE:</span>
+          <span id="selected-skin-color-label" style="font-size:11px;color:#fde047;font-weight:700;">Tone 6 (Default)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(9, 1fr);gap:6px;" id="skin-tones-palette"></div>
       </div>
     </div>
 
@@ -3119,7 +3128,84 @@
     if (engine && typeof engine.setClothesOffset === 'function') engine.setClothesOffset(activeClothesPart, clothesOffsets[activeClothesPart].x, clothesOffsets[activeClothesPart].y);
   });
 
-    function updateSkinCards(activeSkin) {
+      const GT_SKIN_TONES = [
+    { name: "Tone 8", color: "#ffe9c8" },
+    { name: "Tone 7", color: "#ffceb4" },
+    { name: "Tone 6", color: "#ffc3aa" },
+    { name: "Tone 5", color: "#e1ac96" },
+    { name: "Tone 4", color: "#c39582" },
+    { name: "Tone 3", color: "#b48a78" },
+    { name: "Tone 2", color: "#967264" },
+    { name: "Tone 1", color: "#785c50" },
+    { name: "White", color: "#f0f0f0" },
+    { name: "Light Green", color: "#b1dda3" },
+    { name: "Aqua", color: "#41c2c5" },
+    { name: "Red", color: "#d74b2b" },
+    { name: "Green", color: "#418a2a" },
+    { name: "Purple", color: "#a951d5" },
+    { name: "Blue", color: "#397dce" },
+    { name: "Light Blue", color: "#afc6ed" },
+    { name: "Orange", color: "#ff920b" }
+  ];
+
+  let selectedSkinColorTemp = (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin_color")) || "#ffc3aa";
+
+  function initSkinTonePalette() {
+    const palette = document.getElementById("skin-tones-palette");
+    if (!palette) return;
+    palette.innerHTML = "";
+    GT_SKIN_TONES.forEach(tone => {
+      const swatch = document.createElement("div");
+      swatch.className = "skin-tone-swatch";
+      swatch.setAttribute("data-color", tone.color);
+      swatch.setAttribute("data-name", tone.name);
+      swatch.title = `${tone.name} (${tone.color})`;
+      swatch.style.cssText = `width:100%;height:26px;border-radius:3px;background:${tone.color};cursor:pointer;outline:1px solid #000;transition:all 0.15s ease;`;
+      
+      const isSel = (tone.color.toLowerCase() === selectedSkinColorTemp.toLowerCase());
+      if (isSel) {
+        swatch.style.border = "2px solid #00ffff";
+        swatch.style.boxShadow = "0 0 8px #00ffff, inset 0 0 4px rgba(0,0,0,0.5)";
+        swatch.style.transform = "scale(1.1)";
+      } else {
+        swatch.style.border = "1.5px solid rgba(0,0,0,0.6)";
+      }
+
+      swatch.addEventListener("click", () => {
+        selectedSkinColorTemp = tone.color;
+        updateSkinColorSwatches(tone.color);
+        const label = document.getElementById("selected-skin-color-label");
+        if (label) label.textContent = `${tone.name}`;
+        if (engine && typeof engine.setPlayerSkinColor === "function") {
+          engine.setPlayerSkinColor(tone.color);
+        }
+      });
+      palette.appendChild(swatch);
+    });
+  }
+
+  function updateSkinColorSwatches(activeColor) {
+    document.querySelectorAll(".skin-tone-swatch").forEach(sw => {
+      const c = sw.getAttribute("data-color");
+      const isSel = (c && c.toLowerCase() === (activeColor || "").toLowerCase());
+      if (isSel) {
+        sw.style.border = "2px solid #00ffff";
+        sw.style.boxShadow = "0 0 8px #00ffff, inset 0 0 4px rgba(0,0,0,0.5)";
+        sw.style.transform = "scale(1.1)";
+        sw.style.zIndex = "2";
+      } else {
+        sw.style.border = "1.5px solid rgba(0,0,0,0.6)";
+        sw.style.boxShadow = "none";
+        sw.style.transform = "scale(1.0)";
+        sw.style.zIndex = "1";
+      }
+    });
+    const toneMatch = GT_SKIN_TONES.find(t => t.color.toLowerCase() === (activeColor || "").toLowerCase());
+    const label = document.getElementById("selected-skin-color-label");
+    if (label) label.textContent = toneMatch ? toneMatch.name : activeColor;
+  }
+
+  function updateSkinCards(activeSkin) {
     document.querySelectorAll('.skin-card').forEach(card => {
       const isSel = card.getAttribute('data-skin') === activeSkin;
       card.style.borderColor = isSel ? '#00e5ff' : 'rgba(255,255,255,0.15)';
@@ -3138,8 +3224,11 @@
   function openSkinModal() {
     selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
     selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
+    selectedSkinColorTemp = (engine && typeof engine.getPlayerSkinColor === 'function') ? engine.getPlayerSkinColor() : '#ffc3aa';
+    initSkinTonePalette();
     updateSkinCards(selectedSkinTemp);
     updateHairCards(selectedHairTemp);
+    updateSkinColorSwatches(selectedSkinColorTemp);
     updateOffsetDisplay();
     if (charModal) charModal.classList.remove('hidden');
   }
@@ -3219,6 +3308,9 @@
   document.getElementById('character-modal-save')?.addEventListener('click', () => {
     if (engine && typeof engine.setPlayerSkin === 'function') {
       engine.setPlayerSkin(selectedSkinTemp);
+    }
+    if (engine && typeof engine.setPlayerSkinColor === 'function') {
+      engine.setPlayerSkinColor(selectedSkinColorTemp);
     }
     if (engine && typeof engine.setPlayerHair === 'function') {
       engine.setPlayerHair(selectedHairTemp);

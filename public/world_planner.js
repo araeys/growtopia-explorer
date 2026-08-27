@@ -118,6 +118,7 @@
         respawnX: 100,
         respawnY: 100,
         skinStyle: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin")) || "classic",
+        skinColor: (typeof localStorage !== "undefined" && localStorage.getItem("gt_world_player_skin_color")) || "#ffc3aa",
         punchTimer: 0,
         punchTargetX: 0,
         punchTargetY: 0,
@@ -4047,6 +4048,55 @@
       }
 
       const spriteImageCache = new Map();
+            function hexToRgb(hex) {
+        let c = String(hex || "").replace("#", "");
+        if (c.length === 3) c = c.split("").map(x => x + x).join("");
+        const num = parseInt(c, 16);
+        if (isNaN(num)) return { r: 255, g: 195, b: 170 }; // default tone 6
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+      }
+
+      const tintedSpriteCache = new Map();
+      function getTintedSprite(src, colorHex) {
+        const baseImg = getSpriteImage(src);
+        if (!baseImg || !baseImg.complete || baseImg.naturalWidth === 0) return baseImg;
+        if (!colorHex || colorHex === "#f0f0f0" || colorHex === "#ffffff") return baseImg;
+
+        const cacheKey = `${src}_${colorHex}`;
+        if (tintedSpriteCache.has(cacheKey)) {
+          return tintedSpriteCache.get(cacheKey);
+        }
+
+        try {
+          if (typeof document === "undefined" || !document.createElement) return baseImg;
+          const canvas = document.createElement("canvas");
+          canvas.width = baseImg.naturalWidth || baseImg.width || 32;
+          canvas.height = baseImg.naturalHeight || baseImg.height || 32;
+          const tCtx = canvas.getContext("2d");
+          if (!tCtx) return baseImg;
+          tCtx.imageSmoothingEnabled = false;
+          tCtx.drawImage(baseImg, 0, 0);
+
+          const imgData = tCtx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          const rgb = hexToRgb(colorHex);
+
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] > 0) {
+              // Multiply blend mode matching official Growtopia set planner: (base / 255) * target
+              data[i]     = Math.min(255, Math.floor((data[i] / 255.0) * rgb.r));
+              data[i + 1] = Math.min(255, Math.floor((data[i + 1] / 255.0) * rgb.g));
+              data[i + 2] = Math.min(255, Math.floor((data[i + 2] / 255.0) * rgb.b));
+            }
+          }
+          tCtx.putImageData(imgData, 0, 0);
+          tintedSpriteCache.set(cacheKey, canvas);
+          return canvas;
+        } catch (e) {
+          return baseImg;
+        }
+      }
+
       function getSpriteImage(src) {
         if (spriteImageCache.has(src)) return spriteImageCache.get(src);
         if (typeof Image === "undefined") return null;
@@ -4469,30 +4519,32 @@
             // ── 1. Authentic Growtopia Set Character Engine ──
             tCtx.imageSmoothingEnabled = false;
 
-            const imgArmR = getSpriteImage("character_base_assets/gt_parts/arm_r.png");
-            const imgArmL = getSpriteImage("character_base_assets/gt_parts/arm_l.png");
-            const imgLegR = getSpriteImage("character_base_assets/gt_parts/leg_r.png");
-            const imgLegL = getSpriteImage("character_base_assets/gt_parts/leg_l.png");
-            const imgBody = getSpriteImage("character_base_assets/gt_parts/body.png");
+            const pSkinColor = player.skinColor || "#ffc3aa";
+            const imgArmR = getTintedSprite("character_base_assets/gt_parts/arm_r.png", pSkinColor);
+            const imgArmL = getTintedSprite("character_base_assets/gt_parts/arm_l.png", pSkinColor);
+            const imgLegR = getTintedSprite("character_base_assets/gt_parts/leg_r.png", pSkinColor);
+            const imgLegL = getTintedSprite("character_base_assets/gt_parts/leg_l.png", pSkinColor);
+            const imgBody = getTintedSprite("character_base_assets/gt_parts/body.png", pSkinColor);
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
             const isSeriousFace = (player.continuousRunTimer >= 1.5) && !player.moderatorMode;
             const isJumpFace = isJumping && !player.moderatorMode;
 
-            let imgHeadMask = null;
+            let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
-              imgHeadMask = isBlinking ?
-                getSpriteImage("character_base_assets/gt_parts/head_jump_blink.png") :
-                getSpriteImage("character_base_assets/gt_parts/head_jump.png");
+              headMaskPath = isBlinking ?
+                "character_base_assets/gt_parts/head_jump_blink.png" :
+                "character_base_assets/gt_parts/head_jump.png";
             } else if (isSeriousFace) {
-              imgHeadMask = isBlinking ?
-                getSpriteImage("character_base_assets/gt_parts/head_serious_blink.png") :
-                getSpriteImage("character_base_assets/gt_parts/head_serious.png");
+              headMaskPath = isBlinking ?
+                "character_base_assets/gt_parts/head_serious_blink.png" :
+                "character_base_assets/gt_parts/head_serious.png";
             } else {
-              imgHeadMask = isBlinking ?
-                getSpriteImage("character_base_assets/gt_parts/head_blink.png") :
-                getSpriteImage("character_base_assets/gt_parts/head_mask.png");
+              headMaskPath = isBlinking ?
+                "character_base_assets/gt_parts/head_blink.png" :
+                "character_base_assets/gt_parts/head_mask.png";
             }
+            const imgHeadMask = getTintedSprite(headMaskPath, pSkinColor);
 
             const jumpIntensity = isJumping ? Math.min(1.0, Math.abs(player.vy) / 10.0) : 0;
 
@@ -4744,7 +4796,7 @@
               }
 
               // 2. Official Growtopia Fist Sprite Asset at (armTipX, 0)
-              const imgPunchFist = getSpriteImage("character_base_assets/gt_parts/gt_punch_fist.png");
+              const imgPunchFist = getTintedSprite("character_base_assets/gt_parts/gt_punch_fist.png", player.skinColor || "#ffc3aa");
               if (player.moderatorMode) {
                 tCtx.shadowColor = "#c084fc";
                 tCtx.shadowBlur = 10 * punchExtend;
@@ -5832,6 +5884,14 @@
           render();
         },
         getPlayerSkin: () => player.skinStyle || "classic",
+        setPlayerSkinColor: (colorHex) => {
+          player.skinColor = colorHex;
+          if (typeof localStorage !== "undefined") {
+            try { localStorage.setItem("gt_world_player_skin_color", colorHex); } catch(e) {}
+          }
+          render();
+        },
+        getPlayerSkinColor: () => player.skinColor || "#ffc3aa",
         setEyeTrackingMode: (m) => {
           player.eyeTrackingMode = m;
           if (typeof localStorage !== "undefined") {
