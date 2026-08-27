@@ -1,0 +1,154 @@
+name: README Showcase Export
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/readme-showcase.yml'
+      - 'scripts/capture-readme-showcase.mjs'
+      - 'public/workflow-demo.html'
+      - 'public/workflow-showcase-v3.css'
+      - 'public/workflow-showcase-v3.js'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: readme-showcase-export
+  cancel-in-progress: true
+
+jobs:
+  capture-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Playwright in temporary workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/readme-showcase
+          cd /tmp/readme-showcase
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          cp "$GITHUB_WORKSPACE/scripts/capture-readme-showcase.mjs" ./capture-readme-showcase.mjs
+
+      - name: Capture 15-second live showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/readme-showcase
+          node ./capture-readme-showcase.mjs "$GITHUB_WORKSPACE"
+
+      - name: Ensure FFmpeg is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+
+      - name: Encode 1280x720 README GIF
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/assets
+          ffmpeg -y \
+            -framerate 12 \
+            -i '.showcase-frames/frame-%04d.png' \
+            -filter_complex '[0:v]split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=diff[p];[s1][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle' \
+            -loop 0 \
+            docs/assets/growtopia-explorer-showcase.gif
+
+          bytes=$(stat -c%s docs/assets/growtopia-explorer-showcase.gif)
+          echo "GIF size: $bytes bytes"
+
+          # GitHub rejects files >=100 MiB. Keep the same 1280x720 resolution and
+          # only reduce temporal sampling if the first export is unexpectedly huge.
+          if [ "$bytes" -ge 95000000 ]; then
+            ffmpeg -y \
+              -framerate 12 \
+              -i '.showcase-frames/frame-%04d.png' \
+              -filter_complex '[0:v]fps=10,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=diff[p];[s1][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle' \
+              -loop 0 \
+              docs/assets/growtopia-explorer-showcase.gif
+          fi
+
+      - name: Insert showcase into README hero
+        shell: python
+        run: |
+          from pathlib import Path
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+
+          start = '<!-- github-showcase:start -->'
+          end = '<!-- github-showcase:end -->'
+          block = '''<!-- github-showcase:start -->
+          <a href="https://growtopia-explorer.vercel.app">
+            <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer: search items, inspect sprites, style an avatar, build a world, and playtest it" width="100%">
+          </a>
+
+          <sub><strong>Explore → Inspect → Style → Build → Play</strong> · 15-second live product showcase · 1280×720</sub>
+          <!-- github-showcase:end -->'''
+
+          if start in text and end in text:
+              before = text.split(start, 1)[0]
+              after = text.split(end, 1)[1]
+              text = before + block + after
+          else:
+              old_banner = '''<a href="https://growtopia-explorer.vercel.app">
+            <img src="docs/live-demo.svg" alt="Open Growtopia Explorer Live Demo" width="100%">
+          </a>'''
+              if old_banner in text:
+                  text = text.replace(old_banner, block, 1)
+              else:
+                  anchor = '<br>\n'
+                  if anchor not in text:
+                      raise SystemExit('README hero anchor not found')
+                  text = text.replace(anchor, anchor + '\n' + block + '\n', 1)
+
+          readme.write_text(text, encoding='utf-8')
+
+      - name: Verify generated media
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s docs/assets/growtopia-explorer-showcase.gif
+          test -s docs/assets/growtopia-explorer-showcase-poster.png
+          grep -Fq 'docs/assets/growtopia-explorer-showcase.gif' README.md
+          file docs/assets/growtopia-explorer-showcase.gif
+          file docs/assets/growtopia-explorer-showcase-poster.png
+
+      - name: Publish README showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md docs/assets/growtopia-explorer-showcase.gif docs/assets/growtopia-explorer-showcase-poster.png
+
+          if git diff --cached --quiet; then
+            echo 'Showcase is already up to date.'
+            exit 0
+          fi
+
+          git commit -m 'docs: add animated product showcase to README'
+          git push origin HEAD:main
+
+      - name: Upload capture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: growtopia-explorer-readme-showcase
+          path: |
+            docs/assets/growtopia-explorer-showcase.gif
+            docs/assets/growtopia-explorer-showcase-poster.png
+          retention-days: 30
