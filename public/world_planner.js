@@ -3821,11 +3821,13 @@
  player.isGrounded = false;
  resolvePlayerCollisionY();
 
- // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX
+ // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX + Real Human Landing Grunt "Ughh!"
  if (!wasGrounded && player.isGrounded) {
  player.landingSquashTimer = 0.14;
  spawnLandingDust(player.x + player.width / 2, player.y + player.height);
- playSfx("hitground", 0.96 + Math.random() * 0.08, 0.85);
+ playSfx("hitground", 0.96 + Math.random() * 0.08, 0.80);
+ const landSfx = Math.random() < 0.5 ? "human_land_ugh1" : "human_land_ugh2";
+ playSfx(landSfx, 0.96 + Math.random() * 0.08, 0.75);
  }
  }
 
@@ -5385,7 +5387,7 @@
 
  function preloadFootstepSounds() {
         // Preload all essential gameplay SFX for zero-delay instant playback
-        const coreSounds = ["jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch"];
+        const coreSounds = ["human_land_ugh1", "human_land_ugh2", "human_jump_hup", "jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch"];
  coreSounds.forEach(s => {
  const key = `sfx_${s}`;
  if (!audioBufferCache.has(key)) {
@@ -5494,8 +5496,10 @@
  }
 
       function playJumpSound(isDoubleJump = false) {
-        // Play clean authentic Growtopia jump sound (jump.wav)
-        playSfx("jump", isDoubleJump ? 1.25 : 1.0, 0.75);
+        // 1. Play clean authentic Growtopia jump sound (jump.wav)
+        playSfx("jump", isDoubleJump ? 1.25 : 1.0, 0.70);
+        // 2. Play real human jump effort vocal (Hup!)
+        playSfx("human_jump_hup", isDoubleJump ? 1.15 : (0.96 + Math.random() * 0.08), 0.60);
       }
 
  function startBgm() {
