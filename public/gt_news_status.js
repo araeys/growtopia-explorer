@@ -46,9 +46,92 @@
           desc: "Get ready to complete Ringmaster quests and forge legendary rings of power!"
         }
       ];
+      this.staffList = [
+        { name: "@Seth", role: "Original Creator", roleType: "dev", icon: "👨‍💻", note: "Co-creator of Growtopia (Legacy)" },
+        { name: "@Hamumu", role: "Original Creator", roleType: "dev", icon: "🧙‍♂️", note: "Co-creator & Game Designer (Legacy)" },
+        { name: "@Misthero", role: "Developer", roleType: "dev", icon: "👑", note: "Ubisoft Core Lead Developer" },
+        { name: "@Meow", role: "Lead Developer", roleType: "dev", icon: "🐱", note: "Server Architecture & Systems" },
+        { name: "@Solorlz", role: "Community Manager", roleType: "cm", icon: "📢", note: "Official Community & Global Events Lead" },
+        { name: "@JackBowe", role: "Community Manager", roleType: "cm", icon: "🎙️", note: "Social Media & Player Experience" },
+        { name: "@Zodiac", role: "Senior Moderator", roleType: "mod", icon: "🛡️", note: "In-game Security & Rule Enforcement" },
+        { name: "@Cuckers", role: "Senior Moderator", roleType: "mod", icon: "⚖️", note: "Anti-glitch & Player Moderation" },
+        { name: "@Airplaneguy", role: "Guardian", roleType: "guardian", icon: "✈️", note: "Community Guardian & Volunteer Support" },
+        { name: "@TechnoGamer", role: "Guardian", roleType: "guardian", icon: "🎮", note: "Player Assistance & Event Support" }
+      ];
       this.pollInterval = null;
+      this.clockInterval = null;
       this.lastSyncTime = null;
       this.isSyncing = false;
+    }
+
+    getGTTimeData() {
+      const now = new Date();
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          weekday: 'short'
+        });
+        const parts = formatter.formatToParts(now);
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+
+        const hours = parseInt(map.hour, 10) % 24;
+        const minutes = parseInt(map.minute, 10);
+        const seconds = parseInt(map.second, 10);
+
+        const currentDaySeconds = hours * 3600 + minutes * 60 + seconds;
+        const totalDaySeconds = 86400;
+        const remainingSeconds = totalDaySeconds - currentDaySeconds;
+
+        const remHours = Math.floor(remainingSeconds / 3600);
+        const remMinutes = Math.floor((remainingSeconds % 3600) / 60);
+        const remSecs = remainingSeconds % 60;
+
+        const progressPercent = ((currentDaySeconds / totalDaySeconds) * 100).toFixed(1);
+
+        return {
+          timeString: String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'),
+          dateString: map.weekday + ', ' + map.month + ' ' + map.day + ' ' + map.year,
+          countdownString: String(remHours).padStart(2, '0') + 'h ' + String(remMinutes).padStart(2, '0') + 'm ' + String(remSecs).padStart(2, '0') + 's',
+          progressPercent: progressPercent
+        };
+      } catch (e) {
+        return {
+          timeString: now.toTimeString().slice(0, 8),
+          dateString: now.toDateString(),
+          countdownString: '--:--:--',
+          progressPercent: '50'
+        };
+      }
+    }
+
+    updateClockUI() {
+      if (typeof document === 'undefined') return;
+      const gtTime = this.getGTTimeData();
+
+      // 1. Header Clock Badge
+      const headerClockVal = document.getElementById('gt-header-time-val');
+      if (headerClockVal) headerClockVal.textContent = gtTime.timeString;
+
+      // 2. Operations Card Time Elements
+      const opsTimeVal = document.getElementById('gt-ops-time-val');
+      const opsDateVal = document.getElementById('gt-ops-date-val');
+      const opsCountdownVal = document.getElementById('gt-ops-countdown-val');
+      const opsProgressVal = document.getElementById('gt-ops-progress-val');
+      const opsProgressBar = document.getElementById('gt-ops-progress-bar');
+
+      if (opsTimeVal) opsTimeVal.textContent = gtTime.timeString;
+      if (opsDateVal) opsDateVal.textContent = gtTime.dateString;
+      if (opsCountdownVal) opsCountdownVal.textContent = gtTime.countdownString;
+      if (opsProgressVal) opsProgressVal.textContent = gtTime.progressPercent + '%';
+      if (opsProgressBar) opsProgressBar.style.width = gtTime.progressPercent + '%';
     }
 
     async fetchStatus() {
@@ -121,6 +204,7 @@
 
     updateUI() {
       if (typeof document === 'undefined') return;
+      this.updateClockUI();
 
       // 1. Update Topbar Online Players Badge
       const onlineBadge = document.getElementById('gt-live-online-badge');
@@ -196,6 +280,7 @@
       if (!container) return;
 
       const isLive = this.statusState === 'online' && this.onlineUsers !== null;
+      const gtTime = this.getGTTimeData();
 
       container.innerHTML = `
         <div class="gt-news-dashboard">
@@ -206,8 +291,8 @@
                 <span class="${isLive ? 'pulse-dot-green' : (this.statusState === 'connecting' ? 'pulse-dot-yellow' : 'pulse-dot-red')}"></span>
                 OFFICIAL GROWTOPIA LIVE FEED
               </div>
-              <h2 class="news-hero-title">📰 Server Status, WOTD & Patch Notes</h2>
-              <p class="news-hero-subtitle">Real-time player count, World of the Day showcase, and official update changelogs.</p>
+              <h2 class="news-hero-title">📰 Server Status, WOTD & Operations</h2>
+              <p class="news-hero-subtitle">Real-time player count, Growtopia Server Time (EDT), daily reset countdown & update notes.</p>
             </div>
             <div class="news-server-pill">
               <div class="server-pill-status" style="color:${isLive ? '#4ade80' : (this.statusState === 'connecting' ? '#fde047' : '#ef4444')}">
@@ -218,6 +303,50 @@
               </div>
               <div class="server-pill-sub">
                 ${isLive ? 'Active Growtopians Online' : (this.statusState === 'connecting' ? 'Connecting to Growtopia API...' : 'Failed to connect to Growtopia servers')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Server Operations & GT Clock Card -->
+          <div class="gt-server-ops-card">
+            <div class="gt-ops-header">
+              <h3 class="gt-ops-title">⏱️ Live Growtopia Server Time & Daily Reset Operations</h3>
+              <span class="news-live-tag" style="margin:0;"><span class="pulse-dot-cyan"></span> REAL-TIME CLOCK (EDT / UTC-4)</span>
+            </div>
+
+            <div class="gt-ops-grid">
+              <div class="gt-ops-box">
+                <div class="gt-ops-box-label">🕒 Official Server Time (GT Time)</div>
+                <div class="gt-ops-box-val" id="gt-ops-time-val">${gtTime.timeString}</div>
+                <div class="gt-ops-box-sub" id="gt-ops-date-val">${gtTime.dateString}</div>
+              </div>
+
+              <div class="gt-ops-box">
+                <div class="gt-ops-box-label">⏳ Next Daily Server Reset (00:00 GT)</div>
+                <div class="gt-ops-box-val" id="gt-ops-countdown-val" style="color:#fde047;">${gtTime.countdownString}</div>
+                <div class="gt-ops-box-sub">Resets WOTD, Daily Rewards & Guild Clash</div>
+              </div>
+
+              <div class="gt-ops-box">
+                <div class="gt-ops-box-label">🌐 Server Region & Protocol</div>
+                <div class="gt-ops-box-val" style="font-size:20px;color:#a78bfa;">US-East (ENet)</div>
+                <div class="gt-ops-box-sub">Port 17091 / UDP Protocol</div>
+              </div>
+            </div>
+
+            <div class="gt-day-progress-container">
+              <div class="gt-progress-header">
+                <span>🌞 Game Day Cycle Progress</span>
+                <span id="gt-ops-progress-val">${gtTime.progressPercent}% Completed</span>
+              </div>
+              <div class="gt-progress-bar-bg">
+                <div class="gt-progress-bar-fill" id="gt-ops-progress-bar" style="width:${gtTime.progressPercent}%;"></div>
+              </div>
+              <div class="gt-reset-checklist">
+                <div class="gt-reset-item">👑 <span class="gt-reset-item-name">WOTD Rotation</span></div>
+                <div class="gt-reset-item">🎁 <span class="gt-reset-item-name">Daily Bonus Calendar</span></div>
+                <div class="gt-reset-item">⚔️ <span class="gt-reset-item-name">Guild Clash Quests</span></div>
+                <div class="gt-reset-item">🏥 <span class="gt-reset-item-name">Surgery Daily Patients</span></div>
               </div>
             </div>
           </div>
@@ -257,6 +386,33 @@
               </div>
             </div>
           </div>
+
+          <!-- Official Growtopia Staff & Moderator Roster -->
+          <div class="gt-staff-card">
+            <div class="gt-staff-header">
+              <div>
+                <h3 class="gt-staff-title">🛡️ Official Staff & Moderator Directory</h3>
+                <p style="font-size:12px;color:#94a3b8;margin:4px 0 0 0;">
+                  Official Ubisoft Developers, Community Managers, and Moderators. In-game check: Type <code>/mods</code> command in the Growtopia client.
+                </p>
+              </div>
+              <span class="news-live-tag" style="margin:0;"><span class="pulse-dot-green"></span> UBISOFT OFFICIAL ROSTER</span>
+            </div>
+            <div class="gt-staff-grid">
+              ${this.staffList.map(s => `
+                <div class="gt-staff-item">
+                  <div class="gt-staff-avatar">${s.icon}</div>
+                  <div class="gt-staff-info">
+                    <div class="gt-staff-name">
+                      ${s.name}
+                      <span class="gt-staff-role-badge role-${s.roleType}">${s.role}</span>
+                    </div>
+                    <div class="gt-staff-sub">${s.note}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
         </div>
       `;
 
@@ -274,9 +430,16 @@
     startLivePolling() {
       this.updateUI();
       this.fetchStatus();
-      if (this.pollInterval) clearInterval(this.pollInterval);
+
       // Poll every 30 seconds for live player count & WOTD sync
+      if (this.pollInterval) clearInterval(this.pollInterval);
       this.pollInterval = setInterval(() => this.fetchStatus(), 30000);
+
+      // Live 1-second ticking clock ticker
+      if (this.clockInterval) clearInterval(this.clockInterval);
+      this.clockInterval = setInterval(() => {
+        this.updateClockUI();
+      }, 1000);
 
       // Wire topbar badge click to refresh on demand
       if (typeof document !== 'undefined') {
