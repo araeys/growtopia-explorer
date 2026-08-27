@@ -7,30 +7,39 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  try {
-    const response = await fetch('https://growtopiagame.com/detail', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'X-Requested-With': 'XMLHttpRequest'
+  const urls = [
+    'https://www.growtopiagame.com/detail',
+    'https://growtopiagame.com/detail'
+  ];
+
+  for (const targetUrl of urls) {
+    try {
+      const response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/javascript, */*; q=0.01',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: AbortSignal.timeout(6000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.online_user) {
+          res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
+          return res.status(200).json(data);
+        }
       }
-    });
-
-    if (!response.ok) {
-      throw new Error(GT Server status );
+    } catch (err) {
+      // Try next url
     }
-
-    const data = await response.json();
-    res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=30');
-    return res.status(200).json(data);
-  } catch (error) {
-    return res.status(200).json({
-      online_user: '55400',
-      world_day_images: {
-        full_size: 'https://www.growtopiagame.com/worlds/murasakitreasure.png',
-        resize: 'https://www.growtopiagame.com/worlds/murasakitreasure.png'
-      },
-      fallback: true
-    });
   }
+
+  // If failed to reach Growtopia servers, return 503 error - NO FAKE NUMBERS
+  return res.status(503).json({
+    error: 'Failed to connect to official Growtopia servers',
+    isLive: false,
+    online_user: null,
+    world_day_images: null
+  });
 }

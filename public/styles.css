@@ -4543,6 +4543,42 @@ body.sky-warp { background-image: radial-gradient(circle at 50% 50%, #4c1d95 0%,
   100% { transform: scale(0.9); opacity: 0.8; }
 }
 
+.pulse-dot-red {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+  animation: pulseRed 1.5s infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes pulseRed {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.pulse-dot-yellow {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #eab308;
+  box-shadow: 0 0 10px #eab308;
+  animation: pulseYellow 1.5s infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes pulseYellow {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
 .gt-live-stat-badge {
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.4);
