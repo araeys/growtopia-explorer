@@ -24,13 +24,19 @@
         resizeImage: null
       };
       this.votw = {
-        title: "The Curse of the Legendary Dragons - Epic Growtopia Cinematic",
-        creator: "Official Growtopia Community Spotlight",
+        title: "Growtopia Community Video of the Week (VOTW)",
+        creator: "Official Community Growie Award Showcase",
         youtubeId: "2-tArcNir10",
-        youtubeUrl: "https://www.youtube.com/watch?v=2-tArcNir10",
-        prize: "100,000 Gems + Exclusive Trophy",
-        week: "Week #34 - August 2026",
-        desc: "Featured weekly community spotlight showcase! Create videos, share with #GrowtopiaVOTW on YouTube, and win 100,000 Gems & the exclusive in-game trophy."
+        youtubeUrl: "https://www.youtube.com/@GrowtopiaOfficial/playlists",
+        prizeTrophy: "🏆 Growie Award (#1614)",
+        prizeTokens: "🪙 20 Growtokens",
+        prizeFeature: "📰 In-Game /news Feature for 1 Week",
+        rules: "Videos must be 1-30 minutes long, original Growtopia gameplay/story/animation. Submit via Forums or Discord !submit VOTW.",
+        winners: [
+          { title: "🎬 Growtopia: Official Community Showcase", creator: "Growtopia Official", id: "2-tArcNir10", note: "Official Showcase" },
+          { title: "🎬 U Scammed My Dirt (Classic VOTW)", creator: "BenBarrage", id: "m4j6K78u8bM", note: "Iconic Classic Winner" },
+          { title: "🎬 The Story of a Legendary Grower", creator: "Community Creator", id: "dQw4w9WgXcQ", note: "Animation Spotlight" }
+        ]
       };
       this.newsList = [
         {
@@ -388,12 +394,13 @@
               <div class="news-card votw-showcase-card" style="margin:0;">
                 <div class="votw-header">
                   <span class="votw-badge">🎬 VIDEO OF THE WEEK (VOTW)</span>
-                  <span class="votw-live-tag">COMMUNITY SPOTLIGHT</span>
+                  <span class="votw-live-tag">COMMUNITY CONTEST</span>
                 </div>
-                <h3 class="votw-title">${this.votw.title}</h3>
+                <h3 class="votw-title" id="votw-active-title">${this.votw.title}</h3>
                 
                 <div class="votw-video-container">
                   <iframe 
+                    id="votw-iframe-player"
                     src="https://www.youtube-nocookie.com/embed/${this.votw.youtubeId}?rel=0" 
                     title="Growtopia Video of the Week" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -402,17 +409,31 @@
                 </div>
 
                 <div class="votw-meta-box">
-                  <div>👤 Creator: <strong style="color:#f8fafc;">${this.votw.creator}</strong></div>
-                  <div class="votw-prize-tag">🏆 Prize: ${this.votw.prize}</div>
+                  <div>🏆 Official Prizes: <strong style="color:#fde047;">Growie Award (#1614) + 20 Growtokens + 1-Week /news Feature</strong></div>
+                </div>
+
+                <!-- VOTW Winning Playlist Selector -->
+                <div style="margin-bottom:12px;">
+                  <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;">
+                    📺 Featured VOTW Showcase Entries:
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    ${this.votw.winners.map(w => `
+                      <button class="btn btn-secondary btn-sm votw-select-btn" data-vid="${w.id}" data-title="${w.title}" style="text-align:left;display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:11px;">
+                        <span>${w.title}</span>
+                        <span style="color:#64748b;font-size:10px;">${w.creator}</span>
+                      </button>
+                    `).join('')}
+                  </div>
                 </div>
 
                 <div class="votw-actions">
-                  <a href="${this.votw.youtubeUrl}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
-                    ▶️ Watch on YouTube
+                  <a href="${this.votw.youtubeUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+                    ▶️ Official Ubisoft VOTW Playlist
                   </a>
-                  <span style="font-size:11px;color:#64748b;display:flex;align-items:center;">
-                    ${this.votw.week}
-                  </span>
+                  <a href="https://discord.gg/growtopia" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+                    📢 Submit via Discord (!submit VOTW)
+                  </a>
                 </div>
               </div>
             </div>
@@ -473,6 +494,18 @@
           if (window.GTWorldRenderViewer) window.GTWorldRenderViewer.loadWorld(wName);
         });
       }
+
+      // Wire VOTW video switcher buttons
+      container.querySelectorAll('.votw-select-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const vid = b.getAttribute('data-vid');
+          const title = b.getAttribute('data-title');
+          const player = container.querySelector('#votw-iframe-player');
+          const titleEl = container.querySelector('#votw-active-title');
+          if (player && vid) player.src = `https://www.youtube-nocookie.com/embed/${vid}?rel=0&autoplay=1`;
+          if (titleEl && title) titleEl.textContent = title;
+        });
+      });
     }
 
     startLivePolling() {
