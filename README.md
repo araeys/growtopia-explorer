@@ -1,4 +1,4 @@
-# 🌐 Growtopia Explorer & World Planner Studio
+# Growtopia Explorer & World Planner Studio
 
 <div align="center">
 
@@ -19,7 +19,7 @@
   <img src="docs/assets/growtopia-explorer-tutorial.gif" alt="Growtopia Explorer guided tutorial demo: Explore, Inspect, Style, Build, and Play" width="100%">
 </a>
 
-<sub><strong>Explore → Inspect → Style → Build → Play</strong> · guided browser demo · 20 seconds · 1280×720</sub>
+<sub><strong>Explore → Inspect → Style → Build → Play</strong> · guided browser demo ·</sub>
 
 <br>
 
@@ -29,7 +29,7 @@
   <img src="docs/assets/growtopia-explorer-feature-highlights.gif" alt="Growtopia Explorer edited feature highlights with world building, physics, hazards, and moderator mode" width="100%">
 </a>
 
-<sub><strong>World building → Physics → Interaction → Hazards → Moderator mode</strong> · edited showcase · 30 FPS · 1280×720</sub>
+<sub><strong>World building → Physics → Interaction → Hazards → Moderator mode</strong> · Preview showcase ·</sub>
 <!-- github-showcase:end -->
 
 ### **[🚀 OPEN THE LIVE PROJECT → growtopia-explorer.vercel.app](https://growtopia-explorer.vercel.app)**
