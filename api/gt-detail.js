@@ -86,10 +86,10 @@ export default async function handler(request) {
             });
           }
         } else {
-          errors.push({ url, ua, status: gtRes.status });
+          errors.push({ url, ua: h['User-Agent'], status: gtRes.status });
         }
       } catch (e) {
-        errors.push({ url, ua, error: e.message });
+        errors.push({ url, ua: h['User-Agent'], error: e.message });
       }
     }
   }
