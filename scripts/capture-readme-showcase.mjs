@@ -11,7 +11,8 @@ const showcaseUrl = 'https://growtopia-explorer.vercel.app/workflow-demo.html?ca
 const width = 1280;
 const height = 720;
 const fps = 12;
-const durationMs = 15000;
+const durationMs = 20000;
+const playbackRate = 0.75;
 const frameCount = Math.floor((durationMs / 1000) * fps);
 const frameIntervalMs = 1000 / fps;
 
@@ -28,6 +29,18 @@ const context = await browser.newContext({
   reducedMotion: 'no-preference'
 });
 const page = await context.newPage();
+
+// Slow the showcase clock without changing the production page itself.
+// 0.75x turns the 15-second product timeline into a calmer 20-second README loop.
+await page.addInitScript((rate) => {
+  const nativeNow = performance.now.bind(performance);
+  const realOrigin = nativeNow();
+  const virtualOrigin = realOrigin;
+  Object.defineProperty(performance, 'now', {
+    configurable: true,
+    value: () => virtualOrigin + (nativeNow() - realOrigin) * rate
+  });
+}, playbackRate);
 
 page.on('console', (message) => {
   if (message.type() === 'error') console.error(`[browser] ${message.text()}`);
@@ -65,11 +78,12 @@ try {
     });
   }
 
-  // A late Build/Play frame is useful as a static social / fallback poster.
-  const posterFrame = `frame-${String(Math.min(frameCount - 1, Math.round(fps * 11.5))).padStart(4, '0')}.png`;
+  // Use a late Build/Play frame as a static social / fallback poster.
+  const posterSecond = 15.4;
+  const posterFrame = `frame-${String(Math.min(frameCount - 1, Math.round(fps * posterSecond))).padStart(4, '0')}.png`;
   await fs.copyFile(path.join(frameDir, posterFrame), posterPath);
 
-  console.log(`Captured ${frameCount} frames at ${width}x${height} / ${fps} fps.`);
+  console.log(`Captured ${frameCount} frames at ${width}x${height} / ${fps} fps / ${playbackRate}x playback.`);
 } finally {
   await context.close();
   await browser.close();
