@@ -3796,11 +3796,35 @@
           warpThroughDoor(playerCenterTileX, playerCenterTileY);
         }
 
-        // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX
+        // Track highest vertical point during airborne flight for fall distance calculation
+          if (!player.isGrounded) {
+            if (player.fallPeakY === undefined || player.y < player.fallPeakY) {
+              player.fallPeakY = player.y;
+            }
+          }
+
+          // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX + 20+ block High Fall Ouch
           if (!wasGrounded && player.isGrounded) {
             player.landingSquashTimer = 0.14;
             spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+            
+            // 1. Authentic Growtopia hitground impact SFX
             playSfx("hitground", 0.96 + Math.random() * 0.08, 0.85);
+
+            // 2. Compute vertical fall distance in blocks (32px per block)
+            const peakY = (player.fallPeakY !== undefined) ? player.fallPeakY : player.y;
+            const fallBlocks = Math.max(0, (player.y - peakY) / TILE_SIZE);
+            player.fallPeakY = player.y; // Reset peak after landing
+
+            if (fallBlocks >= 20) {
+              // High fall impact (>= 20 blocks): Play extra ouch sound!
+              playSfx("new/ouch.WAV", 1.0, 0.95);
+              player.impactShakeTimer = 0.28;
+              spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+            } else {
+              // Normal landing: Play randomized extra landing sound
+              playRandomLandingExtraSfx(0.75);
+            }
           }
         }
 
@@ -5374,7 +5398,8 @@
           return;
         }
 
-        const ext = (name.endsWith('.ogg') || name.endsWith('.wav') || name.endsWith('.mp3')) ? '' : '.wav';
+        const lower = name.toLowerCase();
+        const ext = (lower.endsWith('.ogg') || lower.endsWith('.wav') || lower.endsWith('.mp3')) ? '' : '.wav';
         fetch(`audio/${name}${ext}`)
           .then(r => r.arrayBuffer())
           .then(ab => ctx.decodeAudioData(ab))
@@ -5383,6 +5408,32 @@
             playBuffer(buf);
           })
           .catch(() => {});
+      }
+
+            const JUMP_EXTRA_SFX_POOL = ["new/jump1.WAV", "new/jump2.WAV", "new/jump3.WAV"];
+      let lastJumpExtraIdx = -1;
+      function playRandomJumpExtraSfx(volume = 0.70) {
+        let idx = Math.floor(Math.random() * JUMP_EXTRA_SFX_POOL.length);
+        if (idx === lastJumpExtraIdx && JUMP_EXTRA_SFX_POOL.length > 1) {
+          idx = (idx + 1) % JUMP_EXTRA_SFX_POOL.length;
+        }
+        lastJumpExtraIdx = idx;
+        const sfx = JUMP_EXTRA_SFX_POOL[idx];
+        const rate = 0.97 + Math.random() * 0.06;
+        playSfx(sfx, rate, volume);
+      }
+
+      const LANDING_EXTRA_SFX_POOL = ["new/landing.WAV", "new/landing2.WAV"];
+      let lastLandingExtraIdx = -1;
+      function playRandomLandingExtraSfx(volume = 0.75) {
+        let idx = Math.floor(Math.random() * LANDING_EXTRA_SFX_POOL.length);
+        if (idx === lastLandingExtraIdx && LANDING_EXTRA_SFX_POOL.length > 1) {
+          idx = (idx + 1) % LANDING_EXTRA_SFX_POOL.length;
+        }
+        lastLandingExtraIdx = idx;
+        const sfx = LANDING_EXTRA_SFX_POOL[idx];
+        const rate = 0.97 + Math.random() * 0.06;
+        playSfx(sfx, rate, volume);
       }
 
       let lastFootstepIdx = -1;
@@ -5398,7 +5449,7 @@
 
       function preloadFootstepSounds() {
         // Preload all essential gameplay SFX for zero-delay instant playback
-        const coreSounds = ["jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch"];
+        const coreSounds = ["jump", "hitground", "Wood_dig3.ogg", ...AMETHYST_PLACE_SFX_POOL, "door_open", "door_shut", "knock", "piano_nice", "dialog_open", "teleport", "success", "rock_hit", "metal_hit", "wood_break", "punch_organic", "punch_glass", "punch_miss", "ouch", ...JUMP_EXTRA_SFX_POOL, ...LANDING_EXTRA_SFX_POOL, "new/ouch.WAV"];
         coreSounds.forEach(s => {
           const key = `sfx_${s}`;
           if (!audioBufferCache.has(key)) {
@@ -5513,6 +5564,9 @@
 
         // 1. Play authentic Growtopia jump sound sample
         playSfx("jump", isDoubleJump ? 1.28 : 1.0, 0.65);
+
+        // 2. Play randomized additional jump vocal/SFX from audio/new/
+        playRandomJumpExtraSfx(0.70);
 
         // 2. Play immediate synth chirp fallback for zero-latency response
         try {
