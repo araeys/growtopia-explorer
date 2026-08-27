@@ -24,18 +24,19 @@
         resizeImage: null
       };
       this.votw = {
-        title: "Growtopia Community Video of the Week (VOTW)",
-        creator: "Official Community Growie Award Showcase",
-        youtubeId: "2-tArcNir10",
+        title: "Official Growtopia Video Spotlight",
+        creator: "Ubisoft Growtopia Official Channel",
+        youtubeId: "TkMVmdA2CIw",
         youtubeUrl: "https://www.youtube.com/@GrowtopiaOfficial/playlists",
         prizeTrophy: "🏆 Growie Award (#1614)",
         prizeTokens: "🪙 20 Growtokens",
         prizeFeature: "📰 In-Game /news Feature for 1 Week",
         rules: "Videos must be 1-30 minutes long, original Growtopia gameplay/story/animation. Submit via Forums or Discord !submit VOTW.",
         winners: [
-          { title: "🎬 Growtopia: Official Community Showcase", creator: "Growtopia Official", id: "2-tArcNir10", note: "Official Showcase" },
-          { title: "🎬 U Scammed My Dirt (Classic VOTW)", creator: "BenBarrage", id: "m4j6K78u8bM", note: "Iconic Classic Winner" },
-          { title: "🎬 The Story of a Legendary Grower", creator: "Community Creator", id: "dQw4w9WgXcQ", note: "Animation Spotlight" }
+          { title: "🎬 Halloween Special featuring 3volv3 & Pharaohboi!", creator: "Growtopia Official", id: "TkMVmdA2CIw", note: "Official Stream Special" },
+          { title: "🎬 PAW Special Livestream Hosted by Miu!", creator: "Growtopia Official", id: "hxN3DkJqdvY", note: "Official Event" },
+          { title: "🎬 Pet Battle Royale Finals 2025 - Razer Prizes!", creator: "Growtopia Official", id: "fTKShfSgSkE", note: "Official Tournament" },
+          { title: "🎬 U Scammed My Dirt (Classic VOTW Winner)", creator: "BenBarrage", id: "m4j6K78u8bM", note: "Iconic Growie Winner" }
         ]
       };
       this.newsList = [
