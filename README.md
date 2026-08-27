@@ -6,21 +6,27 @@
 
 <br>
 
-<!-- github-showcase:start -->
-### Product walkthrough
-
 <a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer product walkthrough: Explore, Inspect, Style, Build, and Play" width="100%">
+  <img src="docs/live-demo.svg" alt="Open Growtopia Explorer Live Demo" width="100%">
 </a>
 
-<sub><strong>Explore → Inspect → Style → Build → Play</strong> · original browser showcase · 1280×720</sub>
+<br>
+
+<!-- github-showcase:start -->
+### Tutorial demo
+
+<a href="https://growtopia-explorer.vercel.app">
+  <img src="docs/assets/growtopia-explorer-tutorial.gif" alt="Growtopia Explorer guided tutorial demo: Explore, Inspect, Style, Build, and Play" width="100%">
+</a>
+
+<sub><strong>Explore → Inspect → Style → Build → Play</strong> · guided browser demo · 20 seconds · 1280×720</sub>
 
 <br>
 
 ### Feature highlights
 
 <a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/assets/growtopia-explorer-showcase-edited.gif" alt="Growtopia Explorer edited feature highlights with world building, physics, hazards, and moderator mode" width="100%">
+  <img src="docs/assets/growtopia-explorer-feature-highlights.gif" alt="Growtopia Explorer edited feature highlights with world building, physics, hazards, and moderator mode" width="100%">
 </a>
 
 <sub><strong>World building → Physics → Interaction → Hazards → Moderator mode</strong> · edited showcase · 30 FPS · 1280×720</sub>
@@ -35,7 +41,7 @@
 [![JavaScript](https://img.shields.io/badge/Language-ES6%2B%20JavaScript-F7DF1E?logo=javascript&logoColor=black)](#tech-stack)
 [![HTML5 Canvas](https://img.shields.io/badge/Graphics-HTML5%20Canvas%202D-E34F26?logo=html5&logoColor=white)](#tech-stack)
 [![Web Audio API](https://img.shields.io/badge/Audio-Web%20Audio%20API-4A154B?logo=webaudio&logoColor=white)](#tech-stack)
-[![Tests](https://img.shields.io/badge/Tests-137%2F137%20Passing-brightgreen?logo=node.js&logoColor=white)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-137%2F137%20Passing-brightgreen?logo=node.js)](#testing)
 [![Vercel](https://img.shields.io/badge/Deploy-Live_on_Vercel-000000?logo=vercel&logoColor=white)](https://growtopia-explorer.vercel.app)
 [![Items](https://img.shields.io/badge/Database-16%2C304%20Items-00E5FF)](#features)
 
