@@ -1498,6 +1498,7 @@
   <button class="world-menu-item" id="world-menu-new-scifi">🚀 Sci-Fi Station (Nebula)</button>
   <button class="world-menu-item" id="world-menu-new-flat">🟦 New Flat World</button>
   <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
+  <button class="world-menu-item" id="world-menu-generate-maze" style="color:#38bdf8;font-weight:bold;">🌀 Auto-Maze / Dungeon Generator...</button>
   <button class="world-menu-item" id="world-menu-custom-size">Custom World Size...</button>
   <div class="world-menu-divider"></div>
   <button class="world-menu-item" id="world-menu-open-file">Open World (.DAT / .gtworld)</button>
@@ -1509,6 +1510,89 @@
     <span id="camera-shake-status-text">Camera Shake: ON</span>
   </button>
   <button class="world-menu-item" id="world-menu-render-png">Render Full World PNG</button>
+</div>
+
+<!-- Auto-Maze & Dungeon Generator Modal (Growtopia Dialog Style) -->
+<div id="maze-generator-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999999;display:none;align-items:center;justify-content:center;padding:12px;font-family:'Century Gothic',Arial,sans-serif;">
+  <div style="max-width:480px;width:100%;background:#1c2836;border:2px solid #0a1017;box-shadow:inset 0 0 0 2px #3d566e, 0 10px 35px rgba(0,0,0,0.9);border-radius:4px;overflow:hidden;">
+    
+    <!-- Header -->
+    <div style="background:#132639;border-bottom:2px solid #0a1017;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:14px;font-weight:900;color:#f9d342;text-shadow:1px 1px 0 #000,-1px -1px 0 #000;letter-spacing:0.5px;">
+        🌀 PROCEDURAL MAZE & DUNGEON GENERATOR
+      </span>
+      <button id="maze-modal-close" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;width:24px;height:24px;line-height:20px;text-align:center;cursor:pointer;padding:0;">
+        X
+      </button>
+    </div>
+
+    <!-- Form Content -->
+    <div style="padding:16px;display:grid;gap:12px;color:#e2e8f0;font-size:12px;">
+      
+      <div>
+        <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">GENERATION MODE:</label>
+        <select id="gen-mode" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
+          <option value="maze">🌀 Classic Labyrinth Maze (Recursive Backtracking)</option>
+          <option value="dungeon">🏰 Dungeon Quest (Multi-Room & Interconnected Chambers)</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">THEME & MATERIAL PALETTE:</label>
+        <select id="gen-theme" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
+          <option value="gothic">👻 Gothic Catacombs (Grimstone, Evil Bricks, Spikes & Torches)</option>
+          <option value="nature">🌿 Garden Topiary (Hedges, Rustic Fences, Fountains & Lanterns)</option>
+          <option value="scifi">🚀 Cyberpunk Station (High Tech Blocks, Forcefields & Laser Grids)</option>
+          <option value="brick">🧱 Classic Brick Crypt (Bricks, Wood Blocks & Platforms)</option>
+        </select>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div id="gen-corridor-wrap">
+          <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">CORRIDOR WIDTH:</label>
+          <select id="gen-corridor-width" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
+            <option value="2">2 Tiles (Jump-Friendly & Playable)</option>
+            <option value="1">1 Tile (Tight & Hardcore)</option>
+          </select>
+        </div>
+        <div id="gen-rooms-wrap" style="display:none;">
+          <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">NUMBER OF ROOMS:</label>
+          <select id="gen-num-rooms" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
+            <option value="8">8 Chambers</option>
+            <option value="6">6 Chambers (Cozy)</option>
+            <option value="10">10 Chambers (Large)</option>
+            <option value="14">14 Chambers (Epic Mega-Dungeon)</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-weight:bold;color:#38bdf8;margin-bottom:4px;">HAZARDS & TRAPS:</label>
+          <select id="gen-hazards" style="width:100%;padding:8px;background:#0f172a;border:1.5px solid #334155;border-radius:4px;color:#ffffff;font-weight:bold;outline:none;">
+            <option value="low">Low (Occasional Spikes)</option>
+            <option value="medium">Medium (Challenging)</option>
+            <option value="high">High (Hardcore Traps)</option>
+            <option value="none">None (Safe Exploration)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <input type="checkbox" id="gen-treasures" checked style="accent-color:#00e5ff;width:16px;height:16px;cursor:pointer;">
+        <label for="gen-treasures" style="cursor:pointer;font-weight:bold;color:#cbd5e1;">Add Display Box Trophies, Props, & Finish Gates</label>
+      </div>
+
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="background:#132639;border-top:2px solid #0a1017;padding:10px 14px;display:flex;justify-content:flex-end;gap:10px;">
+      <button id="maze-modal-cancel" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;padding:6px 18px;cursor:pointer;text-shadow:1px 1px 0 #000;border-radius:2px;">
+        CANCEL
+      </button>
+      <button id="maze-modal-generate" style="background:#27ae60;border-top:2px solid #58d68d;border-left:2px solid #58d68d;border-bottom:3px solid #196f3d;border-right:3px solid #196f3d;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;padding:6px 22px;cursor:pointer;text-shadow:1px 1px 0 #000;border-radius:2px;">
+        🚀 GENERATE WORLD
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <!-- Character Skin Selection Modal (Authentic Growtopia Client Dialog) -->
@@ -2165,6 +2249,65 @@
     const preset = customTypeSelect?.value || 'standard';
     engine.createCustomWorld(w, h, preset);
     sizeModal?.classList.add('hidden');
+  });
+
+  // ── Auto-Maze / Dungeon Generator Modal Handlers ──
+  const mazeModal = document.getElementById('maze-generator-modal');
+  const genModeSelect = document.getElementById('gen-mode');
+  const genThemeSelect = document.getElementById('gen-theme');
+  const genCorridorWrap = document.getElementById('gen-corridor-wrap');
+  const genRoomsWrap = document.getElementById('gen-rooms-wrap');
+  const genCorridorWidth = document.getElementById('gen-corridor-width');
+  const genNumRooms = document.getElementById('gen-num-rooms');
+  const genHazards = document.getElementById('gen-hazards');
+  const genTreasures = document.getElementById('gen-treasures');
+
+  genModeSelect?.addEventListener('change', () => {
+    const isDungeon = genModeSelect.value === 'dungeon';
+    if (genCorridorWrap) genCorridorWrap.style.display = isDungeon ? 'none' : 'block';
+    if (genRoomsWrap) genRoomsWrap.style.display = isDungeon ? 'block' : 'none';
+  });
+
+  document.getElementById('world-menu-generate-maze')?.addEventListener('click', () => {
+    menuDropdown?.classList.add('hidden');
+    if (mazeModal) mazeModal.style.display = 'flex';
+  });
+
+  const closeMazeModal = () => {
+    if (mazeModal) mazeModal.style.display = 'none';
+  };
+
+  document.getElementById('maze-modal-close')?.addEventListener('click', closeMazeModal);
+  document.getElementById('maze-modal-cancel')?.addEventListener('click', closeMazeModal);
+  mazeModal?.addEventListener('click', (e) => {
+    if (e.target === mazeModal) closeMazeModal();
+  });
+
+  document.getElementById('maze-modal-generate')?.addEventListener('click', () => {
+    const mode = genModeSelect?.value || 'maze';
+    const theme = genThemeSelect?.value || 'gothic';
+    const corridorWidth = parseInt(genCorridorWidth?.value, 10) || 2;
+    const numRooms = parseInt(genNumRooms?.value, 10) || 8;
+    const hazardDensity = genHazards?.value || 'low';
+    const addTreasures = genTreasures ? genTreasures.checked : true;
+
+    if (mode === 'dungeon') {
+      engine.generateDungeon({
+        theme,
+        numRooms,
+        hazardDensity,
+        addTreasures
+      });
+    } else {
+      engine.generateMaze({
+        theme,
+        corridorWidth,
+        hazardDensity,
+        addTreasures
+      });
+    }
+
+    closeMazeModal();
   });
 
   const fileInput = document.getElementById('world-file-input');

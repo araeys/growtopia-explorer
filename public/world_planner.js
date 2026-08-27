@@ -5479,6 +5479,58 @@
         onStatusMessage(`Loaded ${world.name || presetName} template with ${world.weather || 'SUNNY'} weather!`);
       }
 
+      function generateMaze(options = {}) {
+        pushUndoSnapshot("Generate Maze");
+        world = catalog.generateMaze({
+          width: options.width || world.width,
+          height: options.height || world.height,
+          theme: options.theme || "gothic",
+          corridorWidth: options.corridorWidth || 2,
+          hazardDensity: options.hazardDensity || "low",
+          addTreasures: options.addTreasures !== false
+        });
+
+        const wObj = catalog.getWeatherById(world.weather);
+        if (wObj && wObj.file) {
+          loadWeatherImage(wObj.file).then(() => render());
+        }
+
+        const spawn = findSpawnPosition();
+        player.x = spawn.x;
+        player.y = spawn.y;
+        centerViewport();
+        render();
+        onWorldChange(world);
+        onStatusMessage(`🌀 Generated ${world.name} with ${world.weather} weather!`);
+        return world;
+      }
+
+      function generateDungeon(options = {}) {
+        pushUndoSnapshot("Generate Dungeon");
+        world = catalog.generateDungeon({
+          width: options.width || world.width,
+          height: options.height || world.height,
+          theme: options.theme || "gothic",
+          numRooms: options.numRooms || 8,
+          hazardDensity: options.hazardDensity || "medium",
+          addTreasures: options.addTreasures !== false
+        });
+
+        const wObj = catalog.getWeatherById(world.weather);
+        if (wObj && wObj.file) {
+          loadWeatherImage(wObj.file).then(() => render());
+        }
+
+        const spawn = findSpawnPosition();
+        player.x = spawn.x;
+        player.y = spawn.y;
+        centerViewport();
+        render();
+        onWorldChange(world);
+        onStatusMessage(`🏰 Generated ${world.name} with ${world.weather} weather!`);
+        return world;
+      }
+
       return {
         init: () => {
           setupEventHandlers();
@@ -5645,6 +5697,8 @@
         getCameraShake: () => cameraShakeEnabled,
         loadPreset,
         createCustomWorld,
+        generateMaze,
+        generateDungeon,
         setTile,
         eraseTile,
         punchInteract,

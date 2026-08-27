@@ -733,5 +733,74 @@ test("GTWorldPlanner: Themed World Templates Loading & Automatic Weather Assignm
   assert.strictEqual(customNature.weather, "SPRING");
 });
 
+test("GTWorldCatalog & Engine: Procedural Auto-Maze and Dungeon Generator", () => {
+  const engine = planner.createEngine({
+    canvas: createTestCanvas(),
+    itemsDb,
+    catalog,
+    lzString: LZString
+  });
+
+  engine.init();
+
+  // 1. Classic Maze Generator Test (Gothic Theme)
+  const maze = catalog.generateMaze({
+    width: 100,
+    height: 60,
+    theme: "gothic",
+    corridorWidth: 2,
+    hazardDensity: "low",
+    addTreasures: true
+  });
+  assert.strictEqual(maze.width, 100);
+  assert.strictEqual(maze.height, 60);
+  assert.strictEqual(maze.weather, "SPOOKY");
+  assert.ok(maze.fg.some(id => id === 6), "Maze contains Main Door Spawn");
+  assert.ok(maze.fg.some(id => id === 680), "Maze contains Grimstone walls");
+  assert.ok(maze.fg.some(id => id === 60), "Maze contains Portcullis finish");
+  assert.ok(maze.bg.some(id => id === 990), "Maze contains Gothic Building background");
+
+  // 2. Nature Garden Maze
+  const gardenMaze = catalog.generateMaze({
+    width: 80,
+    height: 50,
+    theme: "nature",
+    corridorWidth: 1,
+    hazardDensity: "none",
+    addTreasures: true
+  });
+  assert.strictEqual(gardenMaze.width, 80);
+  assert.strictEqual(gardenMaze.height, 50);
+  assert.strictEqual(gardenMaze.weather, "SPRING");
+  assert.ok(gardenMaze.fg.some(id => id === 1004), "Contains Hedge walls");
+
+  // 3. Multi-Room Dungeon Quest Generator Test (Sci-Fi Theme)
+  const dungeon = catalog.generateDungeon({
+    width: 100,
+    height: 60,
+    theme: "scifi",
+    numRooms: 8,
+    hazardDensity: "medium",
+    addTreasures: true
+  });
+  assert.strictEqual(dungeon.width, 100);
+  assert.strictEqual(dungeon.height, 60);
+  assert.strictEqual(dungeon.weather, "NEBULA");
+  assert.ok(dungeon.fg.some(id => id === 6), "Dungeon contains Main Door entrance");
+  assert.ok(dungeon.fg.some(id => id === 324), "Dungeon contains High Tech walls");
+  assert.ok(dungeon.fg.some(id => id === 102), "Dungeon contains Wooden Platforms for climbing");
+
+  // 4. Engine Generator Methods & Live State Loading
+  engine.generateMaze({ theme: "nature", corridorWidth: 2 });
+  assert.strictEqual(engine.getWeather(), "SPRING");
+  const engineMaze = engine.getWorldState();
+  assert.ok(engineMaze.fg.some(id => id === 6), "Engine maze has spawn door");
+
+  engine.generateDungeon({ theme: "gothic", numRooms: 6 });
+  assert.strictEqual(engine.getWeather(), "SPOOKY");
+  const engineDungeon = engine.getWorldState();
+  assert.ok(engineDungeon.fg.some(id => id === 6), "Engine dungeon has spawn door");
+});
+
 
 

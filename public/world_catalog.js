@@ -1074,6 +1074,462 @@
       };
     }
 
+    function generateMaze(options = {}) {
+      const width = Math.max(10, Math.min(200, parseInt(options.width, 10) || WORLD_WIDTH));
+      const height = Math.max(10, Math.min(200, parseInt(options.height, 10) || WORLD_HEIGHT));
+      const theme = options.theme || "gothic"; // "nature" | "gothic" | "scifi" | "brick"
+      const corridorWidth = Math.max(1, Math.min(3, parseInt(options.corridorWidth, 10) || 2));
+      const hazardDensity = options.hazardDensity || "low"; // "none" | "low" | "medium" | "high"
+      const addTreasures = options.addTreasures !== false;
+
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      // 1. Theme Configuration
+      let wallId = 680; // Grimstone
+      let secWallId = 248; // Evil Bricks
+      let bgId = 990; // Gothic Building
+      let hazardId = 162; // Death Spikes
+      let doorId = 30; // Dungeon Door
+      let finishGateId = 60; // Portcullis
+      let propId = 696; // Torch
+      let weather = "SPOOKY";
+      let weatherCode = 11;
+      let worldName = "Gothic Labyrinth";
+
+      if (theme === "nature") {
+        wallId = 1004; // Hedge
+        secWallId = 1046; // Rustic Fence
+        bgId = 0; // Sky
+        hazardId = 194; // Mushroom / Spikes
+        doorId = 224; // House Entrance
+        finishGateId = 2964; // Grand Fountain
+        propId = 1054; // Chinese Lantern
+        weather = "SPRING";
+        weatherCode = 10;
+        worldName = "Garden Maze";
+      } else if (theme === "scifi") {
+        wallId = 324; // High Tech Block
+        secWallId = 186; // Steel Block
+        bgId = 322; // High Tech Wall
+        hazardId = 5666; // Laser Grid
+        doorId = 1162; // Forcefield
+        finishGateId = 382; // Time-Space Rupture
+        propId = 5204; // Plasma Globe
+        weather = "NEBULA";
+        weatherCode = 18;
+        worldName = "Cyber Labyrinth";
+      } else if (theme === "brick") {
+        wallId = 116; // Bricks
+        secWallId = 100; // Wood Block
+        bgId = 118; // Brick Background
+        hazardId = 162; // Death Spikes
+        doorId = 6; // Main Door
+        finishGateId = 60; // Portcullis
+        propId = 696; // Torch
+        weather = "SUNNY";
+        weatherCode = 1;
+        worldName = "Brick Catacombs";
+      }
+
+      // Fill world with wall blocks and bg initially
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          if (y === height - 1) {
+            fg[idx] = 8; // Bedrock at very bottom
+          } else {
+            fg[idx] = (x + y) % 5 === 0 ? secWallId : wallId;
+          }
+          if (bgId > 0 && y < height - 1) {
+            bg[idx] = bgId;
+          }
+        }
+      }
+
+      // 2. Maze Grid Dimensions (Cell step = corridorWidth + 1)
+      const step = corridorWidth + 1;
+      const marginX = 2;
+      const marginY = 3;
+      const cols = Math.floor((width - marginX * 2) / step);
+      const rows = Math.floor((height - marginY * 2 - 2) / step);
+
+      if (cols < 2 || rows < 2) {
+        // Fallback for tiny dimensions
+        for (let y = marginY; y < height - 3; y++) {
+          for (let x = marginX; x < width - marginX; x++) {
+            fg[y * width + x] = 0;
+          }
+        }
+        fg[(height - 4) * width + 4] = 6;
+        return { width, height, name: worldName, weather, weatherCode, fg, bg, paint, flags };
+      }
+
+      const visited = new Uint8Array(cols * rows);
+      const stack = [];
+      const deadEnds = [];
+
+      // Start at (0, 0)
+      visited[0] = 1;
+      stack.push({ cx: 0, cy: 0 });
+
+      // Directions: [dx, dy]
+      const dirs = [
+        { dx: 0, dy: -1 }, // Up
+        { dx: 1, dy: 0 },  // Right
+        { dx: 0, dy: 1 },  // Down
+        { dx: -1, dy: 0 }  // Left
+      ];
+
+      function carveCell(cx, cy) {
+        const startX = marginX + cx * step;
+        const startY = marginY + cy * step;
+        for (let dy = 0; dy < corridorWidth; dy++) {
+          for (let dx = 0; dx < corridorWidth; dx++) {
+            const tx = startX + dx;
+            const ty = startY + dy;
+            if (tx < width && ty < height) {
+              fg[ty * width + tx] = 0; // Clear path
+            }
+          }
+        }
+      }
+
+      function carvePassage(cx1, cy1, cx2, cy2) {
+        const x1 = marginX + cx1 * step;
+        const y1 = marginY + cy1 * step;
+        const x2 = marginX + cx2 * step;
+        const y2 = marginY + cy2 * step;
+
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1 + corridorWidth - 1, x2 + corridorWidth - 1);
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1 + corridorWidth - 1, y2 + corridorWidth - 1);
+
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            if (x < width && y < height) {
+              fg[y * width + x] = 0; // Clear passage
+            }
+          }
+        }
+      }
+
+      carveCell(0, 0);
+
+      // 3. Recursive Backtracking Maze Generation
+      while (stack.length > 0) {
+        const current = stack[stack.length - 1];
+        const unvisitedNeighbors = [];
+
+        // Shuffle directions
+        const shuffledDirs = [...dirs].sort(() => Math.random() - 0.5);
+
+        for (const dir of shuffledDirs) {
+          const nx = current.cx + dir.dx;
+          const ny = current.cy + dir.dy;
+          if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+            const nIdx = ny * cols + nx;
+            if (!visited[nIdx]) {
+              unvisitedNeighbors.push({ cx: nx, cy: ny });
+            }
+          }
+        }
+
+        if (unvisitedNeighbors.length > 0) {
+          const next = unvisitedNeighbors[0];
+          visited[next.cy * cols + next.cx] = 1;
+          carvePassage(current.cx, current.cy, next.cx, next.cy);
+          stack.push(next);
+        } else {
+          const popped = stack.pop();
+          if (popped.cx !== 0 || popped.cy !== 0) {
+            deadEnds.push(popped);
+          }
+        }
+      }
+
+      // 4. Entrance Hub (Spawn) at Top-Left (0, 0)
+      const spawnTileX = marginX;
+      const spawnTileY = marginY + corridorWidth - 1;
+      fg[spawnTileY * width + spawnTileX] = 6; // Main Door Spawn
+      // Bedrock / platform directly underneath spawn
+      if (spawnTileY + 1 < height) {
+        fg[(spawnTileY + 1) * width + spawnTileX] = wallId;
+      }
+      if (spawnTileX + 1 < width) {
+        fg[spawnTileY * width + (spawnTileX + 1)] = 24; // Welcome Sign
+      }
+
+      // 5. Exit Gateway at Farthest Cell (cols - 1, rows - 1)
+      const exitCellX = cols - 1;
+      const exitCellY = rows - 1;
+      const exitTileX = marginX + exitCellX * step;
+      const exitTileY = marginY + exitCellY * step + corridorWidth - 1;
+      
+      fg[exitTileY * width + exitTileX] = finishGateId; // Finish Portcullis / Gateway
+      if (exitTileX + 1 < width) {
+        fg[exitTileY * width + (exitTileX + 1)] = 1422; // Trophy Display Box!
+      }
+      if (exitTileY - 1 >= 0) {
+        fg[(exitTileY - 1) * width + exitTileX] = propId; // Lantern/Torch
+      }
+
+      // 6. Hazards & Treasures in Dead-Ends
+      const hazardChance = hazardDensity === "high" ? 0.6 : (hazardDensity === "medium" ? 0.35 : (hazardDensity === "low" ? 0.15 : 0));
+      deadEnds.forEach((de, idx) => {
+        const tx = marginX + de.cx * step;
+        const ty = marginY + de.cy * step + corridorWidth - 1;
+
+        if (de.cx === exitCellX && de.cy === exitCellY) return; // Don't block exit
+        if (de.cx === 0 && de.cy === 0) return; // Don't block spawn
+
+        const rand = Math.random();
+        if (hazardChance > 0 && rand < hazardChance) {
+          fg[ty * width + tx] = hazardId; // Hazard Trap
+        } else if (addTreasures && rand > 0.75) {
+          if (idx % 2 === 0) {
+            fg[ty * width + tx] = 1422; // Display Box Treasure
+          } else {
+            fg[ty * width + tx] = propId; // Light source
+          }
+        }
+      });
+
+      return {
+        width,
+        height,
+        name: worldName,
+        weather,
+        weatherCode,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
+    function generateDungeon(options = {}) {
+      const width = Math.max(10, Math.min(200, parseInt(options.width, 10) || WORLD_WIDTH));
+      const height = Math.max(10, Math.min(200, parseInt(options.height, 10) || WORLD_HEIGHT));
+      const theme = options.theme || "gothic";
+      const numRoomsRequested = Math.max(4, Math.min(15, parseInt(options.numRooms, 10) || 8));
+      const hazardDensity = options.hazardDensity || "medium";
+      const addTreasures = options.addTreasures !== false;
+
+      const total = width * height;
+      const fg = new Uint16Array(total);
+      const bg = new Uint16Array(total);
+      const paint = new Uint16Array(total);
+      const flags = new Uint8Array(total);
+
+      // Theme configuration
+      let wallId = 680; // Grimstone
+      let secWallId = 248; // Evil Bricks
+      let bgId = 990; // Gothic Building
+      let hazardId = 162; // Death Spikes
+      let doorId = 30; // Dungeon Door
+      let finishGateId = 60; // Portcullis
+      let propId = 696; // Torch
+      let weather = "SPOOKY";
+      let weatherCode = 11;
+      let worldName = "Gothic Dungeon Quest";
+
+      if (theme === "nature") {
+        wallId = 1004; // Hedge
+        secWallId = 1046; // Rustic Fence
+        bgId = 198; // Flowery Wallpaper
+        hazardId = 194; // Mushroom
+        doorId = 224; // House Entrance
+        finishGateId = 2964; // Grand Fountain
+        propId = 1054; // Chinese Lantern
+        weather = "SPRING";
+        weatherCode = 10;
+        worldName = "Botanical Dungeon";
+      } else if (theme === "scifi") {
+        wallId = 324; // High Tech Block
+        secWallId = 186; // Steel Block
+        bgId = 322; // High Tech Wall
+        hazardId = 5666; // Laser Grid
+        doorId = 1162; // Forcefield
+        finishGateId = 382; // Time-Space Rupture
+        propId = 5204; // Plasma Globe
+        weather = "NEBULA";
+        weatherCode = 18;
+        worldName = "Sci-Fi Dungeon Station";
+      } else if (theme === "brick") {
+        wallId = 116; // Bricks
+        secWallId = 100; // Wood Block
+        bgId = 118; // Brick Background
+        hazardId = 162; // Death Spikes
+        doorId = 6; // Main Door
+        finishGateId = 60; // Portcullis
+        propId = 696; // Torch
+        weather = "SUNNY";
+        weatherCode = 1;
+        worldName = "Catacomb Quest";
+      }
+
+      // Fill world with solid rock / wall
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          if (y === height - 1) {
+            fg[idx] = 8; // Bedrock
+          } else {
+            fg[idx] = (x + y) % 4 === 0 ? secWallId : wallId;
+          }
+          if (bgId > 0 && y < height - 1) {
+            bg[idx] = bgId;
+          }
+        }
+      }
+
+      // 1. Generate Non-Overlapping Rooms
+      const rooms = [];
+      const minRoomSize = 6;
+      const maxRoomSize = 12;
+      let attempts = 0;
+
+      while (rooms.length < numRoomsRequested && attempts < 100) {
+        attempts++;
+        const rw = minRoomSize + Math.floor(Math.random() * (maxRoomSize - minRoomSize + 1));
+        const rh = Math.min(rw, minRoomSize + Math.floor(Math.random() * (maxRoomSize - minRoomSize)));
+        const rx = 3 + Math.floor(Math.random() * (width - rw - 6));
+        const ry = 3 + Math.floor(Math.random() * (height - rh - 8));
+
+        // Check overlap with margin
+        let overlap = false;
+        for (const other of rooms) {
+          if (
+            rx < other.x + other.w + 2 &&
+            rx + rw + 2 > other.x &&
+            ry < other.y + other.h + 2 &&
+            ry + rh + 2 > other.y
+          ) {
+            overlap = true;
+            break;
+          }
+        }
+
+        if (!overlap) {
+          rooms.push({ x: rx, y: ry, w: rw, h: rh, centerX: Math.floor(rx + rw / 2), centerY: Math.floor(ry + rh / 2) });
+        }
+      }
+
+      // 2. Carve Rooms & Interior Platforms
+      rooms.forEach((rm, rIdx) => {
+        for (let y = rm.y; y < rm.y + rm.h; y++) {
+          for (let x = rm.x; x < rm.x + rm.w; x++) {
+            if (x < width && y < height) {
+              fg[y * width + x] = 0; // Clear room interior
+            }
+          }
+        }
+
+        // Add middle wooden platform if room is tall (>= 8)
+        if (rm.h >= 8) {
+          const midY = rm.y + Math.floor(rm.h / 2);
+          for (let x = rm.x; x < rm.x + rm.w; x++) {
+            fg[midY * width + x] = 102; // Wooden Platform
+          }
+        }
+
+        // Room props and specialization
+        if (rIdx === 0) {
+          // Spawn Room (Entrance Hall)
+          const spawnX = rm.x + 2;
+          const spawnY = rm.y + rm.h - 1;
+          fg[spawnY * width + spawnX] = 6; // Main Door Spawn
+          fg[spawnY * width + (spawnX + 2)] = 24; // Pointy Sign "DUNGEON ENTRANCE"
+          fg[(spawnY - 2) * width + rm.x + 1] = propId;
+          fg[(spawnY - 2) * width + rm.x + rm.w - 2] = propId;
+        } else if (rIdx === rooms.length - 1) {
+          // Boss / Treasure Vault
+          const vaultFloorY = rm.y + rm.h - 1;
+          fg[vaultFloorY * width + rm.centerX] = finishGateId; // Boss Gate
+          if (rm.centerX + 2 < rm.x + rm.w) fg[vaultFloorY * width + (rm.centerX + 2)] = 1422; // Trophy Display Box
+          if (rm.centerX - 2 >= rm.x) fg[vaultFloorY * width + (rm.centerX - 2)] = 1422; // Trophy Display Box
+          fg[(vaultFloorY - 2) * width + rm.centerX] = propId;
+        } else {
+          // Intermediate chambers (Jail cell / Traps / Checkpoints)
+          const floorY = rm.y + rm.h - 1;
+          if (rIdx % 3 === 1) {
+            // Jail Cell: Iron bars & cobweb
+            for (let py = rm.y; py < floorY; py++) {
+              fg[py * width + rm.x + 2] = 684; // Iron Bars
+            }
+            fg[floorY * width + rm.x + 1] = 1238; // Cobweb
+            fg[floorY * width + (rm.x + rm.w - 2)] = propId;
+          } else if (rIdx % 3 === 2) {
+            // Hazard chamber: Spikes / laser grid
+            if (hazardDensity !== "none") {
+              fg[floorY * width + rm.centerX] = hazardId;
+              if (rm.centerX + 1 < rm.x + rm.w) fg[floorY * width + (rm.centerX + 1)] = hazardId;
+            }
+            fg[(floorY - 2) * width + rm.x + 1] = propId;
+          } else {
+            // Sanctuary chamber: Checkpoint & Door
+            fg[floorY * width + rm.centerX] = 410; // Checkpoint
+            fg[floorY * width + (rm.centerX + 2)] = doorId; // Dungeon Door
+          }
+        }
+      });
+
+      // 3. Connect Rooms with Corridors (with platforms for vertical jumps)
+      for (let i = 0; i < rooms.length - 1; i++) {
+        const r1 = rooms[i];
+        const r2 = rooms[i + 1];
+
+        // Horizontal corridor
+        const minX = Math.min(r1.centerX, r2.centerX);
+        const maxX = Math.max(r1.centerX, r2.centerX);
+        const cy = r1.centerY;
+
+        for (let x = minX; x <= maxX; x++) {
+          for (let dy = 0; dy < 2; dy++) {
+            const ty = cy + dy;
+            if (x < width && ty < height) {
+              fg[ty * width + x] = 0;
+            }
+          }
+        }
+
+        // Vertical corridor
+        const minY = Math.min(r1.centerY, r2.centerY);
+        const maxY = Math.max(r1.centerY, r2.centerY);
+        const cx = r2.centerX;
+
+        for (let y = minY; y <= maxY; y++) {
+          for (let dx = 0; dx < 2; dx++) {
+            const tx = cx + dx;
+            if (tx < width && y < height) {
+              fg[y * width + tx] = 0;
+              // If corridor drops vertically, add wooden platforms for climbing
+              if (y % 3 === 0 && dx === 0) {
+                fg[y * width + tx] = 102; // Wooden Platform ledge
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        width,
+        height,
+        name: worldName,
+        weather,
+        weatherCode,
+        fg,
+        bg,
+        paint,
+        flags
+      };
+    }
+
     function getWeathers() {
       return WEATHERS;
     }
@@ -1104,6 +1560,8 @@
       createParkourWorld,
       createHorrorWorld,
       createSciFiWorld,
+      generateMaze,
+      generateDungeon,
       getWeatherById
     });
   }
