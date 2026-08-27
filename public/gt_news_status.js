@@ -194,6 +194,7 @@
             }
 
             this.lastSyncTime = new Date();
+            this.failureCount = 0;
             this.updateUI();
             this.isSyncing = false;
             return data;
@@ -203,9 +204,12 @@
         }
       }
 
-      // If all endpoints failed to fetch real live data, show strictly OFFLINE status
-      this.statusState = 'offline';
-      this.onlineUsers = null;
+      // If endpoints failed to fetch, only mark offline after consecutive failure threshold
+      this.failureCount = (this.failureCount || 0) + 1;
+      if (this.failureCount >= 2 || this.onlineUsers === null) {
+        this.statusState = 'offline';
+        this.onlineUsers = null;
+      }
       this.isSyncing = false;
       this.updateUI();
       return null;
