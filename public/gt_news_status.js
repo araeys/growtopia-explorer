@@ -199,6 +199,19 @@
               };
             }
 
+            if (Array.isArray(data.latest_videos) && data.latest_videos.length > 0) {
+              this.votw.winners = data.latest_videos.map((v, idx) => ({
+                title: v.title,
+                creator: "Growtopia Official Channel",
+                id: v.id,
+                note: idx === 0 ? "Latest Official Spotlight" : "Official Video"
+              }));
+              if (data.latest_videos[0]) {
+                this.votw.youtubeId = data.latest_videos[0].id;
+                this.votw.title = data.latest_videos[0].title;
+              }
+            }
+
             this.lastSyncTime = new Date();
             this.failureCount = 0;
             this.updateUI();
@@ -290,6 +303,16 @@
           serverCountEl.style.color = '#ef4444';
           if (serverSubEl) serverSubEl.textContent = 'Failed to connect to Growtopia API';
         }
+      }
+
+      // 3. Update VOTW Live Video Player and Title
+      const votwTitleEl = document.getElementById('votw-active-title');
+      const votwIframeEl = document.getElementById('votw-iframe-player');
+      if (votwTitleEl && this.votw.title) {
+        votwTitleEl.textContent = this.votw.title;
+      }
+      if (votwIframeEl && this.votw.youtubeId && !votwIframeEl.src.includes(this.votw.youtubeId)) {
+        votwIframeEl.src = `https://www.youtube-nocookie.com/embed/${this.votw.youtubeId}?rel=0`;
       }
     }
 

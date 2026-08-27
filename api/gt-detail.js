@@ -2,6 +2,34 @@ export const config = {
   runtime: 'edge',
 };
 
+async function fetchOfficialYouTubeVideos() {
+  try {
+    const res = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UCNFTBaDHB4_Y8eFa8YssSMQ', {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const entries = [];
+    const entryMatches = xml.match(/<entry>[\s\S]*?<\/entry>/g) || [];
+    for (const entry of entryMatches.slice(0, 8)) {
+      const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
+      const vidMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+      const pubMatch = entry.match(/<published>([^<]+)<\/published>/);
+      if (titleMatch && vidMatch) {
+        entries.push({
+          title: titleMatch[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"'),
+          id: vidMatch[1],
+          published: pubMatch ? pubMatch[1] : null,
+          url: `https://www.youtube.com/watch?v=${vidMatch[1]}`
+        });
+      }
+    }
+    return entries;
+  } catch (e) {
+    return [];
+  }
+}
+
 export default async function handler(request) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -30,18 +58,22 @@ export default async function handler(request) {
   for (const url of urls) {
     for (const ua of uas) {
       try {
-        const res = await fetch(url, {
-          headers: {
-            'User-Agent': ua,
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Connection': 'close'
-          }
-        });
+        const [gtRes, ytVideos] = await Promise.all([
+          fetch(url, {
+            headers: {
+              'User-Agent': ua,
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Connection': 'close'
+            }
+          }),
+          fetchOfficialYouTubeVideos()
+        ]);
 
-        if (res.ok) {
-          const data = await res.json();
+        if (gtRes.ok) {
+          const data = await gtRes.json();
           if (data && data.online_user) {
+            data.latest_videos = ytVideos;
             return new Response(JSON.stringify(data), {
               status: 200,
               headers: {
@@ -51,7 +83,7 @@ export default async function handler(request) {
             });
           }
         } else {
-          errors.push({ url, ua, status: res.status });
+          errors.push({ url, ua, status: gtRes.status });
         }
       } catch (e) {
         errors.push({ url, ua, error: e.message });
