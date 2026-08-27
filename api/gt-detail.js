@@ -1,62 +1,17 @@
-import https from 'https';
-import http from 'http';
+export const config = {
+  runtime: 'edge',
+};
 
-function fetchGTDetail(urlStr, customUA) {
-  return new Promise((resolve, reject) => {
-    try {
-      const url = new URL(urlStr);
-      const isHttps = url.protocol === 'https:';
-      const client = isHttps ? https : http;
-      const port = url.port ? parseInt(url.port, 10) : (isHttps ? 443 : 80);
+export default async function handler(request) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Cache-Control': 's-maxage=10, stale-while-revalidate=20'
+  };
 
-      const req = client.request({
-        hostname: url.hostname,
-        port: port,
-        path: url.pathname + (url.search || ''),
-        method: 'GET',
-        headers: {
-          'User-Agent': customUA || 'UbiServices_SDK_HTTP_Client_Growtopia',
-          'Accept': 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Connection': 'close'
-        },
-        timeout: 6000
-      }, (res) => {
-        let data = '';
-        res.on('data', (chunk) => data += chunk);
-        res.on('end', () => {
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              const parsed = JSON.parse(data);
-              resolve(parsed);
-            } catch (e) {
-              reject(new Error('Invalid JSON response'));
-            }
-          } else {
-            reject(new Error('HTTP Status ' + res.statusCode));
-          }
-        });
-      });
-
-      req.on('error', (err) => reject(err));
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Request timed out'));
-      });
-      req.end();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   const uas = [
@@ -67,31 +22,54 @@ export default async function handler(req, res) {
 
   const urls = [
     'https://www.growtopiagame.com/detail',
-    'https://growtopiagame.com/detail',
-    'http://www.growtopiagame.com/detail'
+    'https://growtopiagame.com/detail'
   ];
 
   const errors = [];
-  for (const targetUrl of urls) {
+
+  for (const url of urls) {
     for (const ua of uas) {
       try {
-        const data = await fetchGTDetail(targetUrl, ua);
-        if (data && data.online_user) {
-          res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
-          return res.status(200).json(data);
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': ua,
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Connection': 'close'
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.online_user) {
+            return new Response(JSON.stringify(data), {
+              status: 200,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json; charset=utf-8'
+              }
+            });
+          }
+        } else {
+          errors.push({ url, ua, status: res.status });
         }
-      } catch (err) {
-        errors.push({ url: targetUrl, ua, error: err.message });
+      } catch (e) {
+        errors.push({ url, ua, error: e.message });
       }
     }
   }
 
-  // If failed to reach Growtopia servers, return 503 error - NO FAKE NUMBERS
-  return res.status(503).json({
+  return new Response(JSON.stringify({
     error: 'Failed to connect to official Growtopia servers',
     isLive: false,
     online_user: null,
     world_day_images: null,
     debug: errors
+  }), {
+    status: 503,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json; charset=utf-8'
+    }
   });
 }
