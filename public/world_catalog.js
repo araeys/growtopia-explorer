@@ -1517,6 +1517,17 @@
         }
       }
 
+      // Guarantee Main Spawn Door (item 6) in Room 0
+      if (rooms.length > 0) {
+        const startRoom = rooms[0];
+        const sY = startRoom.y + startRoom.h - 1;
+        const sX = startRoom.x + 1;
+        if (sX < width && sY < height) {
+          fg[sY * width + sX] = 6; // Main White Door
+          if (sY + 1 < height) fg[(sY + 1) * width + sX] = 8; // Bedrock base
+        }
+      }
+
       return {
         width,
         height,

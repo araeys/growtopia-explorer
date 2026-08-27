@@ -42,10 +42,20 @@ export default async function handler(request) {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  const uas = [
-    'UbiServices_SDK_HTTP_Client_Growtopia',
-    'Growtopia/4.50 (Windows NT 10.0; Win64; x64)',
-    'Growtopia'
+  const headersList = [
+    {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Referer': 'https://www.growtopiagame.com/',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept-Language': 'en-US,en;q=0.9'
+    },
+    {
+      'User-Agent': 'UbiServices_SDK_HTTP_Client_Growtopia',
+      'Accept': 'application/json, text/plain, */*',
+      'Referer': 'https://www.growtopiagame.com/',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
   ];
 
   const urls = [
@@ -56,17 +66,10 @@ export default async function handler(request) {
   const errors = [];
 
   for (const url of urls) {
-    for (const ua of uas) {
+    for (const h of headersList) {
       try {
         const [gtRes, ytVideos] = await Promise.all([
-          fetch(url, {
-            headers: {
-              'User-Agent': ua,
-              'Accept': 'application/json, text/plain, */*',
-              'Accept-Language': 'en-US,en;q=0.9',
-              'Connection': 'close'
-            }
-          }),
+          fetch(url, { headers: h }),
           fetchOfficialYouTubeVideos()
         ]);
 
