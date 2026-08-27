@@ -149,10 +149,16 @@
     ctx.strokeStyle = 'rgba(255,255,255,.035)';
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 48) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
     }
     for (let y = 0; y < canvas.height; y += 48) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
     }
   }
 
@@ -302,7 +308,10 @@
 
   async function init() {
     try {
-      const [itemsResponse, wearablesResponse] = await Promise.all([fetch('items_db.json'), fetch('wearables_manifest.json')]);
+      const [itemsResponse, wearablesResponse] = await Promise.all([
+        fetch('items_db.json'),
+        fetch('wearables_manifest.json')
+      ]);
       if (!itemsResponse.ok) throw new Error(`items_db.json: HTTP ${itemsResponse.status}`);
       if (!wearablesResponse.ok) throw new Error(`wearables_manifest.json: HTTP ${wearablesResponse.status}`);
 
@@ -310,11 +319,20 @@
       const wearableData = await wearablesResponse.json();
       state.wearables = Array.isArray(wearableData) ? wearableData : (wearableData.items || []);
       state.worldLock = findExact(state.items, 'World Lock') || findIncludes(state.items, ['world lock']);
-      state.wing = findIncludes(state.wearables, ['wing', 'wings'], (item) => normalizedName(item.slot) === 'back') || state.wearables.find((item) => normalizedName(item.slot) === 'back') || null;
+      state.wing = findExact(state.wearables, 'Angel Wings') ||
+        findIncludes(
+          state.wearables,
+          ['angel wings', 'wing', 'wings'],
+          (item) => normalizedName(item.slot) === 'back' && !normalizedName(item.name).includes('da vinci')
+        ) ||
+        state.wearables.find((item) => normalizedName(item.slot) === 'back') ||
+        null;
       state.dirt = findExact(state.items, 'Dirt') || findIncludes(state.items, ['dirt']);
       state.grass = findExact(state.items, 'Grass') || findIncludes(state.items, ['grass']) || state.dirt;
 
-      if (!state.worldLock || !state.wing || !state.dirt) throw new Error('One or more required real project assets could not be resolved from the current database.');
+      if (!state.worldLock || !state.wing || !state.dirt) {
+        throw new Error('One or more required real project assets could not be resolved from the current database.');
+      }
 
       setAssetLabels();
       state.weather = await loadImage('weather/AUTUMN.png');
