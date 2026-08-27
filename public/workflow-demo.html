@@ -5,184 +5,298 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
-  <title>15s Workflow Demo | Growtopia Sprite Explorer & Studio</title>
+  <meta name="author" content="Raey (@araeys)">
+  <title>Growtopia Explorer | Product Showcase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="logo.png">
-  <link rel="stylesheet" href="workflow-demo.css?v=real-assets-v1">
+  <link rel="stylesheet" href="workflow-showcase-v3.css?v=1">
 </head>
 <body>
   <main class="demo-shell">
     <header class="demo-topbar">
-      <a class="demo-brand" href="/" aria-label="Back to Growtopia Sprite Explorer & Studio">
+      <a class="demo-brand" href="/" aria-label="Open Growtopia Explorer">
         <img src="logo.png" alt="" class="demo-logo">
         <span>
           <strong>Growtopia Explorer</strong>
-          <small>15s real-asset workflow demo</small>
+          <small>Creator Studio</small>
         </span>
       </a>
+
       <div class="demo-actions">
-        <button id="restart-demo" class="demo-btn demo-btn-secondary" type="button">Restart demo</button>
+        <button id="toggle-playback" class="demo-btn demo-btn-secondary" type="button" aria-label="Pause showcase">
+          Pause
+        </button>
+        <button id="restart-demo" class="demo-btn demo-btn-secondary" type="button">
+          Replay
+        </button>
         <a class="demo-btn demo-btn-primary" href="/">Open Studio</a>
       </div>
     </header>
 
     <section class="demo-intro">
-      <div>
-        <span class="eyebrow">REAL PROJECT ASSETS</span>
-        <h1>Search. Style. Build. Play.</h1>
-        <p>This loop uses the same item database, tilesheets, wearable manifest, weather art, and player assets shipped with Growtopia Explorer.</p>
+      <div class="hero-copy">
+        <span class="eyebrow">GROWTOPIA CREATOR STUDIO</span>
+        <h1>Explore assets. Build sets. Design worlds. Play instantly.</h1>
+        <p>
+          One browser workspace for 16,304 Growtopia items, pixel-perfect sprites,
+          layered avatars, and playable world planning.
+        </p>
       </div>
-      <div class="demo-progress-wrap" aria-label="Demo progress">
-        <span id="scene-label">Item Explorer</span>
-        <div class="demo-progress"><span id="demo-progress-bar"></span></div>
-        <span id="time-label">00:00 / 00:15</span>
+
+      <div class="hero-proof" aria-label="Product highlights">
+        <span><strong>16,304</strong> items</span>
+        <span><strong>32 x 32</strong> source sprites</span>
+        <span><strong>100%</strong> browser-based</span>
       </div>
     </section>
 
     <section class="demo-stage" id="demo-stage" aria-live="polite">
       <div class="window-chrome">
-        <span></span><span></span><span></span>
-        <div class="window-address" id="window-address">growtopia-explorer.vercel.app</div>
+        <div class="window-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="window-address">growtopia-explorer.vercel.app</div>
+        <div class="window-meta">
+          <span id="scene-count">01 / 05</span>
+          <span class="window-live-dot"></span>
+          <span>Live demo</span>
+        </div>
       </div>
 
       <div class="scene scene-search is-active" data-scene="search">
         <div class="scene-toolbar">
-          <div>
-            <span class="scene-kicker">ITEM SPRITE EXPLORER</span>
-            <h2>Find any Growtopia item</h2>
+          <div class="scene-copy">
+            <span class="scene-kicker">01 · EXPLORE</span>
+            <h2>Find any item in seconds</h2>
+            <p>Search the full item database and preview its original sprite.</p>
           </div>
-          <span class="scene-step">01</span>
+          <span class="scene-proof">Original tilesheet data</span>
         </div>
+
         <div class="search-demo-layout">
           <div class="search-demo-main">
-            <label class="fake-search">
-              <span>⌕</span>
+            <label class="fake-search" aria-label="Search items">
+              <span class="search-icon" aria-hidden="true"></span>
               <span id="typed-search" class="fake-search-value"></span>
               <span class="typing-caret"></span>
+              <span class="search-shortcut">/</span>
             </label>
+
             <div class="search-demo-filters">
-              <span class="chip chip-active">All Items</span>
-              <span class="chip">Locks & Keys</span>
+              <span class="chip chip-active">All items</span>
+              <span class="chip">Locks and keys</span>
               <span class="chip">Animated</span>
             </div>
+
             <button id="world-lock-card" class="asset-card asset-card-result" type="button" aria-label="Open World Lock sprite">
-              <div class="sprite-box sprite-box-lg"><canvas id="world-lock-thumb" width="64" height="64"></canvas></div>
-              <div>
-                <small id="world-lock-id">ITEM</small>
-                <strong id="world-lock-name">Loading World Lock…</strong>
-                <span id="world-lock-texture">Loading project tilesheet…</span>
+              <div class="sprite-box sprite-box-lg">
+                <canvas id="world-lock-thumb" width="64" height="64"></canvas>
               </div>
-              <span class="asset-card-arrow">↗</span>
+              <div class="asset-card-copy">
+                <small id="world-lock-id">ITEM</small>
+                <strong id="world-lock-name">Loading World Lock...</strong>
+                <span id="world-lock-texture">Resolving source texture...</span>
+              </div>
+              <span class="asset-card-action">Open sprite</span>
             </button>
           </div>
+
           <aside class="search-demo-side">
-            <span class="scene-kicker">LIVE DATABASE</span>
+            <span class="section-label">DATABASE COVERAGE</span>
             <strong id="database-count">16,304</strong>
-            <span>items indexed</span>
-            <p>No generated icon. The preview is cropped directly from the item's real tilesheet.</p>
+            <span class="metric-label">searchable items</span>
+            <div class="side-proof-list">
+              <span><i></i> Search by name or ID</span>
+              <span><i></i> Original sprite coordinates</span>
+              <span><i></i> Export-ready source</span>
+            </div>
           </aside>
         </div>
       </div>
 
       <div class="scene scene-sprite" data-scene="sprite">
         <div class="scene-toolbar">
-          <div>
-            <span class="scene-kicker">SPRITE INSPECTOR</span>
-            <h2 id="inspector-title">World Lock</h2>
+          <div class="scene-copy">
+            <span class="scene-kicker">02 · INSPECT</span>
+            <h2>See the exact source</h2>
+            <p>Open texture, coordinates, and pixel detail without digging through files.</p>
           </div>
-          <span class="scene-step">02</span>
+          <span class="scene-proof">Pixel-perfect preview</span>
         </div>
+
         <div class="inspector-layout">
           <div class="inspector-preview">
-            <div class="pixel-stage"><canvas id="world-lock-large" width="256" height="256"></canvas></div>
-            <span>Pixel-perfect 8× preview</span>
+            <div class="pixel-stage">
+              <div class="pixel-grid" aria-hidden="true"></div>
+              <canvas id="world-lock-large" width="256" height="256"></canvas>
+            </div>
+            <span>8x preview from the original 32 x 32 frame</span>
           </div>
+
           <div class="inspector-data">
-            <div><span>Item ID</span><strong id="inspector-id">#—</strong></div>
-            <div><span>Texture</span><strong id="inspector-texture">—</strong></div>
-            <div><span>Coordinates</span><strong id="inspector-coords">—</strong></div>
-            <div><span>Source</span><strong>items_db.json + tilesheets/</strong></div>
-            <button id="to-avatar-hint" class="wide-action" type="button">Try the Avatar Studio <span>→</span></button>
+            <div class="inspector-heading">
+              <span class="section-label">SPRITE DETAILS</span>
+              <strong id="inspector-title">World Lock</strong>
+            </div>
+            <div><span>Item ID</span><strong id="inspector-id">#--</strong></div>
+            <div><span>Texture</span><strong id="inspector-texture">--</strong></div>
+            <div><span>Coordinates</span><strong id="inspector-coords">--</strong></div>
+            <div><span>Source</span><strong>items_db.json + tilesheets</strong></div>
+            <button id="to-avatar-hint" class="wide-action" type="button">
+              Continue to Avatar Studio <span>Next</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div class="scene scene-avatar" data-scene="avatar">
         <div class="scene-toolbar">
-          <div>
-            <span class="scene-kicker">GT SET PLANNER / AVATAR STUDIO</span>
-            <h2>Equip a real wearable</h2>
+          <div class="scene-copy">
+            <span class="scene-kicker">03 · STYLE</span>
+            <h2>Build a proper Growtopia set</h2>
+            <p>Combine real wearable layers on a correctly composed character.</p>
           </div>
-          <span class="scene-step">03</span>
+          <span class="scene-proof">Accurate layer order</span>
         </div>
+
         <div class="avatar-demo-grid">
           <aside class="wearable-browser">
-            <div class="mini-search">Search wearable <strong>wing</strong></div>
+            <div class="panel-header">
+              <div>
+                <span class="section-label">WEARABLES</span>
+                <strong>Back slot</strong>
+              </div>
+              <span class="panel-count">1 result</span>
+            </div>
+
+            <div class="mini-search">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span>wing</span>
+            </div>
+
             <button id="wing-card" class="wearable-card" type="button">
               <canvas id="wing-thumb" width="64" height="64"></canvas>
-              <span><strong id="wing-name">Loading wing…</strong><small>Back / Wings / Cape</small></span>
+              <span>
+                <strong id="wing-name">Loading wearable...</strong>
+                <small>Back / Wings / Cape</small>
+              </span>
               <b id="equip-status">Equip</b>
             </button>
-            <p class="asset-note">Loaded from <code>wearables_manifest.json</code> and the wearable's own tilesheet.</p>
-          </aside>
-          <div class="avatar-live-preview">
-            <span class="scene-kicker">LIVE PREVIEW</span>
-            <div class="avatar-stage-wrap">
-              <canvas id="avatar-demo-canvas" width="384" height="384"></canvas>
-              <div id="equipped-pop" class="equipped-pop">Wing equipped ✓</div>
+
+            <div class="avatar-settings-card">
+              <span class="section-label">LOOK</span>
+              <div>
+                <span class="skin-swatch" aria-hidden="true"></span>
+                <span><strong>Human skin</strong><small>Tone 5</small></span>
+              </div>
+              <div>
+                <span class="expression-icon" aria-hidden="true">:)</span>
+                <span><strong>Expression</strong><small>Normal</small></span>
+              </div>
             </div>
-            <span class="avatar-caption">Actual player + wearable layers</span>
+          </aside>
+
+          <div class="avatar-live-preview">
+            <div class="preview-heading">
+              <div>
+                <span class="section-label">LIVE PREVIEW</span>
+                <strong>Layered avatar composition</strong>
+              </div>
+              <span class="preview-scale">4x</span>
+            </div>
+
+            <div class="avatar-stage-wrap">
+              <div class="avatar-stage-grid" aria-hidden="true"></div>
+              <canvas id="avatar-demo-canvas" width="384" height="384"></canvas>
+              <div id="equipped-pop" class="equipped-pop">
+                <span></span>
+                Angel Wings equipped
+              </div>
+            </div>
+
+            <div class="avatar-caption">
+              <span>Base</span><i></i><span>Face</span><i></i><span>Wearable</span><i></i><span>Front hand</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="scene scene-world" data-scene="world">
         <div class="scene-toolbar world-toolbar">
-          <div>
-            <span class="scene-kicker">GT WORLD PLANNER</span>
-            <h2 id="world-scene-title">Build a clean route</h2>
+          <div class="scene-copy">
+            <span id="world-step-kicker" class="scene-kicker">04 · BUILD</span>
+            <h2 id="world-scene-title">Design a clean, connected world</h2>
+            <p id="world-scene-description">Place autotiled terrain and prepare a playable route.</p>
           </div>
-          <div class="world-mode-group">
-            <span id="edit-mode-pill" class="mode-pill is-active">EDIT</span>
-            <span id="play-mode-pill" class="mode-pill">PLAY</span>
+
+          <div class="world-mode-group" aria-label="World mode">
+            <span id="edit-mode-pill" class="mode-pill is-active"><i></i>Build</span>
+            <span id="play-mode-pill" class="mode-pill"><i></i>Play</span>
           </div>
-          <span class="scene-step">04</span>
         </div>
+
         <div class="world-layout">
           <aside class="world-palette">
-            <span class="scene-kicker">BLOCKS</span>
-            <div class="palette-item is-selected"><canvas id="dirt-palette" width="48" height="48"></canvas><span id="dirt-name">Dirt</span></div>
-            <div class="palette-item"><canvas id="grass-palette" width="48" height="48"></canvas><span id="grass-name">Grass</span></div>
-            <div class="world-help"><kbd>P</kbd><span>Play Mode</span></div>
+            <div class="panel-header">
+              <div>
+                <span class="section-label">WORLD TOOLS</span>
+                <strong>Terrain</strong>
+              </div>
+            </div>
+
+            <div class="palette-item is-selected">
+              <canvas id="dirt-palette" width="48" height="48"></canvas>
+              <span><strong id="dirt-name">Dirt</strong><small>Autotile terrain</small></span>
+            </div>
+            <div class="palette-item">
+              <canvas id="grass-palette" width="48" height="48"></canvas>
+              <span><strong id="grass-name">Grass</strong><small>Decoration</small></span>
+            </div>
+
+            <div class="world-feature-list">
+              <span><i></i>Connected terrain</span>
+              <span><i></i>Sunny weather</span>
+              <span><i></i>Instant playtest</span>
+            </div>
+
+            <div class="world-help"><kbd>P</kbd><span>Enter Play mode</span></div>
           </aside>
+
           <div class="world-canvas-wrap">
             <canvas id="world-demo-canvas" width="960" height="480"></canvas>
             <div id="place-cursor" class="place-cursor"></div>
-            <div id="play-toast" class="play-toast">PLAY MODE <span>READY</span></div>
+            <div id="play-toast" class="play-toast">
+              <span class="play-toast-label">Play mode</span>
+              <strong>Ready</strong>
+            </div>
+            <div class="world-canvas-meta">
+              <span>22 x 10 showcase world</span>
+              <span>Autotile enabled</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div id="asset-error" class="asset-error" hidden>
-        <strong>Demo asset failed to load.</strong>
-        <span id="asset-error-text">The project data is still available through the main tools.</span>
+        <strong>Preview asset failed to load.</strong>
+        <span id="asset-error-text">Open the main studio to continue.</span>
       </div>
     </section>
 
     <footer class="demo-footer">
       <div class="demo-timeline" aria-hidden="true">
-        <span data-dot="0" class="is-active">Search</span>
-        <span data-dot="1">Inspect</span>
-        <span data-dot="2">Avatar</span>
-        <span data-dot="3">Build</span>
-        <span data-dot="4">Play</span>
+        <span data-dot="0" class="is-active"><b>01</b>Explore</span>
+        <span data-dot="1"><b>02</b>Inspect</span>
+        <span data-dot="2"><b>03</b>Style</span>
+        <span data-dot="3"><b>04</b>Build</span>
+        <span data-dot="4"><b>05</b>Play</span>
       </div>
-      <p>Demo page renders project-owned references only. Growtopia game assets remain property of their respective rights holders.</p>
+      <p>Built by <strong>Raey (@araeys)</strong>. Growtopia assets belong to their respective rights holders.</p>
     </footer>
   </main>
 
-  <script src="workflow-demo.js?v=play-mode-v2"></script>
+  <script src="workflow-showcase-v3.js?v=1"></script>
 </body>
 </html>
