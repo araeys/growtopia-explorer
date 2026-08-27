@@ -4048,7 +4048,18 @@
       }
 
       const spriteImageCache = new Map();
-            function hexToRgb(hex) {
+                  function isReadyDrawable(img) {
+        if (!img) return false;
+        if (typeof HTMLCanvasElement !== "undefined" && img instanceof HTMLCanvasElement) {
+          return img.width > 0 && img.height > 0;
+        }
+        if (img.width > 0 && img.naturalWidth === undefined) {
+          return img.width > 0;
+        }
+        return Boolean(img.complete && img.naturalWidth > 0);
+      }
+
+      function hexToRgb(hex) {
         let c = String(hex || "").replace("#", "");
         if (c.length === 3) c = c.split("").map(x => x + x).join("");
         const num = parseInt(c, 16);
@@ -4059,8 +4070,10 @@
       const tintedSpriteCache = new Map();
       function getTintedSprite(src, colorHex) {
         const baseImg = getSpriteImage(src);
-        if (!baseImg || !baseImg.complete || baseImg.naturalWidth === 0) return baseImg;
-        if (!colorHex || colorHex === "#f0f0f0" || colorHex === "#ffffff") return baseImg;
+        if (!isReadyDrawable(baseImg)) return baseImg;
+        if (!colorHex || colorHex.toLowerCase() === "#ffc3aa" || colorHex.toLowerCase() === "#f0f0f0" || colorHex.toLowerCase() === "#ffffff") {
+          return baseImg;
+        }
 
         const cacheKey = `${src}_${colorHex}`;
         if (tintedSpriteCache.has(cacheKey)) {
@@ -4568,7 +4581,7 @@
             tCtx.save();
             tCtx.translate(8 + afkTorsoX, 4 + breatheBob);
             tCtx.rotate(backArmAngle);
-            if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
+            if (isReadyDrawable(imgArmR)) {
               tCtx.drawImage(imgArmR, -24, -20, 32, 32);
             }
             tCtx.restore();
@@ -4588,7 +4601,7 @@
             tCtx.save();
             tCtx.translate(8 + afkTorsoX + pxLeg, legRY + pyLeg);
             tCtx.rotate(legRAngle);
-            if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
+            if (isReadyDrawable(imgLegR)) {
               tCtx.drawImage(imgLegR, -24, -24, 32, 32);
             }
             tCtx.restore();
@@ -4605,7 +4618,7 @@
             tCtx.save();
             tCtx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
             tCtx.rotate(legLAngle);
-            if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
+            if (isReadyDrawable(imgLegL)) {
               tCtx.drawImage(imgLegL, -12, -24, 32, 32);
             }
             tCtx.restore();
@@ -4618,7 +4631,7 @@
             tCtx.save();
             tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt);
             tCtx.rotate(afkTorsoAngle + runLean + torsoTwist + actionTorsoLean);
-            if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+            if (isReadyDrawable(imgBody)) {
               tCtx.drawImage(imgBody, -16, -16, 32, 32);
             }
 
@@ -4635,7 +4648,7 @@
               const eyePulse = 0.70 + 0.30 * Math.sin(t * 6.0);
               
               // Layer A: Authentic White Sclera Base with soft glowing aura behind head mask
-              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+              if (!isBlinking && isReadyDrawable(imgSclera)) {
                 tCtx.save();
                 tCtx.shadowColor = "#38bdf8";
                 tCtx.shadowBlur = 6 + 6 * eyePulse;
@@ -4644,12 +4657,12 @@
               }
 
               // Layer B: Head Mask with transparent eye cutouts (Frames the white eyes naturally)
-              if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+              if (isReadyDrawable(imgHeadMask)) {
                 tCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
               }
 
               // Layer C: Radiant Eye Aura radiating from the exact eyeball sprite pixels
-              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+              if (!isBlinking && isReadyDrawable(imgSclera)) {
                 tCtx.save();
                 tCtx.globalCompositeOperation = "screen";
                 tCtx.globalAlpha = 0.65 * eyePulse;
@@ -4661,7 +4674,7 @@
             } else {
               // Standard Normal Mode: White Sclera + Dark Locked Pupils
               // Layer A: White Eyeballs Sclera Base (Behind head mask)
-              if (!isBlinking && imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+              if (!isBlinking && isReadyDrawable(imgSclera)) {
                 tCtx.drawImage(imgSclera, -16, -16, 32, 32);
               }
 
@@ -4675,7 +4688,7 @@
               }
 
               // Layer C: Head Mask with transparent eye cutouts (Drawn on top of pupils!)
-              if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+              if (isReadyDrawable(imgHeadMask)) {
                 tCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
               }
             }
@@ -4685,7 +4698,7 @@
             if (hairChoice !== "none") {
               const hairImgName = hairChoice === "red" ? "red_hair.png" : (hairChoice === "brown" ? "brown_hair.png" : (hairChoice === "blonde" ? "blonde_hair.png" : "black_hair.png"));
               const imgHair = getSpriteImage("character_base_assets/gt_parts/" + hairImgName);
-              if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
+              if (isReadyDrawable(imgHair)) {
                 const hx = (cOffsets.hair ? cOffsets.hair.x : 0) || 0;
                 const hy = (cOffsets.hair ? cOffsets.hair.y : -6) || -6;
 
@@ -4802,7 +4815,7 @@
                 tCtx.shadowBlur = 10 * punchExtend;
               }
 
-              if (imgPunchFist && imgPunchFist.complete && imgPunchFist.naturalWidth > 0) {
+              if (isReadyDrawable(imgPunchFist)) {
                 tCtx.imageSmoothingEnabled = false;
                 tCtx.drawImage(imgPunchFist, armTipX - 2, -fistH / 2, fistW, fistH);
               } else {
@@ -4843,7 +4856,7 @@
               tCtx.save();
               tCtx.translate(-7 + afkTorsoX + actionThrustX, 4 + breatheBob);
               tCtx.rotate(frontArmAngle);
-              if (imgArmL && imgArmL.complete && imgArmL.naturalWidth > 0) {
+              if (isReadyDrawable(imgArmL)) {
                 tCtx.drawImage(imgArmL, -9, -20, 32, 32);
               }
               tCtx.restore();
@@ -5874,6 +5887,8 @@
         isPlayMode: () => player.active,
         isPlayModeActive: () => player.active,
         getSpriteImage,
+        getTintedSprite,
+        isReadyDrawable,
         toggleModeratorMode,
         isModeratorMode: () => player.moderatorMode,
         setPlayerSkin: (skinName) => {

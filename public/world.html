@@ -2999,7 +2999,7 @@
 
     // 1. Back Arm
     const imgArmR = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/arm_r.png") : null;
-    if (imgArmR && imgArmR.complete && imgArmR.naturalWidth > 0) {
+    if (isReadyDrawable(imgArmR)) {
       previewCtx.save();
       previewCtx.translate(8, 4);
       previewCtx.drawImage(imgArmR, -24, -20, 32, 32);
@@ -3012,13 +3012,13 @@
     const pxLeg = clothesOffsets.pants.x;
     const pyLeg = clothesOffsets.pants.y;
 
-    if (imgLegR && imgLegR.complete && imgLegR.naturalWidth > 0) {
+    if (isReadyDrawable(imgLegR)) {
       previewCtx.save();
       previewCtx.translate(8 + pxLeg, 8 + pyLeg);
       previewCtx.drawImage(imgLegR, -24, -24, 32, 32);
       previewCtx.restore();
     }
-    if (imgLegL && imgLegL.complete && imgLegL.naturalWidth > 0) {
+    if (isReadyDrawable(imgLegL)) {
       previewCtx.save();
       previewCtx.translate(-4 + pxLeg, 8 + pyLeg);
       previewCtx.drawImage(imgLegL, -12, -24, 32, 32);
@@ -3029,7 +3029,7 @@
     const imgBody = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/body.png") : null;
     const sxShirt = clothesOffsets.shirt.x;
     const syShirt = clothesOffsets.shirt.y;
-    if (imgBody && imgBody.complete && imgBody.naturalWidth > 0) {
+    if (isReadyDrawable(imgBody)) {
       previewCtx.save();
       previewCtx.translate(sxShirt, syShirt);
       previewCtx.drawImage(imgBody, -16, -16, 32, 32);
@@ -3040,7 +3040,7 @@
     const imgSclera = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png") : null;
     const imgHeadMask = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/head_mask.png") : null;
     
-    if (imgSclera && imgSclera.complete && imgSclera.naturalWidth > 0) {
+    if (isReadyDrawable(imgSclera)) {
       previewCtx.drawImage(imgSclera, -16, -16, 32, 32);
     }
     // Pupils
@@ -3048,7 +3048,7 @@
     previewCtx.fillRect(-1, -10, 2, 2);
     previewCtx.fillRect(7, -10, 2, 2);
 
-    if (imgHeadMask && imgHeadMask.complete && imgHeadMask.naturalWidth > 0) {
+    if (isReadyDrawable(imgHeadMask)) {
       previewCtx.drawImage(imgHeadMask, -16, -16, 32, 32);
     }
 
@@ -3056,7 +3056,7 @@
     if (selectedHairTemp !== "none") {
       const hairName = selectedHairTemp === "red" ? "red_hair.png" : (selectedHairTemp === "brown" ? "brown_hair.png" : (selectedHairTemp === "blonde" ? "blonde_hair.png" : "black_hair.png"));
       const imgHair = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/" + hairName) : null;
-      if (imgHair && imgHair.complete && imgHair.naturalWidth > 0) {
+      if (isReadyDrawable(imgHair)) {
         previewCtx.drawImage(imgHair, -16 + clothesOffsets.hair.x, -16 + clothesOffsets.hair.y, 32, 32);
       }
     }
@@ -3221,20 +3221,41 @@
     });
   }
 
+  function isReadyDrawable(img) {
+    if (!img) return false;
+    if (typeof HTMLCanvasElement !== "undefined" && img instanceof HTMLCanvasElement) {
+      return img.width > 0 && img.height > 0;
+    }
+    if (img.width > 0 && img.naturalWidth === undefined) {
+      return img.width > 0;
+    }
+    return Boolean(img.complete && img.naturalWidth > 0);
+  }
+
   function openSkinModal() {
+    const modal = document.getElementById('character-modal');
+    if (!modal) return;
+
     selectedSkinTemp = (engine && typeof engine.getPlayerSkin === 'function') ? engine.getPlayerSkin() : 'classic';
     selectedHairTemp = (engine && typeof engine.getPlayerHair === 'function') ? engine.getPlayerHair() : 'red';
     selectedSkinColorTemp = (engine && typeof engine.getPlayerSkinColor === 'function') ? engine.getPlayerSkinColor() : '#ffc3aa';
-    initSkinTonePalette();
-    updateSkinCards(selectedSkinTemp);
-    updateHairCards(selectedHairTemp);
-    updateSkinColorSwatches(selectedSkinColorTemp);
-    updateOffsetDisplay();
-    if (charModal) charModal.classList.remove('hidden');
+
+    try { initSkinTonePalette(); } catch(e) { console.error(e); }
+    try { updateSkinCards(selectedSkinTemp); } catch(e) { console.error(e); }
+    try { updateHairCards(selectedHairTemp); } catch(e) { console.error(e); }
+    try { updateSkinColorSwatches(selectedSkinColorTemp); } catch(e) { console.error(e); }
+    try { updateOffsetDisplay(); } catch(e) { console.error(e); }
+
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
   }
 
   function closeSkinModal() {
-    if (charModal) charModal.classList.add('hidden');
+    const modal = document.getElementById('character-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.add('hidden');
+    }
   }
 
   window.openSkinModal = openSkinModal;
