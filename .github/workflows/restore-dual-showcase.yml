@@ -2,16 +2,14 @@ name: Restore Dual README Showcase
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - '.github/workflows/restore-dual-showcase.yml'
+      - 'scripts/restore-dual-showcase.py'
 
 permissions:
   contents: write
-
-concurrency:
-  group: restore-dual-readme-showcase
-  cancel-in-progress: true
 
 jobs:
   restore:
@@ -23,74 +21,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Preserve edited GIF and restore original showcase
-        shell: bash
+      - name: Restore both showcases
+        run: python scripts/restore-dual-showcase.py
+
+      - name: Verify README layout
         run: |
-          set -euo pipefail
-          cp docs/assets/growtopia-explorer-showcase.gif docs/assets/growtopia-explorer-showcase-edited.gif
-          git checkout ce97d69801e048e3ca1877816d83cf131e7b4e97 -- docs/assets/growtopia-explorer-showcase.gif
-
-      - name: Rebuild README hero
-        shell: python
-        run: |
-          from pathlib import Path
-
-          readme = Path('README.md')
-          text = readme.read_text(encoding='utf-8')
-
-          # Remove the oversized logo from the README hero.
-          text = text.replace('![Growtopia Explorer Logo](public/logo.png)\n\n', '', 1)
-
-          start = '<!-- github-showcase:start -->'
-          end = '<!-- github-showcase:end -->'
-          if start not in text or end not in text:
-              raise SystemExit('README showcase markers not found')
-
-          block = '''<!-- github-showcase:start -->
-### Product walkthrough
-
-<a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/assets/growtopia-explorer-showcase.gif" alt="Growtopia Explorer product walkthrough: Explore, Inspect, Style, Build, and Play" width="100%">
-</a>
-
-<sub><strong>Explore → Inspect → Style → Build → Play</strong> · original browser showcase · 1280×720</sub>
-
-<br>
-
-### Feature highlights
-
-<a href="https://growtopia-explorer.vercel.app">
-  <img src="docs/assets/growtopia-explorer-showcase-edited.gif" alt="Growtopia Explorer edited feature highlights with world building, physics, hazards, and moderator mode" width="100%">
-</a>
-
-<sub><strong>World building → Physics → Interaction → Hazards → Moderator mode</strong> · edited showcase · 30 FPS · 1280×720</sub>
-<!-- github-showcase:end -->'''
-
-          before, rest = text.split(start, 1)
-          _, after = rest.split(end, 1)
-          readme.write_text(before + block + after, encoding='utf-8')
-
-      - name: Verify both GIFs
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s docs/assets/growtopia-explorer-showcase.gif
-          test -s docs/assets/growtopia-explorer-showcase-edited.gif
-          test "$(head -c 4 docs/assets/growtopia-explorer-showcase.gif)" = 'GIF8'
-          test "$(head -c 4 docs/assets/growtopia-explorer-showcase-edited.gif)" = 'GIF8'
+          set -e
           grep -Fq 'growtopia-explorer-showcase.gif' README.md
           grep -Fq 'growtopia-explorer-showcase-edited.gif' README.md
-          ! grep -Fq '![Growtopia Explorer Logo](public/logo.png)' README.md
-          echo "Original GIF: $(stat -c%s docs/assets/growtopia-explorer-showcase.gif) bytes"
-          echo "Edited GIF: $(stat -c%s docs/assets/growtopia-explorer-showcase-edited.gif) bytes"
+          if grep -Fq '![Growtopia Explorer Logo](public/logo.png)' README.md; then exit 1; fi
 
-      - name: Publish restored dual showcase
-        shell: bash
+      - name: Publish README fix
         run: |
-          set -euo pipefail
+          set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add README.md docs/assets/growtopia-explorer-showcase.gif docs/assets/growtopia-explorer-showcase-edited.gif
-          git diff --cached --stat
-          git commit -m 'docs: show original and edited product previews'
+          git commit -m 'docs: restore original preview and keep edited showcase'
           git push origin HEAD:main
