@@ -17,6 +17,7 @@
 > No setup required. Runs directly in the browser.
 
 [![Live Demo](https://img.shields.io/badge/LIVE_DEMO-OPEN_NOW-7C5CFF?style=for-the-badge&logo=vercel&logoColor=white)](https://growtopia-explorer.vercel.app)
+[![Instagram](https://img.shields.io/badge/Instagram-@aryhaan-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://instagram.com/aryhaan)
 [![JavaScript](https://img.shields.io/badge/Language-ES6%2B%20JavaScript-F7DF1E?logo=javascript&logoColor=black)](#tech-stack)
 [![HTML5 Canvas](https://img.shields.io/badge/Graphics-HTML5%20Canvas%202D-E34F26?logo=html5&logoColor=white)](#tech-stack)
 [![Web Audio API](https://img.shields.io/badge/Audio-Web%20Audio%20API-4A154B?logo=webaudio&logoColor=white)](#tech-stack)
@@ -24,7 +25,7 @@
 [![Vercel](https://img.shields.io/badge/Deploy-Live_on_Vercel-000000?logo=vercel&logoColor=white)](https://growtopia-explorer.vercel.app)
 [![Items](https://img.shields.io/badge/Database-16%2C304%20Items-00E5FF)](#features)
 
-[🌐 Live App](https://growtopia-explorer.vercel.app) • [✨ Live Features](#-key-features) • [🚀 Quick Start](#-quick-start--local-development) • [🛠️ Tech Stack](#%EF%B8%8F-technology-stack--architecture) • [📖 Documentation](#-project-structure)
+[🌐 Live App](https://growtopia-explorer.vercel.app) • [📸 Instagram @aryhaan](https://instagram.com/aryhaan) • [✨ Live Features](#-key-features) • [🚀 Quick Start](#-quick-start--local-development) • [🛠️ Tech Stack](#%EF%B8%8F-technology-stack--architecture) • [📖 Documentation](#-project-structure)
 
 </div>
 
@@ -191,11 +192,13 @@ The repository also contains `vercel.json` for Vercel deployment configuration.
 ## 👨‍💻 Author & Credits
 
 - **Creator / Developer**: **Raey** ([@araeys](https://github.com/araeys))
+- **Instagram**: **[@aryhaan](https://instagram.com/aryhaan)**
 - **Assets & IP**: Growtopia assets and sprites are properties of Ubisoft / Robinson Technologies. This project is created for educational, design, and non-commercial community purposes.
 
 ---
 
 <div align="center">
   <strong><a href="https://growtopia-explorer.vercel.app">🌐 OPEN THE LIVE PROJECT</a></strong><br><br>
-  <sub>Built with pure Vanilla JavaScript by @araeys.</sub>
+  <a href="https://instagram.com/aryhaan"><img src="https://img.shields.io/badge/Instagram-@aryhaan-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram @aryhaan"></a><br><br>
+  <sub>Built with pure Vanilla JavaScript by @araeys · Instagram @aryhaan</sub>
 </div>
