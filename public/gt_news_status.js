@@ -23,6 +23,15 @@
         fullImage: null,
         resizeImage: null
       };
+      this.votw = {
+        title: "The Curse of the Legendary Dragons - Epic Growtopia Cinematic",
+        creator: "Official Growtopia Community Spotlight",
+        youtubeId: "2-tArcNir10",
+        youtubeUrl: "https://www.youtube.com/watch?v=2-tArcNir10",
+        prize: "100,000 Gems + Exclusive Trophy",
+        week: "Week #34 - August 2026",
+        desc: "Featured weekly community spotlight showcase! Create videos, share with #GrowtopiaVOTW on YouTube, and win 100,000 Gems & the exclusive in-game trophy."
+      };
       this.newsList = [
         {
           title: "Growtopia Version 5.28 Update: Clash of Worlds & Seasonal Pass",
@@ -352,20 +361,55 @@
           </div>
 
           <div class="news-grid-layout">
-            <!-- Left: World of the Day (WOTD) Showcase -->
-            <div class="news-card wotd-showcase-card">
-              <div class="wotd-header">
-                <span class="wotd-badge">👑 WORLD OF THE DAY</span>
-                <span class="wotd-live-tag">${isLive ? 'LIVE ROTATION' : 'STATUS PENDING'}</span>
+            <!-- Left: World of the Day (WOTD) & Video of the Week (VOTW) -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
+              <!-- World of the Day (WOTD) Showcase -->
+              <div class="news-card wotd-showcase-card" style="margin:0;">
+                <div class="wotd-header">
+                  <span class="wotd-badge">👑 WORLD OF THE DAY (WOTD)</span>
+                  <span class="wotd-live-tag">${isLive ? 'LIVE ROTATION' : 'STATUS PENDING'}</span>
+                </div>
+                <h3 class="wotd-title" id="news-wotd-name">${this.wotd.name || (this.statusState === 'connecting' ? 'Loading WOTD...' : 'UNAVAILABLE')}</h3>
+                <div class="wotd-img-container">
+                  <img id="news-wotd-img" src="${this.wotd.fullImage || 'logo.png'}" alt="WOTD Render" class="wotd-img">
+                </div>
+                <div class="wotd-actions">
+                  <button class="btn btn-primary btn-sm" id="news-wotd-inspect-btn" data-world="${this.wotd.name || 'START'}">
+                    🔍 View in Render World Inspector
+                  </button>
+                </div>
               </div>
-              <h3 class="wotd-title" id="news-wotd-name">${this.wotd.name || (this.statusState === 'connecting' ? 'Loading WOTD...' : 'UNAVAILABLE')}</h3>
-              <div class="wotd-img-container">
-                <img id="news-wotd-img" src="${this.wotd.fullImage || 'logo.png'}" alt="WOTD Render" class="wotd-img">
-              </div>
-              <div class="wotd-actions">
-                <button class="btn btn-primary btn-sm" id="news-wotd-inspect-btn" data-world="${this.wotd.name || 'START'}">
-                  🔍 View in Render World Inspector
-                </button>
+
+              <!-- Video of the Week (VOTW) Showcase -->
+              <div class="news-card votw-showcase-card" style="margin:0;">
+                <div class="votw-header">
+                  <span class="votw-badge">🎬 VIDEO OF THE WEEK (VOTW)</span>
+                  <span class="votw-live-tag">COMMUNITY SPOTLIGHT</span>
+                </div>
+                <h3 class="votw-title">${this.votw.title}</h3>
+                
+                <div class="votw-video-container">
+                  <iframe 
+                    src="https://www.youtube-nocookie.com/embed/${this.votw.youtubeId}?rel=0" 
+                    title="Growtopia Video of the Week" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                  </iframe>
+                </div>
+
+                <div class="votw-meta-box">
+                  <div>👤 Creator: <strong style="color:#f8fafc;">${this.votw.creator}</strong></div>
+                  <div class="votw-prize-tag">🏆 Prize: ${this.votw.prize}</div>
+                </div>
+
+                <div class="votw-actions">
+                  <a href="${this.votw.youtubeUrl}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+                    ▶️ Watch on YouTube
+                  </a>
+                  <span style="font-size:11px;color:#64748b;display:flex;align-items:center;">
+                    ${this.votw.week}
+                  </span>
+                </div>
               </div>
             </div>
 

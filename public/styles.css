@@ -4768,6 +4768,92 @@ body.sky-warp { background-image: radial-gradient(circle at 50% 50%, #4c1d95 0%,
   image-rendering: pixelated;
 }
 
+/* VOTW Showcase Card */
+.votw-showcase-card {
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+  margin-top: 20px;
+}
+
+.votw-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.votw-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.votw-live-tag {
+  font-size: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.votw-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.5px;
+}
+
+.votw-video-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.votw-video-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.votw-meta-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.votw-prize-tag {
+  color: #fde047;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.votw-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .patch-notes-title {
   font-size: 17px;
   font-weight: 700;
