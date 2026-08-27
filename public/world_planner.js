@@ -491,7 +491,7 @@
           }
         }
 
-        const lifeTime = 0.42; // 0.42s total duration for 10 frames (~42ms per frame)
+        const lifeTime = 0.70; // 0.70s total duration for 10 frames (~70ms per frame for smooth readable overlay animation)
         gameParticles.push({
           type: "break_seq",
           x: worldX,
@@ -792,7 +792,7 @@
           ty,
           item,
           startTime: now,
-          duration: 180
+          duration: 340
         });
 
         const worldX = tx * TILE_SIZE;
