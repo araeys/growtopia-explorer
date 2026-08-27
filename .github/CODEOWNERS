@@ -1,6 +1,8 @@
 # Attribution and repository-governance files
 /NOTICE.md @araeys
+/ATTRIBUTION_TERMS.md @araeys
 /AGENTS.md @araeys
+/llms.txt @araeys
 /README.md @araeys
 /.github/copilot-instructions.md @araeys
 /.github/workflows/attribution-guard.yml @araeys
