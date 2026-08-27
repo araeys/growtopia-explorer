@@ -125,6 +125,10 @@
         stepParticleTimer: 0,
         landingSquashTimer: 0,
         modTransformTimer: 0,
+        entranceAnimTimer: 0,
+        entranceMaxTimer: 0.65,
+        entranceX: 0,
+        entranceY: 0,
         keys: { left: false, right: false, up: false, down: false, jump: false }
       };
 
@@ -474,6 +478,57 @@
         });
       }
 
+            function triggerEntranceAnimation(worldX, worldY) {
+        if (!player.active) return;
+        player.entranceAnimTimer = 0.65;
+        player.entranceMaxTimer = 0.65;
+        player.entranceX = worldX;
+        player.entranceY = worldY;
+
+        // 1. Multi-tier Sparkling Star Burst Particles (16 radiant stars)
+        const starColors = ["#00e5ff", "#38bdf8", "#fde047", "#c084fc", "#ffffff", "#4ade80"];
+        for (let i = 0; i < 16; i++) {
+          const angle = (Math.PI * 2 * i) / 16 + (Math.random() * 0.3 - 0.15);
+          const speed = 2.0 + Math.random() * 3.5;
+          gameParticles.push({
+            type: "cheer_star",
+            x: worldX,
+            y: worldY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1.2,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 12,
+            color: starColors[i % starColors.length],
+            size: 3.5 + Math.random() * 2.5,
+            life: 0.65 + Math.random() * 0.25,
+            maxLife: 0.85
+          });
+        }
+
+        // 2. Expanding Radiant Shockwave Ring Particle
+        gameParticles.push({
+          type: "entrance_shockwave",
+          x: worldX,
+          y: worldY + (player.height ? player.height / 2 : 14),
+          radius: 4,
+          maxRadius: 40,
+          color: "#00e5ff",
+          life: 0.60,
+          maxLife: 0.60
+        });
+
+        // 3. Vertical Light Beam Shimmer Pillar
+        gameParticles.push({
+          type: "entrance_light_beam",
+          x: worldX,
+          y: worldY + (player.height ? player.height / 2 : 14),
+          life: 0.55,
+          maxLife: 0.55
+        });
+
+        requestRender();
+      }
+
       function spawnTileBreakParticle(tx, ty) {
         const worldX = (tx + 0.5) * TILE_SIZE;
         const worldY = (ty + 0.5) * TILE_SIZE;
@@ -511,6 +566,42 @@
           p.life -= dt;
           if (p.life <= 0) {
             gameParticles.splice(i, 1);
+            continue;
+          }
+
+                    if (p.type === "entrance_shockwave") {
+            const progress = 1.0 - (p.life / p.maxLife);
+            const r = p.radius + (p.maxRadius - p.radius) * Math.sin(progress * Math.PI * 0.5);
+            const alpha = Math.max(0, 1.0 - Math.pow(progress, 1.5)) * 0.85;
+            ctx.save();
+            ctx.strokeStyle = p.color || "#00e5ff";
+            ctx.lineWidth = Math.max(1, (3 - progress * 2) / (viewport ? viewport.zoom : 1));
+            ctx.shadowColor = p.color || "#00e5ff";
+            ctx.shadowBlur = 10 * (1.0 - progress);
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, r, r * 0.45, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+            continue;
+          }
+
+          if (p.type === "entrance_light_beam") {
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.sin(progress * Math.PI) * 0.65;
+            ctx.save();
+            const beamW = 24;
+            const beamH = 56;
+            if (typeof ctx.createLinearGradient === "function") {
+              const grad = ctx.createLinearGradient(p.x, p.y, p.x, p.y - beamH);
+              grad.addColorStop(0, "rgba(0, 229, 255, " + (alpha * 0.8) + ")");
+              grad.addColorStop(0.6, "rgba(56, 189, 248, " + (alpha * 0.4) + ")");
+              grad.addColorStop(1, "rgba(56, 189, 248, 0)");
+              ctx.fillStyle = grad;
+            } else {
+              ctx.fillStyle = "rgba(0, 229, 255, " + alpha + ")";
+            }
+            ctx.fillRect(p.x - beamW / 2, p.y - beamH, beamW, beamH);
+            ctx.restore();
             continue;
           }
 
@@ -3165,6 +3256,7 @@
         player.vx = 0;
         player.vy = 0;
         player.doorWarpCooldown = 1.2;
+        triggerEntranceAnimation(targetDoor.x * TILE_SIZE + TILE_SIZE / 2, targetDoor.y * TILE_SIZE + TILE_SIZE / 2);
         playSfx("door_open", 1.0, 0.85);
         playSfx("teleport", 1.1, 0.70);
         onStatusMessage(`Warped through door to (${targetDoor.x}, ${targetDoor.y})!`);
@@ -3281,6 +3373,8 @@
         player.respawnInvincible = 1.8; // 1.8s invincibility shield
         player.respawnRingRadius = 4;
         player.state = "idle";
+        triggerEntranceAnimation(spawn.x + player.width / 2, spawn.y + player.height / 2);
+        playSfx("door_open", 1.0, 0.90);
         playSfx("teleport", 1.0, 0.85);
         playSfx("door_shut", 1.0, 0.70);
         if (msg) onStatusMessage(msg);
@@ -3306,6 +3400,9 @@
 
           // Play Game Mode Enter Sound Effect (success.wav) & Zoom in to Player
           playSfx("success", 1.0, 0.75);
+          playSfx("door_open", 1.0, 0.90);
+          playSfx("teleport", 1.0, 0.85);
+          triggerEntranceAnimation(spawn.x + player.width / 2, spawn.y + player.height / 2);
           preloadFootstepSounds();
           viewport.zoom = 2.2;
           smoothZoomTarget = 2.2;
@@ -3448,6 +3545,7 @@
         if (player.landingSquashTimer > 0) player.landingSquashTimer = Math.max(0, player.landingSquashTimer - dt);
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
+        if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
 
         // Continuous AFK Animation Loop (Runs continuously when idle until player moves)
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
@@ -4223,6 +4321,27 @@
           ctx.fill();
         }
 
+        // ── Authentic Growtopia Entrance Swirl & Portal Aura Backdrop ──
+        if (player.entranceAnimTimer > 0 && !player.isDead) {
+          const enterProg = 1.0 - (player.entranceAnimTimer / (player.entranceMaxTimer || 0.65));
+          const centerX = px + pw / 2;
+          const centerY = py + ph / 2;
+          const portalIndex = Math.min(9, Math.floor(enterProg * 10));
+          const portalSrc = modPortalFrames[portalIndex];
+          const portalImg = getSpriteImage(portalSrc);
+
+          if (isReadyDrawable(portalImg)) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            const pSize = 52 * (0.6 + Math.sin(enterProg * Math.PI) * 0.5);
+            ctx.globalAlpha = Math.max(0, (1.0 - enterProg) * 0.90);
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 14;
+            ctx.drawImage(portalImg, centerX - pSize / 2, centerY - pSize / 2 + 1, pSize, pSize);
+            ctx.restore();
+          }
+        }
+
         // ── Enhanced Legendary Moderator Celestial Aura & Orbital Energy Rings ──
         if (player.moderatorMode && !player.isDead) {
           ctx.save();
@@ -4386,7 +4505,19 @@
           const spinDir = player.vx < 0 ? -1 : 1;
           ctx.rotate(deathProgress * Math.PI * 6 * spinDir);
           const deathScale = Math.max(0.15, 1.0 + Math.sin(deathProgress * Math.PI * 0.5) * 0.2 - deathProgress * 0.6);
-          ctx.scale(deathScale, deathScale);
+        } else if (player.entranceAnimTimer > 0) {
+          // Authentic Growtopia Entrance / Spawn Pop & Elastic Swirl Curve
+          const enterProg = 1.0 - (player.entranceAnimTimer / (player.entranceMaxTimer || 0.65));
+          let enterScale;
+          if (enterProg < 0.6) {
+            enterScale = 0.15 + (enterProg / 0.6) * 1.10;
+          } else {
+            enterScale = 1.25 - ((enterProg - 0.6) / 0.4) * 0.25;
+          }
+          ctx.scale(enterScale, enterScale);
+          ctx.globalAlpha = Math.min(1.0, enterProg * 2.0);
+          ctx.shadowColor = "#00e5ff";
+          ctx.shadowBlur = 16 * (1.0 - enterProg);
         } else if (player.modTransformTimer > 0) {
           // Mod Transformation Electrical Strobe Flicker Effect (GPU-friendly zero lag)
           const transProg = 1.0 - (player.modTransformTimer / 0.65);
@@ -5981,6 +6112,7 @@
         },
         spawnBlockPlaceEffect,
         respawnPlayer,
+        triggerEntranceAnimation,
         getPlayer: () => ({ ...player }),
         findSpawnPosition,
         toggleMusic,
