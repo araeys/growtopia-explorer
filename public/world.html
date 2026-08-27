@@ -1623,13 +1623,13 @@
           <div style="font-size:10px;color:#38bdf8;">Official Pixel Art</div>
         </div>
 
-      <!-- Option 2: Cartoon Chibi -->
+      <!-- Option 2: Legacy Character -->
         <div class="skin-card" data-skin="cartoon" style="background:#101923;border:2px solid #0a1017;box-shadow:inset 1px 1px 4px rgba(0,0,0,0.8);border-radius:4px;padding:12px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;">
           <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:rgba(56,189,248,0.1);border-radius:8px;">
             <svg viewBox="0 0 24 24" width="26" height="26" stroke="#38bdf8" stroke-width="2" fill="none"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
           </div>
-          <div style="font-size:12px;font-weight:900;color:#cbd5e1;text-shadow:1px 1px 0 #000;">Cartoon Chibi</div>
-          <div style="font-size:10px;color:#64748b;">Illustrated HD</div>
+          <div style="font-size:12px;font-weight:900;color:#cbd5e1;text-shadow:1px 1px 0 #000;">Legacy Character</div>
+          <div style="font-size:10px;color:#64748b;">Classic Vector</div>
         </div>
       </div>
 
@@ -2997,8 +2997,9 @@
     previewCtx.translate(cx, cy);
     previewCtx.scale(scale, scale);
 
+    const colorForPreview = selectedSkinColorTemp || '#ffc3aa';
     // 1. Back Arm
-    const imgArmR = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/arm_r.png") : null;
+    const imgArmR = engine && engine.getTintedSprite ? engine.getTintedSprite("character_base_assets/gt_parts/arm_r.png", colorForPreview, false) : (engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/arm_r.png") : null);
     if (isReadyDrawable(imgArmR)) {
       previewCtx.save();
       previewCtx.translate(8, 4);
@@ -3007,8 +3008,8 @@
     }
 
     // 2. Legs (Pants)
-    const imgLegR = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_r.png") : null;
-    const imgLegL = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_l.png") : null;
+    const imgLegR = engine && engine.getTintedSprite ? engine.getTintedSprite("character_base_assets/gt_parts/leg_r.png", colorForPreview, false) : (engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_r.png") : null);
+    const imgLegL = engine && engine.getTintedSprite ? engine.getTintedSprite("character_base_assets/gt_parts/leg_l.png", colorForPreview, false) : (engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/leg_l.png") : null);
     const pxLeg = clothesOffsets.pants.x;
     const pyLeg = clothesOffsets.pants.y;
 
@@ -3025,8 +3026,8 @@
       previewCtx.restore();
     }
 
-    // 3. Body / Shirt
-    const imgBody = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/body.png") : null;
+    // 3. Body / Shirt (with selective skin neck tinting and untouched clothes!)
+    const imgBody = engine && engine.getTintedSprite ? engine.getTintedSprite("character_base_assets/gt_parts/body.png", colorForPreview, true) : (engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/body.png") : null);
     const sxShirt = clothesOffsets.shirt.x;
     const syShirt = clothesOffsets.shirt.y;
     if (isReadyDrawable(imgBody)) {
@@ -3038,7 +3039,7 @@
 
     // 4. Head & Eyeballs & Pupils UNDER Head Mask
     const imgSclera = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png") : null;
-    const imgHeadMask = engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/head_mask.png") : null;
+    const imgHeadMask = engine && engine.getTintedSprite ? engine.getTintedSprite("character_base_assets/gt_parts/head_mask.png", colorForPreview, false) : (engine && engine.getSpriteImage ? engine.getSpriteImage("character_base_assets/gt_parts/head_mask.png") : null);
     
     if (isReadyDrawable(imgSclera)) {
       previewCtx.drawImage(imgSclera, -16, -16, 32, 32);

@@ -4068,14 +4068,16 @@
       }
 
       const tintedSpriteCache = new Map();
-      function getTintedSprite(src, colorHex) {
+      function getTintedSprite(src, colorHex, isBody = false) {
         const baseImg = getSpriteImage(src);
         if (!isReadyDrawable(baseImg)) return baseImg;
-        if (!colorHex || colorHex.toLowerCase() === "#ffc3aa" || colorHex.toLowerCase() === "#f0f0f0" || colorHex.toLowerCase() === "#ffffff") {
-          return baseImg;
-        }
+        if (!colorHex) return baseImg;
 
-        const cacheKey = `${src}_${colorHex}`;
+        const cleanHex = colorHex.toLowerCase();
+        // Tone 6 is the exact native asset baseline
+        if (cleanHex === "#ffc3aa") return baseImg;
+
+        const cacheKey = `${src}_${cleanHex}_${isBody ? "body" : "part"}`;
         if (tintedSpriteCache.has(cacheKey)) {
           return tintedSpriteCache.get(cacheKey);
         }
@@ -4095,11 +4097,36 @@
           const rgb = hexToRgb(colorHex);
 
           for (let i = 0; i < data.length; i += 4) {
-            if (data[i + 3] > 0) {
-              // Multiply blend mode matching official Growtopia set planner: (base / 255) * target
-              data[i]     = Math.min(255, Math.floor((data[i] / 255.0) * rgb.r));
-              data[i + 1] = Math.min(255, Math.floor((data[i + 1] / 255.0) * rgb.g));
-              data[i + 2] = Math.min(255, Math.floor((data[i + 2] / 255.0) * rgb.b));
+            const a = data[i + 3];
+            if (a > 0) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+
+              if (isBody) {
+                // In body.png: ONLY tint the skin neck/chest pixels!
+                // NEVER tint the green shirt, belt buckle, or blue jeans/pants!
+                const isSkin = (r >= 160 && g >= 140 && b >= 120 && r >= g && g >= b);
+                if (!isSkin) continue;
+              }
+
+              // Compute normalized luminance factor (0.0 to 1.0) from the base Tone 6 skin pixels:
+              // Highlights (230, 210, 180) -> 1.00
+              // Base skin  (218, 199, 170) -> 0.94
+              // Shadow 1   (200, 182, 156) -> 0.86
+              // Shadow 2   (181, 165, 141) -> 0.78
+              // Outline    (163, 148, 127) -> 0.70
+              // Crease     (81, 48, 27)    -> 0.35
+              let lum;
+              if (r < 100) {
+                lum = 0.35;
+              } else {
+                lum = Math.min(1.0, Math.max(r / 230.0, g / 210.0, b / 180.0));
+              }
+
+              data[i]     = Math.min(255, Math.max(0, Math.round(lum * rgb.r)));
+              data[i + 1] = Math.min(255, Math.max(0, Math.round(lum * rgb.g)));
+              data[i + 2] = Math.min(255, Math.max(0, Math.round(lum * rgb.b)));
             }
           }
           tCtx.putImageData(imgData, 0, 0);
@@ -4537,7 +4564,7 @@
             const imgArmL = getTintedSprite("character_base_assets/gt_parts/arm_l.png", pSkinColor);
             const imgLegR = getTintedSprite("character_base_assets/gt_parts/leg_r.png", pSkinColor);
             const imgLegL = getTintedSprite("character_base_assets/gt_parts/leg_l.png", pSkinColor);
-            const imgBody = getTintedSprite("character_base_assets/gt_parts/body.png", pSkinColor);
+            const imgBody = getTintedSprite("character_base_assets/gt_parts/body.png", pSkinColor, true);
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
             const isSeriousFace = (player.continuousRunTimer >= 1.5) && !player.moderatorMode;
