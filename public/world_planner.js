@@ -3862,17 +3862,18 @@
           // Max walk speed: 5.58 px/frame (10% decrease from 6.2)
           player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
-          // Dynamic Footstep & Skid Particles + Sound Effects (Randomized footstep1-7 with 200ms gap, nonstop while moving)
+          // Dynamic Footstep & Skid Drift Particles + Sound Effects
           const isMovingOnGround = player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35);
-          const isSkidding = player.isGrounded && Math.abs(player.vx) > 1.8 && ((player.vx > 0 && player.keys.left) || (player.vx < 0 && player.keys.right));
+          const isSkidding = player.isGrounded && Math.abs(player.vx) > 1.6 && ((player.vx > 0 && player.keys.left) || (player.vx < 0 && player.keys.right));
+          player.isSkidding = isSkidding;
 
           if (isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.08) {
+            if (player.stepParticleTimer >= 0.05) { // Rapid continuous skid spray
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
               spawnFootstepDust(footX, player.y + player.height, player.facing, true);
-              playRandomFootstepSfx(0.90);
+              playRandomFootstepSfx(0.95);
             }
           } else if (isMovingOnGround) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
@@ -4973,7 +4974,8 @@
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
             const isAirborne = !player.isGrounded && !player.moderatorMode;
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode && !isAirborne;
+            const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding) && !player.moderatorMode && !isAirborne;
             const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
@@ -4998,6 +5000,8 @@
             let backArmAngle = 0;
             if (isJumpSpinning) {
               backArmAngle = jumpSpinAngleBack;
+            } else if (isSkidding) {
+              backArmAngle = 0.85; // Raised back arm counter-balancing skid
             } else if (isActionActive) {
               backArmAngle = 0.55 + Math.sin(actionProg * Math.PI) * 0.40;
             } else if (afkBackArmAngle !== null) {
@@ -5025,7 +5029,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = (walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend);
+            legRAngle = isSkidding ? 0.35 : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5045,7 +5049,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = (walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend);
+            legLAngle = isSkidding ? -0.55 : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend));
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
