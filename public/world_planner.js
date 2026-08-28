@@ -3966,15 +3966,16 @@
           // Max walk speed: 5.58 px/frame
           player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
-          // Active Skid Drift & Slip State
+          // Active Sudden Stop Skid & Kepleset Brake State
           player.isSkidding = player.isGrounded && (player.skidTimer > 0) && (Math.abs(player.vx) > 0.2);
           if (player.isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.04) { // Rapid continuous skid spray
+            if (player.stepParticleTimer >= 0.04) { // Rapid dual-heel smoke spray
               player.stepParticleTimer = 0;
-              const footX = player.x + player.width / 2;
-              spawnFootstepDust(footX, player.y + player.height, player.skidDir || player.facing, true);
-              playRandomFootstepSfx(0.95);
+              // Front heel and back heel smoke puffs
+              spawnFootstepDust(player.x + 4, player.y + player.height, player.skidDir || player.facing, true);
+              spawnFootstepDust(player.x + player.width - 4, player.y + player.height, player.skidDir || player.facing, true);
+              playSfx("hitground", 1.35 + Math.random() * 0.15, 0.50);
             }
           } else if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35)) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
@@ -5116,8 +5117,8 @@
             const isAirborne = !player.isGrounded && !player.moderatorMode;
             const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
                         const isClimbing = player.isClimbing && !player.moderatorMode;
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding) && !player.moderatorMode && !isAirborne;
-            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isClimbing;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode && !isAirborne;
+            const isJumpFace = (isAirborne || isSkidding || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isClimbing;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
@@ -5142,7 +5143,7 @@
             if (isJumpSpinning) {
               backArmAngle = jumpSpinAngleBack;
             } else if (isSkidding) {
-              backArmAngle = 1.15 + Math.sin(t * 22) * 0.30; // Raised back arm flailing in kepleset slip
+              backArmAngle = 1.35 + Math.sin(t * 26) * 0.45; // Panicked windmill arm flail
                         } else if (isClimbing) {
               const climbPhase = player.y * 0.22;
               backArmAngle = -1.95 + Math.sin(climbPhase) * 0.75;
@@ -5173,7 +5174,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isSkidding ? 0.65 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend)));
+            legRAngle = isSkidding ? 0.85 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend)));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5193,7 +5194,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isSkidding ? -0.75 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend)));
+            legLAngle = isSkidding ? -0.95 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend)));
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
@@ -5208,8 +5209,8 @@
             const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
-            const skidLean = isSkidding ? (-0.32 - Math.sin(t * 26) * 0.08) : 0;
-            const skidTorsoY = isSkidding ? (2.6 + Math.sin(t * 26) * 0.4) : 0;
+            const skidLean = isSkidding ? (-0.46 - Math.sin(t * 26) * 0.08) : 0; // Extreme cartoon backward lean
+            const skidTorsoY = isSkidding ? (3.5 + Math.sin(t * 26) * 0.4) : 0;  // Deep brake crouch
             const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
             const torsoLean = (isSkidding ? skidLean : (runLean + torsoTwist + actionTorsoLean + afkTorsoAngle)) + climbTorsoLean;
 
@@ -5292,7 +5293,7 @@
 
                 // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
                 const hairWalkSway = (-Math.sin(walkPhase - 0.7) * 0.072 * wBlend);
-                const hairVelLag = (isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0;
+                const hairVelLag = isSkidding ? (-0.35 + Math.sin(t * 26) * 0.10) : ((isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0);
                 const hairJumpSway = (-player.vy * 0.013 * jBlend);
                 const hairFallLift = (-player.vy * 0.015 * fBlend);
                 const hairIdleSway = (Math.sin(t * 3.0) * 0.022 * idleBlend);
@@ -5423,6 +5424,8 @@
               let frontArmAngle = 0;
               if (isJumpSpinning) {
                 frontArmAngle = jumpSpinAngleFront;
+              } else if (isSkidding) {
+                frontArmAngle = -2.25 - Math.cos(t * 26) * 0.45; // Panicked forward arm windmill flail
               } else if (isPlacing) {
                 frontArmAngle = placeSpinAngle;
               } else if (isActionActive) {
