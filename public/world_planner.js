@@ -132,7 +132,6 @@
         skidTimer: 0,
         skidMaxTimer: 0.26,
         isSkidding: false,
-        isWallSliding: false,
         isClimbing: false,
         modTransformTimer: 0,
         entranceAnimTimer: 0,
@@ -3404,28 +3403,31 @@
         return true;
       }
 
+      function isClimbableBlock(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        const action = Number(item.action);
+        return action === 134 || name.includes("vine") || name.includes("ladder") || name.includes("rope") || name.includes("lattice") || name.includes("trellis") || name.includes("chain") || name.includes("ivy") || name.includes("climb");
+      }
+
       function isSolidBlock(item) {
         if (!item) return false;
         if (isDoorItem(item)) return false;
         if (isPassThroughPlant(item)) return false;
+        if (isClimbableBlock(item)) return false; // Non-solid pass-through for all ladders and vines!
         const name = (item.name || "").toLowerCase();
         const action = Number(item.action);
-        // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89)
+        // Non-solids: Air (0), Backgrounds (18), Platforms (21), Doors (1, 2), Signs (3), Main Door (6), Checkpoints (27), Music notes (28), Weather (81, 89), Vines/Ladders (134)
         if ([0, 1, 2, 3, 6, 18, 21, 27, 28, 81, 89, 134].includes(action)) return false;
-        if (name.includes("door") || name.includes("platform") || name.includes("sign") || name.includes("water") || name.includes("fire")) return false;
+        if (name.includes("door") || name.includes("platform") || name.includes("sign") || name.includes("water") || name.includes("fire") || name.includes("vine") || name.includes("ladder") || name.includes("rope") || name.includes("lattice") || name.includes("trellis") || name.includes("chain") || name.includes("ivy")) return false;
         return true;
       }
 
       function isPlatformBlock(item) {
         if (!item) return false;
+        if (isClimbableBlock(item)) return false; // Climbables are non-solid, not solid platforms!
         const name = (item.name || "").toLowerCase();
         return item.action === 21 || name.includes("platform") || name.includes("cloud") || name.includes("bridge") || name.includes("bannister") || name.includes("ledge");
-      }
-
-      function isClimbableBlock(item) {
-        if (!item) return false;
-        const name = (item.name || "").toLowerCase();
-        return name.includes("vine") || name.includes("ladder") || name.includes("rope") || name.includes("lattice") || name.includes("trellis") || name.includes("chain") || name.includes("ivy");
       }
 
       function isHazardItem(item) {
@@ -3964,57 +3966,10 @@
             player.stepParticleTimer = 0.19;
           }
 
-          // Wall Slide & Wall Cling Detection (When airborne and pushing against a solid wall)
-          let touchingWall = false;
-          let wallContactX = player.x;
-          if (!player.isGrounded && !player.isClimbing && player.vy > 0.2) {
-            const checkDir = (player.keys.right && player.facing === 1) ? 1 : ((player.keys.left && player.facing === -1) ? -1 : 0);
-            if (checkDir !== 0) {
-              const testX = checkDir > 0 ? Math.floor((player.x + player.width + 3) / TILE_SIZE) : Math.floor((player.x - 3) / TILE_SIZE);
-              const testY1 = Math.floor((player.y + 6) / TILE_SIZE);
-              const testY2 = Math.floor((player.y + player.height - 4) / TILE_SIZE);
-              const idx1 = testY1 * world.width + testX;
-              const idx2 = testY2 * world.width + testX;
-              const wallItem1 = getItem(world.fg[idx1]);
-              const wallItem2 = getItem(world.fg[idx2]);
-              if ((wallItem1 && isSolidBlock(wallItem1)) || (wallItem2 && isSolidBlock(wallItem2))) {
-                touchingWall = true;
-                wallContactX = checkDir > 0 ? (player.x + player.width) : player.x;
-              }
-            }
-          }
-
-          player.isWallSliding = touchingWall;
-          if (player.isWallSliding) {
-            // Slow down falling speed (wall friction slide)
-            if (player.vy > 2.0) player.vy = 2.0;
-            player.wallDustTimer = (player.wallDustTimer || 0) + dt;
-            if (player.wallDustTimer >= 0.08) {
-              player.wallDustTimer = 0;
-              spawnWallDust(wallContactX, player.y + 12, player.facing);
-            }
-          }
-
-          // Jump, Double Jump, and Wall Jump
-          const wantsJump = player.keys.jump || player.keys.up;
+          // Jump & Double Jump
+          const wantsJump = player.keys.jump || (player.keys.up && !isAtClimbable);
           if (wantsJump && !player.jumpConsumed) {
-            if (player.isWallSliding) {
-              // Wall Jump Kick-off!
-              player.vy = -10.2;
-              player.vx = -player.facing * 5.2; // Kick off the wall!
-              player.facing = -player.facing;
-              player.isWallSliding = false;
-              player.isGrounded = false;
-              player.jumpCount = 1;
-              player.jumpConsumed = true;
-              player.jumpLaunchTimer = 0.18;
-              player.jumpLaunchMaxTimer = 0.18;
-              player.jumpThrustTimer = 0.22;
-              player.jumpSpinTimer = 0.28;
-              player.state = "jump";
-              spawnLandingDust(wallContactX, player.y + 12);
-              playJumpSound(false);
-            } else if (player.isGrounded || player.isClimbing || player.jumpCount === 0) {
+            if (player.isGrounded || player.isClimbing || player.jumpCount === 0) {
               player.isClimbing = false;
               player.vy = -10.5;
               player.isGrounded = false;
@@ -5138,10 +5093,9 @@
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
             const isAirborne = !player.isGrounded && !player.moderatorMode;
             const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
-            const isWallSliding = player.isWallSliding && !player.isGrounded && !player.moderatorMode;
-            const isClimbing = player.isClimbing && !player.moderatorMode;
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding || isWallSliding) && !player.moderatorMode && !isAirborne;
-            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isWallSliding && !isClimbing;
+                        const isClimbing = player.isClimbing && !player.moderatorMode;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding) && !player.moderatorMode && !isAirborne;
+            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isClimbing;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
@@ -5167,9 +5121,7 @@
               backArmAngle = jumpSpinAngleBack;
             } else if (isSkidding) {
               backArmAngle = 1.15 + Math.sin(t * 22) * 0.30; // Raised back arm flailing in kepleset slip
-            } else if (isWallSliding) {
-              backArmAngle = -1.25; // Hand pressed against wall
-            } else if (isClimbing) {
+                        } else if (isClimbing) {
               const climbPhase = player.y * 0.22;
               backArmAngle = -1.95 + Math.sin(climbPhase) * 0.75;
             } else if (isActionActive) {
@@ -5199,7 +5151,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isSkidding ? 0.65 : (isWallSliding ? 0.35 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend))));
+            legRAngle = isSkidding ? 0.65 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend)));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5219,7 +5171,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isSkidding ? -0.75 : (isWallSliding ? 0.55 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend))));
+            legLAngle = isSkidding ? -0.75 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend)));
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
