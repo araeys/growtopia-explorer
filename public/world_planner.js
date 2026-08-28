@@ -3951,7 +3951,8 @@
 
           // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX + 20+ block High Fall Ouch
           if (!wasGrounded && player.isGrounded) {
-            player.landingSquashTimer = 0.14;
+            player.landingSquashTimer = 0.22;
+            player.landingSquashMaxTimer = 0.22;
             spawnLandingDust(player.x + player.width / 2, player.y + player.height);
             
             // 1. Authentic Growtopia hitground impact SFX
@@ -4704,7 +4705,7 @@
 
         // ── Landing Squash & Stretch Transform (Satisfying bouncy impact) ──
         if (player.landingSquashTimer > 0) {
-          const squashProgress = player.landingSquashTimer / 0.14;
+          const squashProgress = player.landingSquashTimer / (player.landingSquashMaxTimer || 0.22);
           const squashFactor = Math.sin(squashProgress * Math.PI);
           const squashScaleX = 1.0 + squashFactor * 0.16;
           const squashScaleY = 1.0 - squashFactor * 0.16;
@@ -4757,6 +4758,7 @@
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
         const isFalling = !player.isGrounded && player.vy > 0.8;
+        const isLanding = (player.landingSquashTimer > 0) || (player.impactShakeTimer > 0);
         const isFloating = player.moderatorMode;
         const t = player.animTimer;
         const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
@@ -4938,8 +4940,8 @@
             const imgBody = getTintedSprite("character_base_assets/gt_parts/body.png", pSkinColor, true);
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode;
-            const isJumpFace = (isJumping || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode && !isJumping && !isLanding;
+            const isJumpFace = (isJumping || isLanding || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
