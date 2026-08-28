@@ -3672,9 +3672,7 @@
         } else {
           player.afkBlend = player.afkAction ? Math.min(1.0, (player.afkBlend || 0) + dt * 4.5) : Math.max(0.0, (player.afkBlend || 0) - dt * 5.0);
           player.afkTimer += dt;
-          player.afkSubTimer = (player.afkSubTimer || 0) + dt;
-
-          const afkInterval = player.afkAction ? 4.8 : 1.8; // Quick 1.8s idle start, then 4.8s per lively action
+          const afkInterval = 8.0; // 8.0 seconds per idle action cycle
           if (player.afkTimer >= afkInterval) {
             player.afkTimer = 0;
             player.afkSubTimer = 0;
