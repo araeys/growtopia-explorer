@@ -3356,6 +3356,7 @@
         playSfx("boo_death", 1.0, 0.95);
         playSfx("hit", 1.15, 0.75);
         playSfx("splat", 1.0, 0.70);
+        playSfx("new/ouch.WAV", 1.0, 0.95);
         onStatusMessage(reason);
       }
 
@@ -3816,8 +3817,8 @@
             const fallBlocks = Math.max(0, (player.y - peakY) / TILE_SIZE);
             player.fallPeakY = player.y; // Reset peak after landing
 
-            if (fallBlocks >= 20) {
-              // High fall impact (>= 20 blocks): Play extra ouch sound!
+            if (fallBlocks >= 15) {
+              // High fall impact (>= 15 blocks): Play extra ouch sound!
               playSfx("new/ouch.WAV", 1.0, 0.95);
               player.impactShakeTimer = 0.28;
               spawnLandingDust(player.x + player.width / 2, player.y + player.height);
@@ -5423,7 +5424,7 @@
         playSfx(sfx, rate, volume);
       }
 
-      const LANDING_EXTRA_SFX_POOL = ["new/landing.WAV", "new/landing2.WAV"];
+      const LANDING_EXTRA_SFX_POOL = ["new/landing.WAV", "new/landing2.WAV", "new/landing3.WAV"];
       let lastLandingExtraIdx = -1;
       function playRandomLandingExtraSfx(volume = 0.75) {
         let idx = Math.floor(Math.random() * LANDING_EXTRA_SFX_POOL.length);
