@@ -3955,8 +3955,7 @@
             const groundFriction = (player.skidTimer > 0) ? 0.945 : 0.68;
             player.vx *= Math.pow(groundFriction, timeScale);
             if (Math.abs(player.vx) < 0.1) {
-              player.vx = 0;
-              player.skidTimer = 0;
+              player.vx = 0; // Allow skidTimer to continue counting down for full bounce animation!
             }
             if (player.isGrounded && !player.isClimbing) {
               player.state = (player.skidTimer > 0) ? "skid" : "idle";
@@ -3966,8 +3965,8 @@
           // Max walk speed: 5.58 px/frame
           player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
-          // Active Sudden Stop Skid & Kepleset Brake State
-          player.isSkidding = player.isGrounded && (player.skidTimer > 0) && (Math.abs(player.vx) > 0.2);
+          // Active Sudden Stop Skid & Kepleset Brake State (stays active for full slide + bounce duration)
+          player.isSkidding = player.isGrounded && (player.skidTimer > 0);
           if (player.isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
             if (player.stepParticleTimer >= 0.04) { // Rapid dual-heel smoke spray
@@ -4984,7 +4983,7 @@
         const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
         const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend - skidBlend);
 
-        // ── FLUID MULTI-PART ACTIVE SKELETAL BRAKE KINEMATICS ──
+        // ── FLUID MULTI-PART ACTIVE SKELETAL BRAKE & BOUNCE KINEMATICS ──
         const sProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.skidTimer / (player.skidMaxTimer || 0.48))));
         
         let rawSkidLean = 0;
@@ -4997,36 +4996,40 @@
         let rawLegL = 0;
         let rawLegLY = 0;
 
-        if (sProg < 0.65) {
-          // Phase 1: Deep Backward Inertial Slide (Body almost touching floor, arms rotated backward, front leg up, anchored on back foot)
-          const p = sProg / 0.65;
+        if (sProg < 0.52) {
+          // Phase 1: Deep Backward Inertial Slide (Torso elevated so legs stay 100% visible, arms rotated back, front foot up)
+          const p = sProg / 0.52;
           const slideDecay = 1.0 - p * 0.35;
-          const balanceWobble = Math.sin(sProg * 20.0) * 0.08;
+          const balanceWobble = Math.sin(sProg * 22.0) * 0.08;
 
-          rawSkidLean = -0.78 * slideDecay + balanceWobble * 0.2; // Body deeply tilted backwards almost touching ground!
-          rawBackArmSkid = 1.30 * slideDecay + Math.sin(sProg * 18.0) * 0.18; // Back arm rotated backwards
-          rawFrontArmSkid = 1.10 * slideDecay - Math.cos(sProg * 18.0) * 0.18; // Front arm ALSO rotated backwards behind body!
-          rawHeadTilt = 0.24 * slideDecay + balanceWobble * 0.15; // Head pitches forward looking ahead
-          rawHairBend = -0.38 * slideDecay; // Hair whips forward
-          rawTorsoY = 5.5 * slideDecay; // Torso dips down close to the floor
-          rawLegL = -0.85 * slideDecay; // Front leg rotates upwards into the air!
-          rawLegLY = -4.0 * slideDecay; // Front foot lifted up in the air
-          rawLegR = 0.75 * slideDecay;  // Back leg rotates deeply backwards anchored to ground
+          rawSkidLean = -0.72 * slideDecay + balanceWobble * 0.2; // Deep backward lean
+          rawBackArmSkid = 1.25 * slideDecay + Math.sin(sProg * 18.0) * 0.18; // Back arm rotated back
+          rawFrontArmSkid = 1.15 * slideDecay - Math.cos(sProg * 18.0) * 0.18; // Front arm rotated back
+          rawHeadTilt = 0.22 * slideDecay + balanceWobble * 0.15; // Head pitches forward
+          rawHairBend = -0.35 * slideDecay; // Hair whips forward
+          rawTorsoY = -2.0 * slideDecay; // Torso elevates UP slightly so legs are never covered!
+          rawLegL = -0.80 * slideDecay; // Front leg lifts up into the air
+          rawLegLY = -3.5 * slideDecay; // Front foot lifted above ground
+          rawLegR = 0.70 * slideDecay;  // Back leg rotates back anchored to ground
         } else {
-          // Phase 2: Elastic Rebound Spring Settle into Idle (Torso bounces forward, arms swing naturally)
-          const p = (sProg - 0.65) / 0.35;
-          const springSin = Math.sin(p * Math.PI);
-          const springDamp = (1.0 - p);
+          // Phase 2: Obvious, Juicy Elastic Spring Bounce & Rebound into Idle!
+          const p = (sProg - 0.52) / 0.48; // 0.0 -> 1.0
+          const bouncePhase = p * Math.PI * 1.5;
+          const bounceDamp = Math.exp(-p * 3.2);
+          const bounceSine = Math.sin(p * Math.PI); // 0 -> 1 -> 0
 
-          rawSkidLean = (-0.78 * 0.65 * springDamp) + (springSin * 0.20); // Rebound bounce forward then settle
-          rawBackArmSkid = (1.30 * 0.65 * springDamp) - (springSin * 0.35); // Back arm swings forward on rebound
-          rawFrontArmSkid = (1.10 * 0.65 * springDamp) - (springSin * 0.35); // Front arm swings forward on rebound
-          rawHeadTilt = (0.24 * 0.65 * springDamp) - (springSin * 0.12);
-          rawHairBend = (-0.38 * 0.65 * springDamp) + (springSin * 0.15);
-          rawTorsoY = (5.5 * 0.65 * springDamp) - (springSin * 1.0);
-          rawLegL = -0.85 * 0.65 * springDamp;
-          rawLegLY = -4.0 * 0.65 * springDamp;
-          rawLegR = 0.75 * 0.65 * springDamp;
+          // Elastic bounce forward (+0.32 rad) then soft settle
+          rawSkidLean = (-0.72 * 0.65 * (1.0 - p)) + (Math.sin(bouncePhase) * 0.34 * bounceDamp);
+          // Arms swing forward with huge momentum on bounce then settle
+          rawBackArmSkid = (1.25 * 0.65 * (1.0 - p)) - (bounceSine * 0.75);
+          rawFrontArmSkid = (1.15 * 0.65 * (1.0 - p)) - (bounceSine * 0.85);
+          rawHeadTilt = (0.22 * 0.65 * (1.0 - p)) - (bounceSine * 0.22);
+          rawHairBend = (-0.35 * 0.65 * (1.0 - p)) + (bounceSine * 0.25);
+          // Vertical spring bounce hop into air!
+          rawTorsoY = -bounceSine * 4.0;
+          rawLegL = -0.80 * 0.65 * (1.0 - p);
+          rawLegLY = -3.5 * 0.65 * (1.0 - p);
+          rawLegR = 0.70 * 0.65 * (1.0 - p);
         }
 
         const skidLean = rawSkidLean * skidBlend;
