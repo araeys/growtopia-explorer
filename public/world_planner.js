@@ -127,6 +127,8 @@
         landingSquashMaxTimer: 0.22,
         highFallBounceTimer: 0,
         highFallBounceMaxTimer: 0.42,
+        jumpLaunchTimer: 0,
+        jumpLaunchMaxTimer: 0.18,
         modTransformTimer: 0,
         entranceAnimTimer: 0,
         entranceMaxTimer: 0.65,
@@ -3661,6 +3663,7 @@
         if (player.chatTimer > 0) player.chatTimer = Math.max(0, player.chatTimer - dt);
         if (player.landingSquashTimer > 0) player.landingSquashTimer = Math.max(0, player.landingSquashTimer - dt);
         if (player.highFallBounceTimer > 0) player.highFallBounceTimer = Math.max(0, player.highFallBounceTimer - dt);
+        if (player.jumpLaunchTimer > 0) player.jumpLaunchTimer = Math.max(0, player.jumpLaunchTimer - dt);
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
@@ -3896,14 +3899,19 @@
               player.isGrounded = false;
               player.jumpCount = 1;
               player.jumpConsumed = true;
+              player.jumpLaunchTimer = 0.18;
+              player.jumpLaunchMaxTimer = 0.18;
               player.jumpThrustTimer = 0.22; // Power jump kick!
               player.jumpSpinTimer = 0.28;   // 360-degree power spin!
               player.state = "jump";
+              spawnLandingDust(player.x + player.width / 2, player.y + player.height);
               playJumpSound(false);
             } else if (player.jumpCount === 1) {
               player.vy = -9.2;
               player.jumpCount = 2;
               player.jumpConsumed = true;
+              player.jumpLaunchTimer = 0.18;
+              player.jumpLaunchMaxTimer = 0.18;
               player.jumpThrustTimer = 0.22; // Power jump kick!
               player.jumpSpinTimer = 0.28;   // 360-degree power spin!
               player.state = "jump";
@@ -4796,13 +4804,44 @@
         const t = player.animTimer;
         const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
 
-        // Dynamic Falling Aerodynamic Stretch (Velocity Stretch) - Zero stretch in Mod mode, subtle in normal fall
-        if (isFalling && !player.isDead && !player.moderatorMode) {
-          const fallStretchY = 1.0 + fallIntensity * 0.04;
-          const fallStretchX = 1.0 - fallIntensity * 0.02;
-          ctx.translate(0, -ph / 2);
-          ctx.scale(fallStretchX, fallStretchY);
-          ctx.translate(0, ph / 2);
+        // Dynamic Jump Launch Anticipation, Rocket Stretch, and Falling Aerodynamic Stretch
+        if (!player.isDead && !player.moderatorMode) {
+          if (player.jumpLaunchTimer > 0) {
+            // Jump Takeoff Spring Anticipation into Kinetic Stretch
+            const launchProg = 1.0 - (player.jumpLaunchTimer / (player.jumpLaunchMaxTimer || 0.18));
+            let launchScaleX = 1.0;
+            let launchScaleY = 1.0;
+            if (launchProg < 0.25) {
+              // Spring squash anticipation
+              const squashAmt = Math.sin((launchProg / 0.25) * Math.PI) * 0.14;
+              launchScaleX = 1.0 + squashAmt;
+              launchScaleY = 1.0 - squashAmt;
+            } else {
+              // Kinetic upward rocket stretch
+              const stretchAmt = Math.sin(((launchProg - 0.25) / 0.75) * Math.PI) * 0.18;
+              launchScaleX = 1.0 - stretchAmt * 0.5;
+              launchScaleY = 1.0 + stretchAmt;
+            }
+            ctx.translate(0, ph / 2);
+            ctx.scale(launchScaleX, launchScaleY);
+            ctx.translate(0, -ph / 2);
+          } else if (isJumping && player.vy < -2.0) {
+            // Airborne upward rocket stretch
+            const upIntensity = Math.min(1.0, Math.abs(player.vy) / 10.5);
+            const upStretchY = 1.0 + upIntensity * 0.12;
+            const upStretchX = 1.0 - upIntensity * 0.06;
+            ctx.translate(0, ph / 2);
+            ctx.scale(upStretchX, upStretchY);
+            ctx.translate(0, -ph / 2);
+          } else if (isFalling && player.vy > 1.5) {
+            // Airborne downward velocity stretch
+            const fallStretchIntensity = Math.min(1.0, (player.vy - 1.5) / 8.0);
+            const fallStretchY = 1.0 + fallStretchIntensity * 0.10;
+            const fallStretchX = 1.0 - fallStretchIntensity * 0.05;
+            ctx.translate(0, -ph / 2);
+            ctx.scale(fallStretchX, fallStretchY);
+            ctx.translate(0, ph / 2);
+          }
         }
 
         let isBlinking = (t % 3.8) < 0.14;
