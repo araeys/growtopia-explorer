@@ -3153,11 +3153,15 @@
 
   document.getElementById('mp-host-start-btn')?.addEventListener('click', () => {
     initMpClient();
+    const btn = document.getElementById('mp-host-start-btn');
+    if (btn) btn.innerHTML = '<span>CREATING ROOM...</span>';
     if (mpClient) {
       mpClient.hostRoom().then((code) => {
         updateMpUI();
+        if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>HOSTING ACTIVE</span>';
         switchMpTab('lobby');
       }).catch(err => {
+        if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>CREATE ROOM</span>';
         alert("Could not start hosting: " + (err.message || err));
       });
     }
@@ -3171,8 +3175,7 @@
     }
     const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
-      alert(`Invite link copied to clipboard!
-${shareUrl}`);
+      alert(`Invite link copied to clipboard!\n${shareUrl}`);
     }).catch(() => {
       prompt("Copy room link:", shareUrl);
     });
@@ -3185,11 +3188,15 @@ ${shareUrl}`);
       alert("Please enter a room code (e.g. GT-8A92)");
       return;
     }
+    const btn = document.getElementById('mp-join-btn');
+    if (btn) btn.innerHTML = '<span>CONNECTING TO HOST...</span>';
     if (mpClient) {
       mpClient.joinRoom(code).then(() => {
         updateMpUI();
+        if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>JOIN WORLD ROOM</span>';
         switchMpTab('lobby');
       }).catch(err => {
+        if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>JOIN WORLD ROOM</span>';
         alert("Failed to join room: " + (err.message || err));
       });
     }
@@ -3213,7 +3220,19 @@ ${shareUrl}`);
           openMultiplayerModal();
           switchMpTab('join');
           if (mpJoinInput) mpJoinInput.value = roomParam.toUpperCase();
-        }, 600);
+          initMpClient();
+          if (mpClient) {
+            const btn = document.getElementById('mp-join-btn');
+            if (btn) btn.innerHTML = '<span>CONNECTING TO HOST...</span>';
+            mpClient.joinRoom(roomParam).then(() => {
+              updateMpUI();
+              if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>JOIN WORLD ROOM</span>';
+              switchMpTab('lobby');
+            }).catch(err => {
+              if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>JOIN WORLD ROOM</span>';
+            });
+          }
+        }, 700);
       }
     } catch(e) {}
   });

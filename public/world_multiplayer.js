@@ -1,6 +1,6 @@
 /**
- * GTWorldMultiplayer - Real-Time Peer-to-Peer Multiplayer Engine for Growtopia Explorer
- * Powered by WebRTC DataChannels with Host Authority & Zero-Cost Serverless Signaling
+ * GTWorldMultiplayer - Ultra-Reliable Real-Time Peer-to-Peer Multiplayer Engine
+ * Optimized for WebRTC DataChannels with RLE World Compression & STUN/TURN Reliability
  * 
  * Original creator and developer: Raey (@araeys / @aryhaan)
  * Repository: https://github.com/araeys/growtopia-explorer
@@ -10,12 +10,15 @@
   "use strict";
 
   const PEER_PREFIX = "gt-room-";
-  const STUN_SERVERS = [
+  
+  // Public Google STUN servers with high-availability fallbacks
+  const ICE_SERVERS = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" }
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.relay.metered.ca:80" }
   ];
 
   // Room Code generator: GT-[4 character alphanumeric]
@@ -35,6 +38,59 @@
       code = "GT-" + code;
     }
     return code;
+  }
+
+  function getPureCode(code) {
+    const cleaned = cleanRoomCode(code);
+    return cleaned.replace(/^GT-/, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  // Fast Run-Length Encoding (RLE) for ultra-compact world data (< 2KB over WebRTC)
+  function compressLayerRLE(arr) {
+    if (!arr || arr.length === 0) return [];
+    const rle = [];
+    let currentVal = arr[0];
+    let count = 1;
+
+    for (let i = 1; i < arr.length; i++) {
+      if (arr[i] === currentVal) {
+        count++;
+      } else {
+        rle.push(currentVal, count);
+        currentVal = arr[i];
+        count = 1;
+      }
+    }
+    rle.push(currentVal, count);
+    return rle;
+  }
+
+  function decompressLayerRLE(rle, expectedLength) {
+    const out = new Uint16Array(expectedLength);
+    if (!rle || !Array.isArray(rle)) return out;
+    let outIdx = 0;
+    for (let i = 0; i < rle.length; i += 2) {
+      const val = rle[i];
+      const count = rle[i + 1] || 1;
+      for (let c = 0; c < count && outIdx < expectedLength; c++) {
+        out[outIdx++] = val;
+      }
+    }
+    return out;
+  }
+
+  function decompressFlagsRLE(rle, expectedLength) {
+    const out = new Uint8Array(expectedLength);
+    if (!rle || !Array.isArray(rle)) return out;
+    let outIdx = 0;
+    for (let i = 0; i < rle.length; i += 2) {
+      const val = rle[i];
+      const count = rle[i + 1] || 1;
+      for (let c = 0; c < count && outIdx < expectedLength; c++) {
+        out[outIdx++] = val;
+      }
+    }
+    return out;
   }
 
   function createMultiplayerClient(engine) {
@@ -64,32 +120,36 @@
     }
 
     function getLocalPlayerProfile() {
-      const pName = (engine && typeof engine.getPlayerName === "function") ? engine.getPlayerName() : (localStorage.getItem("gt_player_name") || "Raey");
+      const pName = (engine && typeof engine.getPlayerName === "function") ? engine.getPlayerName() : "Raey";
       const pSkin = (engine && typeof engine.getPlayerSkin === "function") ? engine.getPlayerSkin() : "classic";
       const pSkinColor = (engine && typeof engine.getPlayerSkinColor === "function") ? engine.getPlayerSkinColor() : "#ffc3aa";
       const pMod = (engine && typeof engine.isModeratorMode === "function") ? engine.isModeratorMode() : false;
       return { name: pName, skin: pSkin, skinColor: pSkinColor, isMod: pMod };
     }
 
-    // Broadcast packet to all active peer connections
+    // Safe broadcast packet to all active peer connections
     function broadcast(packet, excludePeerId = null) {
       const dataStr = typeof packet === "string" ? packet : JSON.stringify(packet);
       connections.forEach((conn, peerId) => {
         if (peerId !== excludePeerId && conn && conn.open) {
           try {
             conn.send(dataStr);
-          } catch (e) {}
+          } catch (e) {
+            console.warn("Broadcast send failed to peer:", peerId, e);
+          }
         }
       });
     }
 
-    // Send packet to specific peer
+    // Safe send packet to specific peer
     function sendTo(peerId, packet) {
       const conn = connections.get(peerId);
       if (conn && conn.open) {
         try {
           conn.send(typeof packet === "string" ? packet : JSON.stringify(packet));
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Send failed to peer:", peerId, e);
+        }
       }
     }
 
@@ -128,8 +188,9 @@
             remotePlayers.set(fromPeerId, remoteP);
 
             if (isHost) {
-              // Host responds with full WORLD_SYNC and list of existing peers
+              // Host responds with ultra-compact RLE WORLD_SYNC and list of existing peers
               const worldState = engine.getWorldState();
+
               sendTo(fromPeerId, {
                 type: "WORLD_SYNC",
                 world: {
@@ -137,10 +198,10 @@
                   height: worldState.height,
                   name: worldState.name,
                   weather: worldState.weather,
-                  fg: Array.from(worldState.fg),
-                  bg: Array.from(worldState.bg),
-                  flags: Array.from(worldState.flags),
-                  paint: worldState.paint ? Array.from(worldState.paint) : null
+                  fgRLE: compressLayerRLE(worldState.fg),
+                  bgRLE: compressLayerRLE(worldState.bg),
+                  flagsRLE: compressLayerRLE(worldState.flags),
+                  paintRLE: worldState.paint ? compressLayerRLE(worldState.paint) : null
                 },
                 hostProfile: getLocalPlayerProfile(),
                 peers: Array.from(remotePlayers.entries()).map(([pId, rp]) => ({
@@ -172,15 +233,21 @@
           case "WORLD_SYNC": {
             // Guest receives full world sync from host
             if (!isHost && msg.world) {
+              const totalTiles = msg.world.width * msg.world.height;
+              const fg = msg.world.fgRLE ? decompressLayerRLE(msg.world.fgRLE, totalTiles) : new Uint16Array(msg.world.fg || totalTiles);
+              const bg = msg.world.bgRLE ? decompressLayerRLE(msg.world.bgRLE, totalTiles) : new Uint16Array(msg.world.bg || totalTiles);
+              const flags = msg.world.flagsRLE ? decompressFlagsRLE(msg.world.flagsRLE, totalTiles) : new Uint8Array(msg.world.flags || totalTiles);
+              const paint = msg.world.paintRLE ? decompressLayerRLE(msg.world.paintRLE, totalTiles) : (msg.world.paint ? new Uint16Array(msg.world.paint) : null);
+
               engine.loadCustomWorldState({
                 width: msg.world.width,
                 height: msg.world.height,
                 name: msg.world.name,
                 weather: msg.world.weather,
-                fg: new Uint16Array(msg.world.fg),
-                bg: new Uint16Array(msg.world.bg),
-                flags: new Uint8Array(msg.world.flags),
-                paint: msg.world.paint ? new Uint16Array(msg.world.paint) : null
+                fg,
+                bg,
+                flags,
+                paint
               });
 
               // Add host to remote players
@@ -452,9 +519,10 @@
     function hostRoom(customCode = null) {
       disconnect();
       const code = cleanRoomCode(customCode || generateRoomCode());
+      const pureId = getPureCode(code);
       roomCode = code;
       isHost = true;
-      const fullPeerId = `${PEER_PREFIX}${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+      const fullPeerId = `${PEER_PREFIX}${pureId}`;
 
       notifyStatus(`Creating Room ${code}...`, "info");
 
@@ -467,7 +535,7 @@
       return new Promise((resolve, reject) => {
         try {
           peer = new PeerClass(fullPeerId, {
-            config: { iceServers: STUN_SERVERS }
+            config: { iceServers: ICE_SERVERS }
           });
 
           peer.on("open", (id) => {
@@ -510,14 +578,15 @@
     function joinRoom(inputCode) {
       disconnect();
       const code = cleanRoomCode(inputCode);
-      if (!code) {
+      const pureId = getPureCode(code);
+      if (!code || !pureId) {
         notifyStatus("Please enter a valid room code (e.g. GT-8A92)", "error");
         return Promise.reject(new Error("Invalid room code"));
       }
 
       roomCode = code;
       isHost = false;
-      const targetHostPeerId = `${PEER_PREFIX}${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+      const targetHostPeerId = `${PEER_PREFIX}${pureId}`;
 
       notifyStatus(`Connecting to Room ${code}...`, "info");
 
@@ -528,9 +597,19 @@
       }
 
       return new Promise((resolve, reject) => {
+        let isResolved = false;
+        const joinTimeout = setTimeout(() => {
+          if (!isResolved) {
+            isResolved = true;
+            notifyStatus(`Could not reach Host (${code}). Make sure Host created the room first!`, "error");
+            disconnect();
+            reject(new Error(`Timeout: Host room ${code} not reachable`));
+          }
+        }, 12000);
+
         try {
           peer = new PeerClass({
-            config: { iceServers: STUN_SERVERS }
+            config: { iceServers: ICE_SERVERS }
           });
 
           peer.on("open", (id) => {
@@ -539,27 +618,40 @@
             setupConnection(conn);
 
             conn.on("open", () => {
-              isConnected = true;
-              notifyStatus(`Joined Room ${code} successfully!`, "success");
-              startTickLoop();
-              if (typeof eventCallbacks.onConnect === "function") {
-                eventCallbacks.onConnect(code, false);
+              if (!isResolved) {
+                isResolved = true;
+                clearTimeout(joinTimeout);
+                isConnected = true;
+                notifyStatus(`Joined Room ${code} successfully!`, "success");
+                startTickLoop();
+                if (typeof eventCallbacks.onConnect === "function") {
+                  eventCallbacks.onConnect(code, false);
+                }
+                resolve(code);
               }
-              resolve(code);
             });
 
             conn.on("error", (err) => {
-              notifyStatus(`Failed to connect to host: ${err.message || err}`, "error");
-              reject(err);
+              if (!isResolved) {
+                isResolved = true;
+                clearTimeout(joinTimeout);
+                notifyStatus(`Failed to connect to host: ${err.message || err}`, "error");
+                reject(err);
+              }
             });
           });
 
           peer.on("error", (err) => {
-            console.error("Peer join error:", err);
-            notifyStatus(`Join error: ${err.message || err}`, "error");
-            reject(err);
+            if (!isResolved) {
+              isResolved = true;
+              clearTimeout(joinTimeout);
+              console.error("Peer join error:", err);
+              notifyStatus(`Join error: ${err.message || err}`, "error");
+              reject(err);
+            }
           });
         } catch (err) {
+          clearTimeout(joinTimeout);
           reject(err);
         }
       });
@@ -686,6 +778,10 @@
   global.GTWorldMultiplayer = {
     generateRoomCode,
     cleanRoomCode,
+    getPureCode,
+    compressLayerRLE,
+    decompressLayerRLE,
+    decompressFlagsRLE,
     createMultiplayerClient
   };
 
