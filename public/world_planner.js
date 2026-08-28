@@ -3946,13 +3946,13 @@
           } else {
             // Sudden Stop from Fast Sprint (trigger slippery kepleset brake ONLY after sprinting)
             if (player.isGrounded && wasSprintingFast && player.skidTimer <= 0) {
-              player.skidTimer = 0.38;
-              player.skidMaxTimer = 0.38;
+              player.skidTimer = 0.48;
+              player.skidMaxTimer = 0.48;
               player.skidDir = player.vx > 0 ? 1 : -1;
             }
 
-            // Slippery ground inertia during sudden stop brake
-            const groundFriction = (player.skidTimer > 0) ? 0.91 : 0.68;
+            // Slippery ground inertia during sudden stop brake (extra slippery cartoon slide)
+            const groundFriction = (player.skidTimer > 0) ? 0.945 : 0.68;
             player.vx *= Math.pow(groundFriction, timeScale);
             if (Math.abs(player.vx) < 0.1) {
               player.vx = 0;
@@ -4985,7 +4985,7 @@
         const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend - skidBlend);
 
         // ── FLUID MULTI-PART ACTIVE SKELETAL BRAKE KINEMATICS ──
-        const sProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.skidTimer / (player.skidMaxTimer || 0.38))));
+        const sProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.skidTimer / (player.skidMaxTimer || 0.48))));
         
         let rawSkidLean = 0;
         let rawBackArmSkid = 0;
@@ -4995,35 +4995,38 @@
         let rawTorsoY = 0;
         let rawLegR = 0;
         let rawLegL = 0;
+        let rawLegLY = 0;
 
-        if (sProg < 0.62) {
-          // Phase 1: High-Speed Inertial Brake Slide (Deep Lean, Extended Arms with Balance Counter-Oscillation)
-          const p = sProg / 0.62;
+        if (sProg < 0.65) {
+          // Phase 1: Deep Backward Inertial Slide (Body almost touching floor, arms rotated backward, front leg up, anchored on back foot)
+          const p = sProg / 0.65;
           const slideDecay = 1.0 - p * 0.35;
-          const balanceWobble = Math.sin(sProg * 22.0) * 0.12;
+          const balanceWobble = Math.sin(sProg * 20.0) * 0.08;
 
-          rawSkidLean = -0.44 * slideDecay + balanceWobble * 0.3; // Deep energetic backward lean
-          rawBackArmSkid = 1.15 * slideDecay + Math.sin(sProg * 20.0) * 0.22; // High back arm counter-balance
-          rawFrontArmSkid = -1.40 * slideDecay - Math.cos(sProg * 20.0) * 0.22; // Extended forward arm counter-balance
-          rawHeadTilt = 0.16 * slideDecay + balanceWobble * 0.2; // Head pitch against inertia
-          rawHairBend = -0.32 * slideDecay; // Hair whipping forward over forehead
-          rawTorsoY = (1.2 + Math.sin(sProg * 20.0) * 0.5); // Athletic brake crouch
-          rawLegL = -0.38 * slideDecay; // Front foot planted forward
-          rawLegR = 0.30 * slideDecay;  // Back foot planted bracing
+          rawSkidLean = -0.78 * slideDecay + balanceWobble * 0.2; // Body deeply tilted backwards almost touching ground!
+          rawBackArmSkid = 1.30 * slideDecay + Math.sin(sProg * 18.0) * 0.18; // Back arm rotated backwards
+          rawFrontArmSkid = 1.10 * slideDecay - Math.cos(sProg * 18.0) * 0.18; // Front arm ALSO rotated backwards behind body!
+          rawHeadTilt = 0.24 * slideDecay + balanceWobble * 0.15; // Head pitches forward looking ahead
+          rawHairBend = -0.38 * slideDecay; // Hair whips forward
+          rawTorsoY = 5.5 * slideDecay; // Torso dips down close to the floor
+          rawLegL = -0.85 * slideDecay; // Front leg rotates upwards into the air!
+          rawLegLY = -4.0 * slideDecay; // Front foot lifted up in the air
+          rawLegR = 0.75 * slideDecay;  // Back leg rotates deeply backwards anchored to ground
         } else {
           // Phase 2: Elastic Rebound Spring Settle into Idle (Torso bounces forward, arms swing naturally)
-          const p = (sProg - 0.62) / 0.38;
+          const p = (sProg - 0.65) / 0.35;
           const springSin = Math.sin(p * Math.PI);
           const springDamp = (1.0 - p);
 
-          rawSkidLean = (-0.44 * 0.65 * springDamp) + (springSin * 0.16); // Rebound bounce forward then settle
-          rawBackArmSkid = (1.15 * 0.65 * springDamp) - (springSin * 0.32); // Back arm swings forward on rebound
-          rawFrontArmSkid = (-1.40 * 0.65 * springDamp) + (springSin * 0.35); // Front arm swings back on rebound
-          rawHeadTilt = (0.16 * 0.65 * springDamp) - (springSin * 0.10);
-          rawHairBend = (-0.32 * 0.65 * springDamp) + (springSin * 0.12);
-          rawTorsoY = springSin * -0.6; // Soft vertical spring bounce
-          rawLegL = -0.38 * 0.65 * springDamp;
-          rawLegR = 0.30 * 0.65 * springDamp;
+          rawSkidLean = (-0.78 * 0.65 * springDamp) + (springSin * 0.20); // Rebound bounce forward then settle
+          rawBackArmSkid = (1.30 * 0.65 * springDamp) - (springSin * 0.35); // Back arm swings forward on rebound
+          rawFrontArmSkid = (1.10 * 0.65 * springDamp) - (springSin * 0.35); // Front arm swings forward on rebound
+          rawHeadTilt = (0.24 * 0.65 * springDamp) - (springSin * 0.12);
+          rawHairBend = (-0.38 * 0.65 * springDamp) + (springSin * 0.15);
+          rawTorsoY = (5.5 * 0.65 * springDamp) - (springSin * 1.0);
+          rawLegL = -0.85 * 0.65 * springDamp;
+          rawLegLY = -4.0 * 0.65 * springDamp;
+          rawLegR = 0.75 * 0.65 * springDamp;
         }
 
         const skidLean = rawSkidLean * skidBlend;
@@ -5034,6 +5037,7 @@
         const skidTorsoY = rawTorsoY * skidBlend;
         const skidLegR = rawLegR * skidBlend;
         const skidLegL = rawLegL * skidBlend;
+        const skidLegLY = rawLegLY * skidBlend;
 
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
@@ -5232,7 +5236,7 @@
             const walkLegRAng = walkCycleSin * 0.65;
             legRAngle = isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend) + skidLegR);
 
-            const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
+            const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY + (skidTorsoY * 0.35));
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
             const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
 
@@ -5252,7 +5256,7 @@
             const walkLegLAng = -walkCycleSin * 0.65;
             legLAngle = isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend) + skidLegL);
 
-            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
+            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY + skidLegLY);
             tCtx.save();
             tCtx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
             tCtx.rotate(legLAngle);
