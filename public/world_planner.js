@@ -4940,8 +4940,9 @@
             const imgBody = getTintedSprite("character_base_assets/gt_parts/body.png", pSkinColor, true);
 
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode && !isJumping && !isLanding;
-            const isJumpFace = (isJumping || isLanding || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
+            const isAirborne = !player.isGrounded && !player.moderatorMode;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry") && !player.moderatorMode && !isAirborne;
+            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
