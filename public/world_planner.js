@@ -729,11 +729,11 @@
 
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
-              ctx.imageSmoothingEnabled = true;
-              ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.90));
+              ctx.imageSmoothingEnabled = false;
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
               ctx.translate(p.x, p.y);
               ctx.rotate(p.rot);
-              const popScale = p.scale * (0.85 + Math.sin(progress * Math.PI) * 0.30);
+              const popScale = p.scale * (0.95 + Math.sin(progress * Math.PI) * 0.35);
               ctx.scale(popScale, popScale);
               ctx.shadowColor = "#fde047";
               ctx.shadowBlur = 6;
@@ -3661,7 +3661,7 @@
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
 
-        // Continuous AFK Animation Loop (Subtle, charming, and authentic to Growtopia)
+        // Continuous AFK Animation Loop (Snappy, lively, and responsive)
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
         if (isUserMoving || player.moderatorMode || !player.isGrounded) {
           player.afkTimer = 0;
@@ -3672,7 +3672,7 @@
           player.afkTimer += dt;
           player.afkSubTimer = (player.afkSubTimer || 0) + dt;
 
-          const afkInterval = player.afkAction ? 7.0 : 3.5; // Natural 3.5s idle threshold, then 7.0s per action
+          const afkInterval = player.afkAction ? 4.8 : 1.8; // Quick 1.8s idle start, then 4.8s per lively action
           if (player.afkTimer >= afkInterval) {
             player.afkTimer = 0;
             player.afkSubTimer = 0;
@@ -3680,20 +3680,20 @@
             const available = afkList.filter(a => a !== player.afkAction);
             player.afkAction = available[Math.floor(Math.random() * available.length)];
             
-            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.35);
-            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.35);
-            else if (player.afkAction === "dance") playSfx("magic", 1.0, 0.25);
-            else if (player.afkAction === "think") playSfx("pop", 1.25, 0.25);
-            else if (player.afkAction === "wave") playSfx("magic", 1.35, 0.20);
+            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.40);
+            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.40);
+            else if (player.afkAction === "dance") playSfx("magic", 1.0, 0.30);
+            else if (player.afkAction === "think") playSfx("pop", 1.25, 0.30);
+            else if (player.afkAction === "wave") playSfx("magic", 1.35, 0.25);
           }
 
-          // Active AFK Particle Spawners (Subtle, tasteful, low density)
+          // Active AFK Particle Spawners (Snappy & Beautiful)
           if (player.afkAction) {
             player.afkParticleTimer = (player.afkParticleTimer || 0) + dt;
 
             // 1. Dancing Floating Musical Notes
             if (player.afkAction === "dance") {
-              if (player.afkParticleTimer >= 0.35) {
+              if (player.afkParticleTimer >= 0.18) {
                 player.afkParticleTimer = 0;
                 const noteList = [
                   "character_base_assets/dance_notes/note_1.png",
@@ -3701,98 +3701,79 @@
                   "character_base_assets/dance_notes/note_4.png"
                 ];
                 const noteSrc = noteList[Math.floor(Math.random() * noteList.length)];
-                const nX = player.x + player.width / 2 + (Math.random() - 0.5) * 20;
-                const nY = player.y + 4 + (Math.random() - 0.5) * 8;
+                const nX = player.x + player.width / 2 + (Math.random() - 0.5) * 22;
+                const nY = player.y + 4 + (Math.random() - 0.5) * 10;
                 gameParticles.push({
                   type: "dance_note",
                   src: noteSrc,
                   x: nX,
                   y: nY,
-                  vx: (Math.random() - 0.5) * 0.3,
-                  vy: -(0.55 + Math.random() * 0.35),
-                  scale: 0.18 + Math.random() * 0.05,
-                  rot: (Math.random() - 0.5) * 0.3,
-                  rotSpeed: (Math.random() - 0.5) * 1.2,
-                  life: 0.90 + Math.random() * 0.20,
-                  maxLife: 0.90 + Math.random() * 0.20
+                  vx: (Math.random() - 0.5) * 0.4,
+                  vy: -(0.70 + Math.random() * 0.45),
+                  scale: 0.20 + Math.random() * 0.06,
+                  rot: (Math.random() - 0.5) * 0.4,
+                  rotSpeed: (Math.random() - 0.5) * 1.8,
+                  life: 0.80 + Math.random() * 0.20,
+                  maxLife: 0.80 + Math.random() * 0.20
                 });
                 requestRender();
               }
             }
 
-            // 2. Thinking Soft Thought Cloud
+            // 2. Thinking Cute Thought Bubbles
             else if (player.afkAction === "think") {
-              if (player.afkParticleTimer >= 1.2) {
+              if (player.afkParticleTimer >= 0.55) {
                 player.afkParticleTimer = 0;
-                // Little trail dot
                 gameParticles.push({
                   type: "thought_bubble",
-                  x: player.x + player.width / 2 + (player.facing * 8),
-                  y: player.y - 2,
-                  vx: player.facing * 0.1,
-                  vy: -0.3,
-                  radius: 2.0,
-                  isMainCloud: false,
-                  life: 0.9,
-                  maxLife: 0.9
+                  x: player.x + player.width / 2 + (player.facing * 8) + (Math.random() - 0.5) * 4,
+                  y: player.y - 4,
+                  vx: (player.facing * 0.15) + (Math.random() - 0.5) * 0.1,
+                  vy: -0.45,
+                  radius: 2.4 + Math.random() * 1.6,
+                  life: 0.75,
+                  maxLife: 0.75
                 });
-                // Main thought cloud with dots
-                setTimeout(() => {
-                  if (player.afkAction === "think") {
-                    gameParticles.push({
-                      type: "thought_bubble",
-                      x: player.x + player.width / 2 + (player.facing * 12),
-                      y: player.y - 12,
-                      vx: 0,
-                      vy: -0.15,
-                      radius: 5.5,
-                      isMainCloud: true,
-                      life: 1.4,
-                      maxLife: 1.4
-                    });
-                    requestRender();
-                  }
-                }, 200);
                 requestRender();
               }
             }
 
-            // 3. Angry Soft Comic Steam Puffs
+            // 3. Angry Comic Steam Puffs
             else if (player.afkAction === "angry") {
-              if (player.afkParticleTimer >= 0.28) {
+              if (player.afkParticleTimer >= 0.15) {
                 player.afkParticleTimer = 0;
-                const earSide = Math.random() < 0.5 ? -6 : 6;
+                const earSide = Math.random() < 0.5 ? -7 : 7;
                 gameParticles.push({
                   type: "anger_fume",
                   x: player.x + player.width / 2 + earSide,
-                  y: player.y + (Math.random() - 0.5) * 3,
-                  vx: earSide * 0.08 + (Math.random() - 0.5) * 0.1,
-                  vy: -(0.5 + Math.random() * 0.3),
-                  radius: 2.5 + Math.random() * 1.5,
-                  life: 0.55 + Math.random() * 0.15,
-                  maxLife: 0.55 + Math.random() * 0.15
+                  y: player.y + (Math.random() - 0.5) * 4,
+                  vx: earSide * 0.10 + (Math.random() - 0.5) * 0.15,
+                  vy: -(0.65 + Math.random() * 0.45),
+                  radius: 2.8 + Math.random() * 1.6,
+                  life: 0.45 + Math.random() * 0.15,
+                  maxLife: 0.45 + Math.random() * 0.15
                 });
                 requestRender();
               }
             }
 
-            // 4. Cheerful Tiny Star Confetti
+            // 4. Cheerful Celebration Star Confetti
             else if (player.afkAction === "cheer") {
-              if (player.afkParticleTimer >= 0.24) {
+              if (player.afkParticleTimer >= 0.16) {
                 player.afkParticleTimer = 0;
-                const cheerColors = ["#fde047", "#38bdf8", "#f472b6", "#4ade80"];
+                const cheerColors = ["#fde047", "#38bdf8", "#f472b6", "#4ade80", "#fb923c", "#c084fc"];
                 gameParticles.push({
                   type: "cheer_star",
-                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 20,
-                  y: player.y - 2 + (Math.random() - 0.5) * 6,
-                  vx: (Math.random() - 0.5) * 0.8,
-                  vy: -(0.9 + Math.random() * 0.6),
-                  size: 2.5 + Math.random() * 1.5,
+                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 24,
+                  y: player.y - 4 + (Math.random() - 0.5) * 8,
+                  vx: (Math.random() - 0.5) * 1.2,
+                  vy: -(1.2 + Math.random() * 0.8),
+                  size: 3.0 + Math.random() * 1.8,
                   color: cheerColors[Math.floor(Math.random() * cheerColors.length)],
                   rot: Math.random() * Math.PI * 2,
-                  rotSpeed: (Math.random() - 0.5) * 4.0,
-                  life: 0.70 + Math.random() * 0.20,
-                  maxLife: 0.70 + Math.random() * 0.20
+                  rotSpeed: (Math.random() - 0.5) * 5.0,
+                  life: 0.65 + Math.random() * 0.20,
+                  maxLife: 0.65 + Math.random() * 0.20
                 });
                 requestRender();
               }
@@ -4840,57 +4821,57 @@
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
             isBlinking = true;
-            afkHeadAngle = 0.12;
-            afkHeadY = 0.8;
-            afkTorsoY = Math.sin(t * 2.2) * 0.6;
-            afkBackArmAngle = 0.20;
-            afkFrontArmAngle = 0.25;
-            afkLegROffset = 0.4;
-            afkLegLOffset = 0.4;
+            afkHeadAngle = 0.14;
+            afkHeadY = 1.0;
+            afkTorsoY = Math.sin(t * 3.0) * 1.0;
+            afkBackArmAngle = 0.32;
+            afkFrontArmAngle = 0.40;
+            afkLegROffset = 0.6;
+            afkLegLOffset = 0.6;
           } else if (player.afkAction === "dance") {
-            afkTorsoX = Math.sin(t * 5.5) * 2.2;
-            afkTorsoAngle = Math.sin(t * 5.5) * 0.10;
-            afkHeadAngle = -Math.sin(t * 5.5) * 0.08;
-            afkHeadY = Math.abs(Math.sin(t * 5.5)) * -0.6;
-            afkBackArmAngle = -Math.cos(t * 5.5) * 0.85;
-            afkFrontArmAngle = Math.sin(t * 5.5) * 0.85;
-            afkLegROffset = Math.max(0, Math.sin(t * 5.5)) * 1.8;
-            afkLegLOffset = Math.max(0, -Math.sin(t * 5.5)) * 1.8;
+            afkTorsoX = Math.sin(t * 8.0) * 3.2;
+            afkTorsoAngle = Math.sin(t * 8.0) * 0.18;
+            afkHeadAngle = -Math.sin(t * 8.0) * 0.14;
+            afkHeadY = Math.abs(Math.sin(t * 8.0)) * -1.0;
+            afkBackArmAngle = -Math.cos(t * 8.0) * 1.35;
+            afkFrontArmAngle = Math.sin(t * 8.0) * 1.35;
+            afkLegROffset = Math.max(0, Math.sin(t * 8.0)) * 3.0;
+            afkLegLOffset = Math.max(0, -Math.sin(t * 8.0)) * 3.0;
           } else if (player.afkAction === "think") {
-            afkHeadAngle = -0.12;
-            afkHeadY = -0.4;
-            afkFrontArmAngle = -1.65;
-            afkBackArmAngle = 0.35;
-            afkTorsoY = Math.sin(t * 2.0) * 0.4;
+            afkHeadAngle = -0.15;
+            afkHeadY = -0.6;
+            afkFrontArmAngle = -1.85;
+            afkBackArmAngle = 0.45;
+            afkTorsoY = Math.sin(t * 2.5) * 0.5;
           } else if (player.afkAction === "cheer") {
-            const cheerSin = Math.sin(t * 7.0);
-            const hop = -Math.max(0, cheerSin) * 3.8;
+            const hop = -Math.abs(Math.sin(t * 8.5)) * 5.0;
             afkTorsoY = hop;
             afkHeadY = hop * 0.3;
-            afkBackArmAngle = -1.85 + Math.sin(t * 7.0) * 0.18;
-            afkFrontArmAngle = -1.85 - Math.sin(t * 7.0) * 0.18;
-            afkLegROffset = Math.max(0, -hop * 0.4);
-            afkLegLOffset = Math.max(0, -hop * 0.4);
+            afkBackArmAngle = -2.15 + Math.sin(t * 12.0) * 0.25;
+            afkFrontArmAngle = -2.15 - Math.sin(t * 12.0) * 0.25;
+            afkLegROffset = Math.abs(Math.sin(t * 8.5)) * 2.2;
+            afkLegLOffset = Math.abs(Math.sin(t * 8.5)) * 2.2;
           } else if (player.afkAction === "angry") {
-            afkTorsoAngle = Math.sin(t * 12.0) * 0.04;
-            afkTorsoY = 0.4;
-            afkHeadAngle = -0.06;
-            afkBackArmAngle = -0.45;
-            afkFrontArmAngle = -0.45;
-            afkLegROffset = Math.max(0, Math.sin(t * 12.0)) * 2.2;
+            afkTorsoX = Math.sin(t * 24.0) * 1.2;
+            afkTorsoY = 0.8;
+            afkTorsoAngle = Math.sin(t * 24.0) * 0.08;
+            afkHeadAngle = -0.08 + Math.sin(t * 24.0) * 0.04;
+            afkBackArmAngle = -0.65;
+            afkFrontArmAngle = -0.65;
+            afkLegROffset = Math.max(0, Math.sin(t * 16.0)) * 3.2;
           } else if (player.afkAction === "wave") {
-            afkTorsoAngle = 0.04;
-            afkHeadAngle = -0.08;
-            afkFrontArmAngle = -1.85 + Math.sin(t * 8.0) * 0.35;
-            afkBackArmAngle = 0.15;
-            afkTorsoY = Math.sin(t * 3.0) * 0.4;
+            afkTorsoAngle = 0.06;
+            afkHeadAngle = -0.12;
+            afkFrontArmAngle = -2.05 + Math.sin(t * 12.0) * 0.45;
+            afkBackArmAngle = 0.22;
+            afkTorsoY = Math.sin(t * 4.0) * 0.6;
           } else if (player.afkAction === "laugh") {
-            const chuckle = Math.abs(Math.sin(t * 10.0)) * 1.5;
+            const chuckle = Math.abs(Math.sin(t * 14.0)) * 2.2;
             afkTorsoY = chuckle;
-            afkTorsoAngle = 0.10 + Math.sin(t * 5.0) * 0.05;
-            afkHeadAngle = 0.08;
-            afkFrontArmAngle = -0.85;
-            afkBackArmAngle = -0.50;
+            afkTorsoAngle = 0.18 + Math.sin(t * 7.0) * 0.08;
+            afkHeadAngle = 0.14 + Math.sin(t * 7.0) * 0.06;
+            afkFrontArmAngle = -1.15;
+            afkBackArmAngle = -0.65;
           }
         }
 
@@ -5438,20 +5419,20 @@
           ctx.restore();
         }
 
-        // AFK Sleeping Soft Cyan "Zzz" Animation
+        // AFK Sleeping Snappy Cyan "Zzz" Animation
         if (player.afkAction === "sleep" && !player.isDead) {
           ctx.save();
-          const zProgress = (t * 0.8) % 1.0;
+          const zProgress = (t * 1.2) % 1.0;
           const alphaZ = Math.sin(zProgress * Math.PI);
           ctx.shadowColor = "#38bdf8";
-          ctx.shadowBlur = 5;
-          ctx.fillStyle = `rgba(103, 232, 249, ${alphaZ * 0.90})`;
-          ctx.font = "bold 11px 'Century Gothic', Arial, sans-serif";
-          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 2.0) * 3, py - 10 - zProgress * 12);
-          ctx.font = "bold 9px 'Century Gothic', Arial, sans-serif";
-          ctx.fillText("z", px + pw / 2 + 6 + Math.sin(t * 2.0 + 1) * 2, py - 6 - zProgress * 12);
-          ctx.font = "bold 7px 'Century Gothic', Arial, sans-serif";
-          ctx.fillText("z", px + pw / 2 + 11 + Math.sin(t * 2.0 + 2) * 1.5, py - 2 - zProgress * 12);
+          ctx.shadowBlur = 6;
+          ctx.fillStyle = `rgba(103, 232, 249, ${alphaZ})`;
+          ctx.font = "bold 12px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 2.8) * 3, py - 10 - zProgress * 14);
+          ctx.font = "bold 10px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("z", px + pw / 2 + 7 + Math.sin(t * 2.8 + 1) * 2, py - 6 - zProgress * 14);
+          ctx.font = "bold 8px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("z", px + pw / 2 + 13 + Math.sin(t * 2.8 + 2) * 1.5, py - 2 - zProgress * 14);
           ctx.restore();
         }
 
