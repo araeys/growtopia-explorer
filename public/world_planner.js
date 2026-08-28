@@ -124,6 +124,9 @@
         punchTargetY: 0,
         stepParticleTimer: 0,
         landingSquashTimer: 0,
+        landingSquashMaxTimer: 0.22,
+        highFallBounceTimer: 0,
+        highFallBounceMaxTimer: 0.42,
         modTransformTimer: 0,
         entranceAnimTimer: 0,
         entranceMaxTimer: 0.65,
@@ -3657,6 +3660,7 @@
         if (player.jumpSpinTimer > 0) player.jumpSpinTimer = Math.max(0, player.jumpSpinTimer - dt);
         if (player.chatTimer > 0) player.chatTimer = Math.max(0, player.chatTimer - dt);
         if (player.landingSquashTimer > 0) player.landingSquashTimer = Math.max(0, player.landingSquashTimer - dt);
+        if (player.highFallBounceTimer > 0) player.highFallBounceTimer = Math.max(0, player.highFallBounceTimer - dt);
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
@@ -3964,10 +3968,25 @@
             player.fallPeakY = player.y; // Reset peak after landing
 
             if (fallBlocks >= 15) {
-              // High fall impact (>= 15 blocks): Play extra ouch sound!
+              // High fall impact (>= 15 blocks): Play extra ouch sound & trigger elastic bounce!
               if (humanVocalSfxEnabled) playSfx("new/ouch.WAV", 1.0, 0.95);
-              player.impactShakeTimer = 0.28;
-              spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+              player.impactShakeTimer = 0.35;
+              player.highFallBounceTimer = 0.42;
+              player.highFallBounceMaxTimer = 0.42;
+
+              // High impact shockwave + dual dust puffs
+              gameParticles.push({
+                type: "entrance_shockwave",
+                x: player.x + player.width / 2,
+                y: player.y + player.height,
+                radius: 4,
+                maxRadius: 28,
+                color: "#f87171",
+                life: 0.32,
+                maxLife: 0.32
+              });
+              spawnLandingDust(player.x + 2, player.y + player.height);
+              spawnLandingDust(player.x + player.width - 2, player.y + player.height);
             } else {
               // Normal landing: Play randomized extra landing sound
               playRandomLandingExtraSfx(0.75);
@@ -4703,8 +4722,21 @@
         ctx.translate(px + pw / 2, py + ph / 2);
         if (player.facing < 0) ctx.scale(-1, 1);
 
-        // ── Landing Squash & Stretch Transform (Satisfying bouncy impact) ──
-        if (player.landingSquashTimer > 0) {
+        // ── High Fall Elastic Bounce & Landing Squash Transform ──
+        if (player.highFallBounceTimer > 0) {
+          const bounceProg = 1.0 - (player.highFallBounceTimer / (player.highFallBounceMaxTimer || 0.42));
+          // Elastic spring bounce oscillation curve
+          const bouncePhase = bounceProg * Math.PI * 2.6;
+          const bounceDamping = Math.exp(-bounceProg * 4.2);
+          const bounceY = -Math.sin(bouncePhase) * 10.0 * bounceDamping; // Rebound hop up to 10px into the air!
+          const squashFactor = Math.cos(bouncePhase) * 0.32 * bounceDamping;
+          const bounceScaleX = 1.0 + squashFactor;
+          const bounceScaleY = 1.0 - squashFactor;
+
+          ctx.translate(0, ph / 2 + bounceY);
+          ctx.scale(bounceScaleX, bounceScaleY);
+          ctx.translate(0, -ph / 2);
+        } else if (player.landingSquashTimer > 0) {
           const squashProgress = player.landingSquashTimer / (player.landingSquashMaxTimer || 0.22);
           const squashFactor = Math.sin(squashProgress * Math.PI);
           const squashScaleX = 1.0 + squashFactor * 0.16;
@@ -4758,7 +4790,7 @@
         const isWalking = player.state === "walk";
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
         const isFalling = !player.isGrounded && player.vy > 0.8;
-        const isLanding = (player.landingSquashTimer > 0) || (player.impactShakeTimer > 0);
+        const isLanding = (player.landingSquashTimer > 0) || (player.impactShakeTimer > 0) || (player.highFallBounceTimer > 0);
         const isFloating = player.moderatorMode;
         const t = player.animTimer;
         const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
