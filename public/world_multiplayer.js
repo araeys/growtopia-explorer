@@ -482,6 +482,23 @@
     }
 
     // Continuous tick loop (30Hz rate-limited broadcast of player state)
+        let keepAliveTimer = null;
+    function startSignalingKeepAlive() {
+      if (keepAliveTimer) clearInterval(keepAliveTimer);
+      keepAliveTimer = setInterval(() => {
+        if (peer && !peer.destroyed) {
+          if (peer.disconnected) {
+            try { peer.reconnect(); } catch (e) {}
+          }
+          if (peer.socket && peer.socket._ws && peer.socket._ws.readyState === 1) {
+            try {
+              peer.socket._ws.send(JSON.stringify({ type: "HEARTBEAT" }));
+            } catch (e) {}
+          }
+        }
+      }, 12000); // 12-second heartbeat
+    }
+
     function startTickLoop() {
       if (sendTickTimer) clearInterval(sendTickTimer);
       sendTickTimer = setInterval(() => {
@@ -543,6 +560,7 @@
             isConnected = true;
             notifyStatus(`Room ${code} is open! Share the code with friends.`, "success");
             startTickLoop();
+            startSignalingKeepAlive();
             if (typeof eventCallbacks.onConnect === "function") {
               eventCallbacks.onConnect(code, true);
             }
@@ -566,7 +584,8 @@
           });
 
           peer.on("disconnected", () => {
-            notifyStatus("Disconnected from signaling server.", "warning");
+            notifyStatus("Reconnecting to signaling network...", "warning");
+            try { peer.reconnect(); } catch (e) {}
           });
         } catch (err) {
           reject(err);
@@ -658,6 +677,10 @@
     }
 
     function disconnect() {
+      if (keepAliveTimer) {
+        clearInterval(keepAliveTimer);
+        keepAliveTimer = null;
+      }
       if (sendTickTimer) {
         clearInterval(sendTickTimer);
         sendTickTimer = null;
