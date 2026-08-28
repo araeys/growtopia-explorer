@@ -3661,14 +3661,16 @@
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
 
-        // Continuous AFK Animation Loop (Snappy, lively, and responsive)
+        // Continuous AFK Animation Loop with Silky-Smooth Blend Transition
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
         if (isUserMoving || player.moderatorMode || !player.isGrounded) {
           player.afkTimer = 0;
           player.afkAction = null;
           player.afkParticleTimer = 0;
           player.afkSubTimer = 0;
+          player.afkBlend = Math.max(0.0, (player.afkBlend || 0) - dt * 6.0);
         } else {
+          player.afkBlend = player.afkAction ? Math.min(1.0, (player.afkBlend || 0) + dt * 4.5) : Math.max(0.0, (player.afkBlend || 0) - dt * 5.0);
           player.afkTimer += dt;
           player.afkSubTimer = (player.afkSubTimer || 0) + dt;
 
@@ -4799,81 +4801,98 @@
         // Mod Flying Hover Float Wave
         const floatBob = isFloating ? Math.sin(t * 4.5) * 1.6 : 0;
         
-        // Fluid Striding Walk Cycle
-        const walkPhase = player.walkPhase || (t * 15);
+        // Fluid Striding Walk Cycle with Organic Foot-Plant Physics
+        const walkPhase = player.walkPhase || (t * 16);
         const walkCycleSin = Math.sin(walkPhase) * wBlend;
         const walkCycleCos = Math.cos(walkPhase) * wBlend;
-        const walkStepBob = (player.isGrounded && !isFloating) ? (Math.abs(Math.sin(walkPhase)) * 1.8 * wBlend) : 0;
+        // Dual-dip step impact bob with natural stride bounce
+        const walkStepBob = (player.isGrounded && !isFloating) ? (Math.pow(Math.sin(walkPhase), 2) * 2.2 * wBlend) : 0;
         const legHoverWave = Math.sin(t * 4.0) * 1.4;
 
-        // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS ──
-        let afkHeadAngle = 0;
-        let afkHeadX = 0;
-        let afkHeadY = 0;
-        let afkTorsoX = 0;
-        let afkTorsoY = 0;
-        let afkTorsoAngle = 0;
-        let afkBackArmAngle = null;
-        let afkFrontArmAngle = null;
-        let afkLegROffset = 0;
-        let afkLegLOffset = 0;
+        // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS WITH SILKY BLEND ──
+        const afkBlend = player.afkBlend || 0;
+        let rawAfkHeadAngle = 0;
+        let rawAfkHeadX = 0;
+        let rawAfkHeadY = 0;
+        let rawAfkTorsoX = 0;
+        let rawAfkTorsoY = 0;
+        let rawAfkTorsoAngle = 0;
+        let rawAfkBackArmAngle = null;
+        let rawAfkFrontArmAngle = null;
+        let rawAfkLegROffset = 0;
+        let rawAfkLegLOffset = 0;
 
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
             isBlinking = true;
-            afkHeadAngle = 0.14;
-            afkHeadY = 1.0;
-            afkTorsoY = Math.sin(t * 3.0) * 1.0;
-            afkBackArmAngle = 0.32;
-            afkFrontArmAngle = 0.40;
-            afkLegROffset = 0.6;
-            afkLegLOffset = 0.6;
+            rawAfkHeadAngle = 0.16 + Math.sin(t * 2.6) * 0.03;
+            rawAfkHeadY = 1.2 + Math.sin(t * 2.6) * 0.3;
+            rawAfkTorsoY = Math.sin(t * 2.6) * 1.2;
+            rawAfkBackArmAngle = 0.35 + Math.sin(t * 2.6) * 0.04;
+            rawAfkFrontArmAngle = 0.45 + Math.sin(t * 2.6) * 0.04;
+            rawAfkLegROffset = 0.6;
+            rawAfkLegLOffset = 0.6;
           } else if (player.afkAction === "dance") {
-            afkTorsoX = Math.sin(t * 8.0) * 3.2;
-            afkTorsoAngle = Math.sin(t * 8.0) * 0.18;
-            afkHeadAngle = -Math.sin(t * 8.0) * 0.14;
-            afkHeadY = Math.abs(Math.sin(t * 8.0)) * -1.0;
-            afkBackArmAngle = -Math.cos(t * 8.0) * 1.35;
-            afkFrontArmAngle = Math.sin(t * 8.0) * 1.35;
-            afkLegROffset = Math.max(0, Math.sin(t * 8.0)) * 3.0;
-            afkLegLOffset = Math.max(0, -Math.sin(t * 8.0)) * 3.0;
+            rawAfkTorsoX = Math.sin(t * 9.0) * 3.6;
+            rawAfkTorsoAngle = Math.sin(t * 9.0) * 0.20;
+            rawAfkHeadAngle = -Math.sin(t * 9.0) * 0.16;
+            rawAfkHeadY = Math.abs(Math.sin(t * 9.0)) * -1.2;
+            rawAfkBackArmAngle = -Math.cos(t * 9.0) * 1.50 + Math.sin(t * 18.0) * 0.15;
+            rawAfkFrontArmAngle = Math.sin(t * 9.0) * 1.50 - Math.cos(t * 18.0) * 0.15;
+            rawAfkLegROffset = Math.max(0, Math.sin(t * 9.0)) * 3.6;
+            rawAfkLegLOffset = Math.max(0, -Math.sin(t * 9.0)) * 3.6;
           } else if (player.afkAction === "think") {
-            afkHeadAngle = -0.15;
-            afkHeadY = -0.6;
-            afkFrontArmAngle = -1.85;
-            afkBackArmAngle = 0.45;
-            afkTorsoY = Math.sin(t * 2.5) * 0.5;
+            rawAfkHeadAngle = -0.16 + Math.sin(t * 2.0) * 0.02;
+            rawAfkHeadY = -0.6;
+            rawAfkFrontArmAngle = -1.90 + Math.sin(t * 12.0) * 0.08;
+            rawAfkBackArmAngle = 0.48;
+            rawAfkTorsoY = Math.sin(t * 2.5) * 0.6;
+            rawAfkTorsoAngle = -0.04;
           } else if (player.afkAction === "cheer") {
-            const hop = -Math.abs(Math.sin(t * 8.5)) * 5.0;
-            afkTorsoY = hop;
-            afkHeadY = hop * 0.3;
-            afkBackArmAngle = -2.15 + Math.sin(t * 12.0) * 0.25;
-            afkFrontArmAngle = -2.15 - Math.sin(t * 12.0) * 0.25;
-            afkLegROffset = Math.abs(Math.sin(t * 8.5)) * 2.2;
-            afkLegLOffset = Math.abs(Math.sin(t * 8.5)) * 2.2;
+            const hop = -Math.pow(Math.sin(t * 8.5), 2.0) * 5.8;
+            rawAfkTorsoY = hop;
+            rawAfkHeadY = hop * 0.35;
+            rawAfkBackArmAngle = -2.25 + Math.sin(t * 14.0) * 0.25;
+            rawAfkFrontArmAngle = -2.25 - Math.sin(t * 14.0) * 0.25;
+            rawAfkLegROffset = Math.max(0, -hop * 0.45);
+            rawAfkLegLOffset = Math.max(0, -hop * 0.45);
           } else if (player.afkAction === "angry") {
-            afkTorsoX = Math.sin(t * 24.0) * 1.2;
-            afkTorsoY = 0.8;
-            afkTorsoAngle = Math.sin(t * 24.0) * 0.08;
-            afkHeadAngle = -0.08 + Math.sin(t * 24.0) * 0.04;
-            afkBackArmAngle = -0.65;
-            afkFrontArmAngle = -0.65;
-            afkLegROffset = Math.max(0, Math.sin(t * 16.0)) * 3.2;
+            rawAfkTorsoX = Math.sin(t * 26.0) * 1.4;
+            rawAfkTorsoY = 0.8;
+            rawAfkTorsoAngle = Math.sin(t * 26.0) * 0.08;
+            rawAfkHeadAngle = -0.08 + Math.sin(t * 26.0) * 0.04;
+            rawAfkBackArmAngle = -0.68 + Math.sin(t * 35.0) * 0.15;
+            rawAfkFrontArmAngle = -0.68 + Math.cos(t * 35.0) * 0.15;
+            rawAfkLegROffset = Math.max(0, Math.sin(t * 18.0)) * 3.8;
           } else if (player.afkAction === "wave") {
-            afkTorsoAngle = 0.06;
-            afkHeadAngle = -0.12;
-            afkFrontArmAngle = -2.05 + Math.sin(t * 12.0) * 0.45;
-            afkBackArmAngle = 0.22;
-            afkTorsoY = Math.sin(t * 4.0) * 0.6;
+            rawAfkTorsoAngle = 0.08 + Math.sin(t * 3.0) * 0.03;
+            rawAfkTorsoX = Math.sin(t * 3.0) * 1.2;
+            rawAfkHeadAngle = -0.14 + Math.sin(t * 4.0) * 0.04;
+            rawAfkHeadY = -0.5;
+            rawAfkFrontArmAngle = -2.15 + Math.sin(t * 13.0) * 0.50;
+            rawAfkBackArmAngle = 0.24 + Math.sin(t * 3.0) * 0.06;
+            rawAfkTorsoY = Math.sin(t * 4.0) * 0.6;
           } else if (player.afkAction === "laugh") {
-            const chuckle = Math.abs(Math.sin(t * 14.0)) * 2.2;
-            afkTorsoY = chuckle;
-            afkTorsoAngle = 0.18 + Math.sin(t * 7.0) * 0.08;
-            afkHeadAngle = 0.14 + Math.sin(t * 7.0) * 0.06;
-            afkFrontArmAngle = -1.15;
-            afkBackArmAngle = -0.65;
+            const chuckle = Math.abs(Math.sin(t * 15.0)) * 2.4;
+            rawAfkTorsoY = chuckle;
+            rawAfkTorsoAngle = 0.18 + Math.sin(t * 7.5) * 0.08;
+            rawAfkHeadAngle = 0.14 + Math.sin(t * 7.5) * 0.06;
+            rawAfkFrontArmAngle = -1.25 + Math.sin(t * 15.0) * 0.10;
+            rawAfkBackArmAngle = -0.70 + Math.cos(t * 15.0) * 0.10;
           }
         }
+
+        // Apply smooth afkBlend interpolation to all channels
+        const afkHeadAngle = rawAfkHeadAngle * afkBlend;
+        const afkHeadX = rawAfkHeadX * afkBlend;
+        const afkHeadY = rawAfkHeadY * afkBlend;
+        const afkTorsoX = rawAfkTorsoX * afkBlend;
+        const afkTorsoY = rawAfkTorsoY * afkBlend;
+        const afkTorsoAngle = rawAfkTorsoAngle * afkBlend;
+        const afkBackArmAngle = rawAfkBackArmAngle !== null ? (rawAfkBackArmAngle * afkBlend) : null;
+        const afkFrontArmAngle = rawAfkFrontArmAngle !== null ? (rawAfkFrontArmAngle * afkBlend) : null;
+        const afkLegROffset = rawAfkLegROffset * afkBlend;
+        const afkLegLOffset = rawAfkLegLOffset * afkBlend;
 
         const breatheBob = (player.isGrounded ? (Math.sin(t * 4) * 0.75 * idleBlend - walkStepBob + afkTorsoY) : 0) + (isJumping ? -1.8 * jBlend : 0) + (isFalling ? 1.2 * fBlend : 0) + (floatBob * flBlend);
         const legRLift = isWalking ? (Math.max(0, walkCycleSin) * 2.8) : afkLegROffset;
