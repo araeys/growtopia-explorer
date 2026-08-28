@@ -255,37 +255,161 @@
     .world-tool-btn.active { background: rgba(0,229,255,0.15); border-color: var(--accent); color: var(--accent); }
     .tool-separator { width: 1px; height: 30px; background: var(--border); margin: 0 4px; }
 
-    /* ─── Dropdown Menu ─── */
+    /* ─── Centered World & Gameplay Settings Modal ─── */
     #world-menu-dropdown {
       position: fixed;
-      bottom: 60px;
-      right: 80px;
-      background: rgba(15,20,40,0.97);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      z-index: 200;
-      min-width: 260px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      backdrop-filter: blur(12px);
+      inset: 0;
+      background: rgba(5, 8, 17, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      font-family: 'Century Gothic', Arial, sans-serif;
     }
-    #world-menu-dropdown.hidden { display: none; }
-    .world-menu-header { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px 8px; }
-    .world-menu-item {
-      display: block; width: 100%;
+    #world-menu-dropdown.hidden {
+      display: none !important;
+    }
+    .settings-modal-card {
+      max-width: 580px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      background: #182535;
+      border: 2px solid #0a1017;
+      box-shadow: inset 0 0 0 2px #38536e, 0 16px 45px rgba(0,0,0,0.9);
+      border-radius: 4px;
+      overflow: hidden;
+      animation: modalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .settings-modal-header {
+      background: #101e2e;
+      border-bottom: 2px solid #0a1017;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .settings-modal-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #f9d342;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .settings-nav-tabs {
+      display: flex;
+      background: #0f1924;
+      border-bottom: 2px solid #0a1017;
+      padding: 4px 10px 0;
+      gap: 4px;
+    }
+    .settings-tab-btn {
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #94a3b8;
       background: transparent;
       border: none;
-      color: var(--text-main);
-      text-align: left;
-      padding: 9px 12px;
-      border-radius: 7px;
+      border-bottom: 2px solid transparent;
       cursor: pointer;
-      font-size: 13px;
-      font-family: var(--font);
-      transition: all 0.12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
     }
-    .world-menu-item:hover { background: rgba(0,229,255,0.08); color: var(--accent); }
-    .world-menu-divider { height: 1px; background: var(--border); margin: 6px 0; }
+    .settings-tab-btn:hover {
+      color: #38bdf8;
+    }
+    .settings-tab-btn.active {
+      color: #00ffff;
+      border-bottom: 2px solid #00ffff;
+      background: rgba(0, 255, 255, 0.08);
+      border-radius: 4px 4px 0 0;
+    }
+    .settings-modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(90vh - 120px);
+    }
+    .settings-section-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .settings-card-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111a24;
+      border: 1.5px solid #233547;
+      border-radius: 4px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .settings-card-toggle:hover {
+      border-color: #38bdf8;
+      background: #14212e;
+    }
+    .settings-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+    .settings-preset-card {
+      background: #111a24;
+      border: 1.5px solid #233547;
+      border-radius: 4px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .settings-preset-card:hover {
+      border-color: #f9d342;
+      background: #182838;
+      transform: translateY(-1px);
+    }
+    .settings-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .settings-tool-btn {
+      background: #111a24;
+      border: 1.5px solid #233547;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .settings-tool-btn:hover {
+      border-color: #38bdf8;
+      background: #14212e;
+      color: #38bdf8;
+    }
 
     /* ─── Small buttons ─── */
     .btn-sm {
@@ -1488,31 +1612,164 @@
   </nav>
 </div>
 
-<!-- World Settings Dropdown -->
+<!-- Centered World & Gameplay Settings Studio Modal -->
 <div id="world-menu-dropdown" class="hidden">
-  <div class="world-menu-header">World Templates & Presets</div>
-  <button class="world-menu-item" id="world-menu-new-std">️ Standard World (Sunny)</button>
-  <button class="world-menu-item" id="world-menu-new-nature"> Nature Paradise (Spring)</button>
-  <button class="world-menu-item" id="world-menu-new-parkour"> Parkour Arena (Floating)</button>
-  <button class="world-menu-item" id="world-menu-new-horror"> Horror Dungeon (Spooky)</button>
-  <button class="world-menu-item" id="world-menu-new-scifi"> Sci-Fi Station (Nebula)</button>
-  <button class="world-menu-item" id="world-menu-new-flat"> New Flat World</button>
-  <button class="world-menu-item" id="world-menu-new-blank">⬜ New Blank World</button>
-  <button class="world-menu-item" id="world-menu-generate-maze" style="color:#38bdf8;font-weight:bold;"> Auto-Maze / Dungeon Generator...</button>
-  <button class="world-menu-item" id="world-menu-custom-size">Custom World Size...</button>
-  <div class="world-menu-divider"></div>
-  <button class="world-menu-item" id="world-menu-open-file">Open World (.DAT / .gtworld)</button>
-  <input type="file" id="world-file-input" accept=".dat,.json,.gtworld" style="display:none;">
-  <button class="world-menu-item" id="world-menu-save-dat">Save World (.DAT)</button>
-  <button class="world-menu-item" id="world-menu-save-json">Export .gtworld JSON</button>
-  <div class="world-menu-divider"></div>
-  <button class="world-menu-item" id="world-menu-camera-shake">
-    <span id="camera-shake-status-text">Camera Shake: ON</span>
-  </button>
-  <button class="world-menu-item" id="world-menu-human-sfx">
-    <span id="human-sfx-status-text">Human Vocal SFX: ON</span>
-  </button>
-  <button class="world-menu-item" id="world-menu-render-png">Render Full World PNG</button>
+  <div class="settings-modal-card" id="world-menu-card">
+    
+    <!-- Modal Header -->
+    <div class="settings-modal-header">
+      <div class="settings-modal-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="#f9d342" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>WORLD & GAMEPLAY SETTINGS STUDIO</span>
+      </div>
+      <button id="world-settings-close-btn" style="background:#c0392b;border-top:2px solid #ec7063;border-left:2px solid #ec7063;border-bottom:2px solid #78281f;border-right:2px solid #78281f;outline:1px solid #000;color:#ffffff;font-size:12px;font-weight:900;width:24px;height:24px;line-height:20px;text-align:center;cursor:pointer;padding:0;" title="Close">
+        X
+      </button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="settings-nav-tabs">
+      <button class="settings-tab-btn active" data-tab="general" onclick="switchSettingsTab('general');">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <span>Audio & Gameplay</span>
+      </button>
+      <button class="settings-tab-btn" data-tab="presets" onclick="switchSettingsTab('presets');">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span>World Presets</span>
+      </button>
+      <button class="settings-tab-btn" data-tab="tools" onclick="switchSettingsTab('tools');">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span>Generators & Files</span>
+      </button>
+    </div>
+
+    <!-- Modal Body Content -->
+    <div class="settings-modal-body">
+      
+      <!-- TAB 1: AUDIO & GAMEPLAY -->
+      <div id="settings-tab-general">
+        <div class="settings-section-title">
+          <span>GAMEPLAY AUDIO & KINEMATICS:</span>
+        </div>
+        <div style="display:grid;gap:8px;">
+          <!-- Camera Shake Toggle -->
+          <div class="settings-card-toggle" id="world-menu-camera-shake">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:rgba(56,189,248,0.12);border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="#38bdf8" stroke-width="2" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:900;color:#ffffff;" id="camera-shake-title">Dynamic Camera Shake</div>
+                <div style="font-size:10px;color:#94a3b8;">Kinetic running camera shake and high fall landing vibration</div>
+              </div>
+            </div>
+            <span id="camera-shake-status-text" style="font-size:11px;font-weight:900;color:#38bdf8;padding:4px 8px;background:rgba(56,189,248,0.15);border:1px solid #38bdf8;border-radius:4px;">ON</span>
+          </div>
+
+          <!-- Human Vocal SFX Toggle -->
+          <div class="settings-card-toggle" id="world-menu-human-sfx">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:rgba(74,222,128,0.12);border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="#4ade80" stroke-width="2" fill="none"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:900;color:#ffffff;" id="human-sfx-title">Human Vocal SFX (Voice)</div>
+                <div style="font-size:10px;color:#94a3b8;">Jump vocal audio (jump1-3), landing voice (landing1-3), and high fall ouch!</div>
+              </div>
+            </div>
+            <span id="human-sfx-status-text" style="font-size:11px;font-weight:900;color:#4ade80;padding:4px 8px;background:rgba(74,222,128,0.15);border:1px solid #4ade80;border-radius:4px;">ON</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: WORLD PRESETS -->
+      <div id="settings-tab-presets" style="display:none;">
+        <div class="settings-section-title">
+          <span>THEMED WORLD PRESETS & WEATHER:</span>
+        </div>
+        <div class="settings-preset-grid">
+          <div class="settings-preset-card" id="world-menu-new-std">
+            <div style="font-size:12px;font-weight:900;color:#fde047;">Standard Sunny</div>
+            <div style="font-size:10px;color:#94a3b8;">Sunny Day & Hills</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-nature">
+            <div style="font-size:12px;font-weight:900;color:#4ade80;">Nature Paradise</div>
+            <div style="font-size:10px;color:#94a3b8;">Spring Forest & Lake</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-parkour">
+            <div style="font-size:12px;font-weight:900;color:#38bdf8;">Parkour Arena</div>
+            <div style="font-size:10px;color:#94a3b8;">Floating Platforms</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-horror">
+            <div style="font-size:12px;font-weight:900;color:#f87171;">Horror Dungeon</div>
+            <div style="font-size:10px;color:#94a3b8;">Spooky Castle Ruins</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-scifi">
+            <div style="font-size:12px;font-weight:900;color:#c084fc;">Sci-Fi Station</div>
+            <div style="font-size:10px;color:#94a3b8;">Deep Cosmic Nebula</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-flat">
+            <div style="font-size:12px;font-weight:900;color:#e2e8f0;">Flat World</div>
+            <div style="font-size:10px;color:#94a3b8;">Even Grass & Dirt</div>
+          </div>
+          <div class="settings-preset-card" id="world-menu-new-blank">
+            <div style="font-size:12px;font-weight:900;color:#94a3b8;">Blank World</div>
+            <div style="font-size:10px;color:#64748b;">Empty Canvas & Bedrock</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: GENERATORS & FILES -->
+      <div id="settings-tab-tools" style="display:none;">
+        <div class="settings-section-title">
+          <span>PROCEDURAL GENERATOR & DIMENSIONS:</span>
+        </div>
+        <div class="settings-tool-grid" style="margin-bottom:10px;">
+          <button class="settings-tool-btn" id="world-menu-generate-maze" style="border-color:#38bdf8;color:#38bdf8;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <span>Auto-Maze Generator...</span>
+          </button>
+          <button class="settings-tool-btn" id="world-menu-custom-size">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+            <span>Custom World Dimensions...</span>
+          </button>
+        </div>
+
+        <div class="settings-section-title">
+          <span>SAVE, IMPORT & EXPORT FILES:</span>
+        </div>
+        <div class="settings-tool-grid">
+          <button class="settings-tool-btn" id="world-menu-save-dat" style="color:#fde047;border-color:#eab308;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Save World (.DAT)</span>
+          </button>
+          <button class="settings-tool-btn" id="world-menu-open-file">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Open File (.DAT / JSON)</span>
+          </button>
+          <button class="settings-tool-btn" id="world-menu-save-json">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Export .gtworld JSON</span>
+          </button>
+          <button class="settings-tool-btn" id="world-menu-render-png">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Render Full HD PNG</span>
+          </button>
+        </div>
+        <input type="file" id="world-file-input" accept=".dat,.json,.gtworld" style="display:none;">
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="background:#101e2e;border-top:2px solid #0a1017;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:#64748b;font-weight:600;">Press <kbd style="background:#1e293b;padding:2px 5px;border-radius:3px;color:#e2e8f0;font-size:10px;">ESC</kbd> to close</span>
+      <button id="world-settings-done-btn" style="background:#27ae60;border-top:2px solid #2ecc71;border-left:2px solid #2ecc71;border-bottom:2px solid #1e8449;border-right:2px solid #1e8449;color:#ffffff;font-size:12px;font-weight:900;padding:6px 16px;cursor:pointer;">
+        DONE
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <!-- Auto-Maze & Dungeon Generator Modal (Growtopia Dialog Style) -->
@@ -2217,16 +2474,42 @@
   document.getElementById('world-undo-btn')?.addEventListener('click', () => engine.undo());
   document.getElementById('world-redo-btn')?.addEventListener('click', () => engine.redo());
 
-  // ── Settings Menu ──
+  // ── Centered Settings Modal Logic ──
   const menuDropdown = document.getElementById('world-menu-dropdown');
+  
+  function openSettingsModal() {
+    if (!menuDropdown) return;
+    updateCameraShakeMenu();
+    updateHumanSfxMenu();
+    menuDropdown.classList.remove('hidden');
+  }
+
+  function closeSettingsModal() {
+    if (!menuDropdown) return;
+    menuDropdown.classList.add('hidden');
+  }
+
+  function switchSettingsTab(tabName) {
+    const tabs = ['general', 'presets', 'tools'];
+    tabs.forEach(t => {
+      const pane = document.getElementById('settings-tab-' + t);
+      const btn = document.querySelector('.settings-tab-btn[data-tab="' + t + '"]');
+      if (pane) pane.style.display = (t === tabName) ? 'block' : 'none';
+      if (btn) btn.classList.toggle('active', t === tabName);
+    });
+  }
+  window.switchSettingsTab = switchSettingsTab;
+  window.openSettingsModal = openSettingsModal;
+  window.closeSettingsModal = closeSettingsModal;
+
   document.getElementById('world-settings-btn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menuDropdown?.classList.toggle('hidden');
+    e.preventDefault();
+    openSettingsModal();
   });
-  window.addEventListener('click', (e) => {
-    if (!menuDropdown?.contains(e.target) && e.target.id !== 'world-settings-btn') {
-      menuDropdown?.classList.add('hidden');
-    }
+  document.getElementById('world-settings-close-btn')?.addEventListener('click', closeSettingsModal);
+  document.getElementById('world-settings-done-btn')?.addEventListener('click', closeSettingsModal);
+  menuDropdown?.addEventListener('click', (e) => {
+    if (e.target === menuDropdown) closeSettingsModal();
   });
   document.getElementById('world-menu-new-std')?.addEventListener('click', () => { engine.loadPreset('standard'); menuDropdown?.classList.add('hidden'); });
   document.getElementById('world-menu-new-nature')?.addEventListener('click', () => { engine.loadPreset('nature'); menuDropdown?.classList.add('hidden'); });
@@ -2372,8 +2655,12 @@
   function updateCameraShakeMenu() {
     if (typeof engine.getCameraShake === 'function') {
       const isShake = engine.getCameraShake();
-      if (shakeStatusText) shakeStatusText.textContent = isShake ? "Camera Shake: ON" : "Camera Shake: OFF";
-      if (shakeMenuItem) shakeMenuItem.style.color = isShake ? "#38bdf8" : "#94a3b8";
+      if (shakeStatusText) {
+        shakeStatusText.textContent = isShake ? "ON" : "OFF";
+        shakeStatusText.style.color = isShake ? "#38bdf8" : "#94a3b8";
+        shakeStatusText.style.borderColor = isShake ? "#38bdf8" : "#475569";
+        shakeStatusText.style.background = isShake ? "rgba(56,189,248,0.15)" : "rgba(71,85,105,0.2)";
+      }
     }
   }
 
@@ -2385,10 +2672,6 @@
     }
   });
 
-  document.getElementById('world-settings-btn')?.addEventListener('click', () => {
-    updateCameraShakeMenu();
-  });
-
   // ── Human Vocal SFX Settings Toggle ──
   const humanSfxMenuItem = document.getElementById('world-menu-human-sfx');
   const humanSfxStatusText = document.getElementById('human-sfx-status-text');
@@ -2396,8 +2679,12 @@
   function updateHumanSfxMenu() {
     if (typeof engine.getHumanVocalSfx === 'function') {
       const isVoice = engine.getHumanVocalSfx();
-      if (humanSfxStatusText) humanSfxStatusText.textContent = isVoice ? "Human Vocal SFX: ON" : "Human Vocal SFX: OFF";
-      if (humanSfxMenuItem) humanSfxMenuItem.style.color = isVoice ? "#4ade80" : "#94a3b8";
+      if (humanSfxStatusText) {
+        humanSfxStatusText.textContent = isVoice ? "ON" : "OFF";
+        humanSfxStatusText.style.color = isVoice ? "#4ade80" : "#94a3b8";
+        humanSfxStatusText.style.borderColor = isVoice ? "#4ade80" : "#475569";
+        humanSfxStatusText.style.background = isVoice ? "rgba(74,222,128,0.15)" : "rgba(71,85,105,0.2)";
+      }
     }
   }
 
@@ -2407,11 +2694,6 @@
       engine.setHumanVocalSfx(next);
       updateHumanSfxMenu();
     }
-  });
-
-  document.getElementById('world-settings-btn')?.addEventListener('click', () => {
-    updateCameraShakeMenu();
-    updateHumanSfxMenu();
   });
 
 
