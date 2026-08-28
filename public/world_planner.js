@@ -147,12 +147,13 @@
       // Settings State
       let cameraShakeEnabled = true;
       let playerName = "Raey";
-      let multiplayerClient = null;
-      let isNetworkTileOp = false;
       try {
         if (typeof localStorage !== "undefined") {
-          const savedName = localStorage.getItem("gt_player_name");
-          if (savedName) playerName = savedName;
+          playerName = localStorage.getItem("gt_player_name") || "Raey";
+        }
+      } catch(e) {}
+      try {
+        if (typeof localStorage !== "undefined") {
           const savedShake = localStorage.getItem("gt_camera_shake_enabled");
           if (savedShake !== null) cameraShakeEnabled = (savedShake === "true");
         }
@@ -323,9 +324,7 @@
         if (!world.paint) world.paint = new Uint16Array(world.fg.length);
         if (prev.paint) world.paint.set(prev.paint);
         world.flags.set(prev.flags);
-        if (multiplayerClient && !isNetworkTileOp) {
-          multiplayerClient.broadcastTileErase(x, y);
-        }
+        
         render();
         onWorldChange(world);
         return true;
@@ -935,10 +934,9 @@
         }
       }
 
-            // Network receiver methods (invoked by GTWorldMultiplayer without re-broadcasting)
-            function loadCustomWorldState(newState) {
+      function loadCustomWorldState(newState) {
         if (!newState) return;
-        pushUndoSnapshot("Multiplayer World Sync");
+        pushUndoSnapshot("Load World State");
         world.width = newState.width || world.width;
         world.height = newState.height || world.height;
         world.name = newState.name || world.name;
@@ -1015,9 +1013,7 @@
         if (item) {
           playBlockPlacingSfx(x, y, item);
         }
-        if (multiplayerClient && !isNetworkTileOp) {
-          multiplayerClient.broadcastTileSet(x, y, item, { isBg: determineBg, flip });
-        }
+        
         return true;
       }
 
@@ -1258,9 +1254,7 @@
         if (filledCount > 0 && newItem) {
           playBlockPlacingSfx(startX, startY, newItem);
         }
-        if (multiplayerClient && !isNetworkTileOp) {
-          multiplayerClient.broadcastFloodFill(startX, startY, newItem);
-        }
+        
         render();
         onWorldChange(world);
       }
@@ -1861,17 +1855,8 @@
         }
 
         // 8. Player Avatar & Dynamic Particles (Play Mode)
-        const hasRemotePlayers = multiplayerClient && multiplayerClient.getRemotePlayers().size > 0;
-        if (player.active || gameParticles.length > 0 || hasRemotePlayers) {
+        if (player.active || gameParticles.length > 0) {
           updateAndDrawParticles(ctx, 0.016);
-          if (multiplayerClient) {
-            multiplayerClient.updateRemotePlayers(0.016);
-            multiplayerClient.getRemotePlayers().forEach((rp) => {
-              if (!rp.isDead) {
-                drawPlayerAvatar(ctx, rp, false);
-              }
-            });
-          }
           if (player.active) drawPlayerAvatar(ctx, player, true);
         }
 
@@ -6314,9 +6299,7 @@
           onStatusMessage(humanVocalSfxEnabled ? "Human Vocal SFX: ON" : "Human Vocal SFX: OFF");
         },
         getHumanVocalSfx: () => humanVocalSfxEnabled,
-        setMultiplayerClient: (client) => { multiplayerClient = client; },
-        getMultiplayerClient: () => multiplayerClient,
-        setPlayerName: (name) => {
+                        setPlayerName: (name) => {
           playerName = String(name || "Raey").trim().slice(0, 16);
           try { localStorage.setItem("gt_player_name", playerName); } catch(e) {}
         },
