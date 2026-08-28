@@ -875,6 +875,21 @@
         }
       }
 
+            function playBlockPlacingSfx(x, y, item) {
+        if (x !== undefined && y !== undefined) {
+          if (player.active) {
+            triggerPlayerPlace(x, y);
+            if (item) spawnBlockPlaceEffect(x, y, item);
+          }
+          spawnTileBreakParticle(x, y);
+        }
+        // 1. Main Place SFX: Wood_dig3.ogg (boosted +50% to 1.60)
+        playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 1.60);
+        // 2. Secondary Combined Place SFX: Randomized Amethyst pool (+50% louder volume)
+        const randomAmethyst = AMETHYST_PLACE_SFX_POOL[Math.floor(Math.random() * AMETHYST_PLACE_SFX_POOL.length)];
+        playSfx(randomAmethyst, 0.94 + Math.random() * 0.12, 1.00);
+      }
+
       function spawnBlockPlaceEffect(tx, ty, item) {
         if (!item || !player.active || typeof performance === "undefined") return;
         const now = performance.now();
@@ -944,16 +959,7 @@
           }
         }
         if (item) {
-          if (player.active) {
-            triggerPlayerPlace(x, y);
-            spawnBlockPlaceEffect(x, y, item);
-          }
-          spawnTileBreakParticle(x, y);
-          // 1. Main Place SFX: Wood_dig3.ogg (boosted +50% to 1.60)
-          playSfx("Wood_dig3.ogg", 0.96 + Math.random() * 0.08, 1.60);
-          // 2. Secondary Combined Place SFX: Randomized Amethyst pool (+50% louder volume)
-          const randomAmethyst = AMETHYST_PLACE_SFX_POOL[Math.floor(Math.random() * AMETHYST_PLACE_SFX_POOL.length)];
-          playSfx(randomAmethyst, 0.94 + Math.random() * 0.12, 1.00);
+          playBlockPlacingSfx(x, y, item);
         }
         return true;
       }
@@ -1169,6 +1175,7 @@
         pushUndoSnapshot("Bucket Fill");
         const queue = [[startX, startY]];
         const visited = new Uint8Array(world.width * world.height);
+        let filledCount = 0;
 
         while (queue.length > 0) {
           const [cx, cy] = queue.pop();
@@ -1178,6 +1185,7 @@
 
           if (targetLayer[idx] === targetVal) {
             targetLayer[idx] = newVal;
+            filledCount++;
             if (!isBg && isFlipped) {
               world.flags[idx] |= 1;
             } else if (!isBg) {
@@ -1189,6 +1197,9 @@
             if (cy > 0 && !visited[idx - world.width]) queue.push([cx, cy - 1]);
             if (cy < world.height - 1 && !visited[idx + world.width]) queue.push([cx, cy + 1]);
           }
+        }
+        if (filledCount > 0 && newItem) {
+          playBlockPlacingSfx(startX, startY, newItem);
         }
         render();
         onWorldChange(world);
@@ -1375,10 +1386,7 @@
         }
 
         if (placedCount > 0) {
-          if (player.active) {
-            triggerPlayerPlace(endTile.x, endTile.y);
-          }
-          playSfx("pop", 1.0, 0.7);
+          playBlockPlacingSfx(endTile.x, endTile.y, activeItem);
           render();
           onWorldChange(world);
           onStatusMessage(` Placed ${placedCount} blocks with ${toolLabel}`);
