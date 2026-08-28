@@ -614,140 +614,36 @@
             continue;
           }
 
-                    if (p.type === "sleep_bubble") {
-            p.x = p.targetX + (p.offsetX || 0);
-            p.y = p.targetY + (p.offsetY || 0);
+                    if (p.type === "thought_bubble") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.96;
+            p.vy *= 0.96;
             const progress = 1.0 - (p.life / p.maxLife);
-            // Grow smoothly, wobble, then shrink/pop
-            const grow = progress < 0.75 ? (progress / 0.75) : (1.0 - (progress - 0.75) / 0.25 * 0.8);
-            const radius = (p.maxRadius || 5.0) * (0.2 + grow * 0.8);
-            const wobbleX = Math.sin(progress * Math.PI * 4) * 0.6;
-            const wobbleY = Math.cos(progress * Math.PI * 4) * 0.6;
-            const alpha = progress < 0.85 ? 0.75 : Math.max(0, 1.0 - (progress - 0.85) / 0.15) * 0.75;
+            const alpha = progress < 0.2 ? (progress / 0.2) : Math.max(0, 1.0 - (progress - 0.2) / 0.8);
 
             ctx.save();
-            ctx.fillStyle = `rgba(165, 243, 252, ${alpha * 0.55})`;
-            ctx.strokeStyle = `rgba(103, 232, 249, ${alpha})`;
-            ctx.lineWidth = 1.2;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.90));
             ctx.shadowColor = "#38bdf8";
             ctx.shadowBlur = 4;
+            
+            // Soft rounded thought cloud
+            ctx.fillStyle = "rgba(240, 249, 255, 0.92)";
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 1.0;
             ctx.beginPath();
-            ctx.ellipse(p.x + wobbleX, p.y + wobbleY, radius, radius * 0.92, 0, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.radius || 3.0, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Specular shine dot
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
-            ctx.beginPath();
-            ctx.arc(p.x + wobbleX - radius * 0.35, p.y + wobbleY - radius * 0.35, Math.max(0.8, radius * 0.22), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            continue;
-          }
-
-          if (p.type === "thought_bubble") {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= 0.95;
-            p.vy *= 0.95;
-            const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = progress < 0.15 ? (progress / 0.15) : Math.max(0, 1.0 - (progress - 0.15) / 0.85);
-
-            ctx.save();
-            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            if (p.isIdea) {
-              // Glowing Golden Lightbulb Idea Pop!
-              const bulbScale = 0.8 + Math.sin(progress * Math.PI) * 0.35;
-              ctx.translate(p.x, p.y);
-              ctx.scale(bulbScale, bulbScale);
-              ctx.shadowColor = "#fde047";
-              ctx.shadowBlur = 12;
-
-              // Lightbulb Glass Dome
-              ctx.fillStyle = "#fde047";
-              ctx.beginPath();
-              ctx.arc(0, -2, 6, 0, Math.PI * 2);
-              ctx.fill();
-
-              // Screw Base & Filament
-              ctx.fillStyle = "#e2e8f0";
-              ctx.fillRect(-2.5, 3, 5, 3);
-              ctx.fillStyle = "#cbd5e1";
-              ctx.fillRect(-1.5, 6, 3, 2);
-
-              // Radiating Shine Rays
-              ctx.strokeStyle = "#fef08a";
-              ctx.lineWidth = 1.4;
-              for (let ray = 0; ray < 6; ray++) {
-                const angle = (Math.PI * 2 * ray) / 6;
-                const r1 = 8.5;
-                const r2 = 12.5;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1 - 2);
-                ctx.lineTo(Math.cos(angle) * r2, Math.sin(angle) * r2 - 2);
-                ctx.stroke();
-              }
-            } else {
-              // Translucent Thought Cloud Bubble
-              ctx.fillStyle = "rgba(241, 245, 249, 0.85)";
-              ctx.strokeStyle = "#94a3b8";
-              ctx.lineWidth = 1.0;
-              ctx.shadowColor = "#e2e8f0";
-              ctx.shadowBlur = 4;
-              ctx.beginPath();
-              ctx.arc(p.x, p.y, p.radius || 3.0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.stroke();
+            // Internal thought dots for main cloud
+            if (p.isMainCloud) {
+              ctx.fillStyle = "#0284c7";
+              ctx.font = "bold 9px 'Century Gothic', sans-serif";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText("...", p.x, p.y);
             }
-            ctx.restore();
-            continue;
-          }
-
-          if (p.type === "joy_tear") {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.12; // Gravity arc
-            const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = Math.sin(progress * Math.PI) * 0.90;
-
-            ctx.save();
-            ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
-            ctx.shadowColor = "#38bdf8";
-            ctx.shadowBlur = 3;
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, 2.2, 3.2, (p.vx > 0 ? 0.3 : -0.3), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            continue;
-          }
-
-          if (p.type === "gleam_sparkle") {
-            p.x += p.vx;
-            p.y += p.vy;
-            const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = Math.sin(progress * Math.PI);
-            const sz = (p.size || 5.0) * Math.sin(progress * Math.PI);
-
-            ctx.save();
-            ctx.fillStyle = p.color || "#fde047";
-            ctx.shadowColor = p.color || "#fde047";
-            ctx.shadowBlur = 8;
-            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            ctx.translate(p.x, p.y);
-            ctx.rotate(progress * Math.PI * 0.5);
-
-            // 4-Pointed Star Diamond Gleam
-            ctx.beginPath();
-            ctx.moveTo(0, -sz);
-            ctx.lineTo(sz * 0.25, -sz * 0.25);
-            ctx.lineTo(sz, 0);
-            ctx.lineTo(sz * 0.25, sz * 0.25);
-            ctx.lineTo(0, sz);
-            ctx.lineTo(-sz * 0.25, sz * 0.25);
-            ctx.lineTo(-sz, 0);
-            ctx.lineTo(-sz * 0.25, -sz * 0.25);
-            ctx.closePath();
-            ctx.fill();
             ctx.restore();
             continue;
           }
@@ -821,26 +717,26 @@
           }
 
           if (p.type === "dance_note") {
-            p.x += p.vx + Math.sin((p.maxLife - p.life) * 8) * 0.45;
+            p.x += p.vx + Math.sin((p.maxLife - p.life) * 5) * 0.35;
             p.y += p.vy;
-            p.vx *= 0.96;
+            p.vx *= 0.97;
             p.vy *= 0.98;
             p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
 
             const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = progress < 0.15 ? (progress / 0.15) : Math.max(0, 1.0 - (progress - 0.15) / 0.85);
+            const alpha = progress < 0.2 ? (progress / 0.2) : Math.max(0, 1.0 - (progress - 0.2) / 0.8);
             const img = getSpriteImage(p.src);
 
             if (img && img.complete && img.naturalWidth > 0) {
               ctx.save();
               ctx.imageSmoothingEnabled = true;
-              ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.95));
+              ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.90));
               ctx.translate(p.x, p.y);
               ctx.rotate(p.rot);
-              const popScale = p.scale * (0.8 + Math.sin(progress * Math.PI) * 0.45);
+              const popScale = p.scale * (0.85 + Math.sin(progress * Math.PI) * 0.30);
               ctx.scale(popScale, popScale);
               ctx.shadowColor = "#fde047";
-              ctx.shadowBlur = 8;
+              ctx.shadowBlur = 6;
               ctx.drawImage(img, -10, -10, 20, 20);
               ctx.restore();
             }
@@ -850,16 +746,19 @@
           if (p.type === "anger_fume") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy -= 0.06;
+            p.vy *= 0.96;
             const progress = 1.0 - (p.life / p.maxLife);
-            const alpha = Math.sin(progress * Math.PI) * 0.70;
+            const alpha = Math.sin(progress * Math.PI) * 0.65;
             ctx.save();
-            ctx.fillStyle = `rgba(239, 68, 68, ${alpha})`;
-            ctx.shadowColor = "#dc2626";
-            ctx.shadowBlur = 5;
+            ctx.fillStyle = `rgba(241, 245, 249, ${alpha * 0.85})`;
+            ctx.strokeStyle = `rgba(239, 68, 68, ${alpha * 0.60})`;
+            ctx.lineWidth = 1.0;
+            ctx.shadowColor = "#f87171";
+            ctx.shadowBlur = 4;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, (p.radius || 2.5) * (0.8 + progress * 0.6), 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, (p.radius || 2.5) * (0.7 + progress * 0.5), 0, Math.PI * 2);
             ctx.fill();
+            ctx.stroke();
             ctx.restore();
             continue;
           }
@@ -867,19 +766,33 @@
           if (p.type === "cheer_star") {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.05; // light gravity on confetti
+            p.vx *= 0.96;
+            p.vy = p.vy * 0.96 + 0.02; // soft flutter
             p.rot = (p.rot || 0) + (p.rotSpeed || 0) * dt;
             const progress = 1.0 - (p.life / p.maxLife);
             const alpha = Math.sin(progress * Math.PI);
+            const sz = (p.size || 3.0) * (0.8 + Math.sin(progress * Math.PI) * 0.35);
+
             ctx.save();
-            ctx.fillStyle = p.color || "#facc15";
-            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            ctx.shadowColor = p.color || "#facc15";
-            ctx.shadowBlur = 4;
+            ctx.fillStyle = p.color || "#fde047";
+            ctx.shadowColor = p.color || "#fde047";
+            ctx.shadowBlur = 5;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha * 0.90));
             ctx.translate(p.x, p.y);
             ctx.rotate(p.rot);
-            const sz = (p.size || 3.0) * (0.8 + progress * 0.4);
-            ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+            
+            // Cute 4-pointed micro star
+            ctx.beginPath();
+            ctx.moveTo(0, -sz);
+            ctx.lineTo(sz * 0.3, -sz * 0.3);
+            ctx.lineTo(sz, 0);
+            ctx.lineTo(sz * 0.3, sz * 0.3);
+            ctx.lineTo(0, sz);
+            ctx.lineTo(-sz * 0.3, sz * 0.3);
+            ctx.lineTo(-sz, 0);
+            ctx.lineTo(-sz * 0.3, -sz * 0.3);
+            ctx.closePath();
+            ctx.fill();
             ctx.restore();
             continue;
           }
@@ -3748,7 +3661,7 @@
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
 
-        // Continuous AFK Animation Loop (Runs continuously when idle until player moves)
+        // Continuous AFK Animation Loop (Subtle, charming, and authentic to Growtopia)
         const isUserMoving = player.keys.left || player.keys.right || player.keys.up || player.keys.down || player.keys.jump || Math.abs(player.vx) > 0.3;
         if (isUserMoving || player.moderatorMode || !player.isGrounded) {
           player.afkTimer = 0;
@@ -3759,29 +3672,28 @@
           player.afkTimer += dt;
           player.afkSubTimer = (player.afkSubTimer || 0) + dt;
 
-          const afkInterval = player.afkAction ? 6.5 : 3.0; // Quick initial idle transition, then 6.5s per action
+          const afkInterval = player.afkAction ? 7.0 : 3.5; // Natural 3.5s idle threshold, then 7.0s per action
           if (player.afkTimer >= afkInterval) {
             player.afkTimer = 0;
             player.afkSubTimer = 0;
-            const afkList = ["dance", "sleep", "think", "cheer", "angry", "wave", "laugh", "flex"];
+            const afkList = ["dance", "sleep", "think", "cheer", "angry", "wave", "laugh"];
             const available = afkList.filter(a => a !== player.afkAction);
             player.afkAction = available[Math.floor(Math.random() * available.length)];
             
-            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.45);
-            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.45);
-            else if (player.afkAction === "dance") playSfx("magic", 1.0, 0.35);
-            else if (player.afkAction === "think") playSfx("pop", 1.25, 0.30);
-            else if (player.afkAction === "wave") playSfx("magic", 1.35, 0.25);
-            else if (player.afkAction === "flex") playSfx("switch", 1.20, 0.35);
+            if (player.afkAction === "cheer") playSfx("happy", 1.0, 0.35);
+            else if (player.afkAction === "angry") playSfx("grunt", 1.0, 0.35);
+            else if (player.afkAction === "dance") playSfx("magic", 1.0, 0.25);
+            else if (player.afkAction === "think") playSfx("pop", 1.25, 0.25);
+            else if (player.afkAction === "wave") playSfx("magic", 1.35, 0.20);
           }
 
-          // Active AFK Particle FX Spawners
+          // Active AFK Particle Spawners (Subtle, tasteful, low density)
           if (player.afkAction) {
             player.afkParticleTimer = (player.afkParticleTimer || 0) + dt;
 
-            // 1. Dancing Floating Musical Notes & Sparkles
+            // 1. Dancing Floating Musical Notes
             if (player.afkAction === "dance") {
-              if (player.afkParticleTimer >= 0.20) {
+              if (player.afkParticleTimer >= 0.35) {
                 player.afkParticleTimer = 0;
                 const noteList = [
                   "character_base_assets/dance_notes/note_1.png",
@@ -3789,183 +3701,98 @@
                   "character_base_assets/dance_notes/note_4.png"
                 ];
                 const noteSrc = noteList[Math.floor(Math.random() * noteList.length)];
-                const nX = player.x + player.width / 2 + (Math.random() - 0.5) * 28;
-                const nY = player.y + player.height / 2 - 8 + (Math.random() - 0.5) * 14;
+                const nX = player.x + player.width / 2 + (Math.random() - 0.5) * 20;
+                const nY = player.y + 4 + (Math.random() - 0.5) * 8;
                 gameParticles.push({
                   type: "dance_note",
                   src: noteSrc,
                   x: nX,
                   y: nY,
-                  vx: (Math.random() - 0.5) * 0.6,
-                  vy: -(0.75 + Math.random() * 0.60),
-                  scale: 0.22 + Math.random() * 0.08,
-                  rot: (Math.random() - 0.5) * 0.5,
-                  rotSpeed: (Math.random() - 0.5) * 2.0,
-                  life: 0.85 + Math.random() * 0.25,
-                  maxLife: 0.85 + Math.random() * 0.25
-                });
-                // Micro footstep disco sparkle
-                if (Math.random() < 0.4) {
-                  gameParticles.push({
-                    type: "gleam_sparkle",
-                    x: player.x + player.width / 2 + (Math.random() - 0.5) * 20,
-                    y: player.y + player.height - 2,
-                    vx: (Math.random() - 0.5) * 0.4,
-                    vy: -(0.2 + Math.random() * 0.4),
-                    size: 3.5 + Math.random() * 2.5,
-                    color: ["#fde047", "#38bdf8", "#ec4899", "#a855f7"][Math.floor(Math.random() * 4)],
-                    life: 0.45,
-                    maxLife: 0.45
-                  });
-                }
-                requestRender();
-              }
-            }
-
-            // 2. Sleeping Snooze Snot Bubble
-            else if (player.afkAction === "sleep") {
-              if (player.afkParticleTimer >= 1.6) {
-                player.afkParticleTimer = 0;
-                gameParticles.push({
-                  type: "sleep_bubble",
-                  targetX: player.x + player.width / 2,
-                  targetY: player.y + 4,
-                  offsetX: player.facing * 8,
-                  offsetY: -2,
-                  maxRadius: 5.5,
-                  life: 1.55,
-                  maxLife: 1.55
+                  vx: (Math.random() - 0.5) * 0.3,
+                  vy: -(0.55 + Math.random() * 0.35),
+                  scale: 0.18 + Math.random() * 0.05,
+                  rot: (Math.random() - 0.5) * 0.3,
+                  rotSpeed: (Math.random() - 0.5) * 1.2,
+                  life: 0.90 + Math.random() * 0.20,
+                  maxLife: 0.90 + Math.random() * 0.20
                 });
                 requestRender();
               }
             }
 
-            // 3. Thinking Thought Clouds & Golden Lightbulb Idea Pop!
+            // 2. Thinking Soft Thought Cloud
             else if (player.afkAction === "think") {
-              if (player.afkParticleTimer >= 0.70) {
+              if (player.afkParticleTimer >= 1.2) {
                 player.afkParticleTimer = 0;
-                const isIdeaMoment = player.afkSubTimer > 3.2 && player.afkSubTimer < 4.8;
-                if (isIdeaMoment) {
-                  gameParticles.push({
-                    type: "thought_bubble",
-                    x: player.x + player.width / 2 + (player.facing * 12),
-                    y: player.y - 14,
-                    vx: 0,
-                    vy: -0.15,
-                    isIdea: true,
-                    life: 1.2,
-                    maxLife: 1.2
-                  });
-                } else {
-                  // Rising thinking dots
-                  gameParticles.push({
-                    type: "thought_bubble",
-                    x: player.x + player.width / 2 + (player.facing * 8) + (Math.random() - 0.5) * 4,
-                    y: player.y - 4,
-                    vx: (player.facing * 0.15) + (Math.random() - 0.5) * 0.1,
-                    vy: -0.45,
-                    radius: 2.2 + Math.random() * 1.5,
-                    isIdea: false,
-                    life: 0.85,
-                    maxLife: 0.85
-                  });
-                }
+                // Little trail dot
+                gameParticles.push({
+                  type: "thought_bubble",
+                  x: player.x + player.width / 2 + (player.facing * 8),
+                  y: player.y - 2,
+                  vx: player.facing * 0.1,
+                  vy: -0.3,
+                  radius: 2.0,
+                  isMainCloud: false,
+                  life: 0.9,
+                  maxLife: 0.9
+                });
+                // Main thought cloud with dots
+                setTimeout(() => {
+                  if (player.afkAction === "think") {
+                    gameParticles.push({
+                      type: "thought_bubble",
+                      x: player.x + player.width / 2 + (player.facing * 12),
+                      y: player.y - 12,
+                      vx: 0,
+                      vy: -0.15,
+                      radius: 5.5,
+                      isMainCloud: true,
+                      life: 1.4,
+                      maxLife: 1.4
+                    });
+                    requestRender();
+                  }
+                }, 200);
                 requestRender();
               }
             }
 
-            // 4. Angry Swirling Steam & Stomp Dust
+            // 3. Angry Soft Comic Steam Puffs
             else if (player.afkAction === "angry") {
-              if (player.afkParticleTimer >= 0.14) {
+              if (player.afkParticleTimer >= 0.28) {
                 player.afkParticleTimer = 0;
-                const earSide = Math.random() < 0.5 ? -8 : 8;
+                const earSide = Math.random() < 0.5 ? -6 : 6;
                 gameParticles.push({
                   type: "anger_fume",
                   x: player.x + player.width / 2 + earSide,
-                  y: player.y + 2 + (Math.random() - 0.5) * 4,
-                  vx: earSide * 0.12 + (Math.random() - 0.5) * 0.2,
-                  vy: -(0.7 + Math.random() * 0.6),
-                  radius: 3.0 + Math.random() * 2.0,
-                  life: 0.50 + Math.random() * 0.15,
-                  maxLife: 0.50 + Math.random() * 0.15
+                  y: player.y + (Math.random() - 0.5) * 3,
+                  vx: earSide * 0.08 + (Math.random() - 0.5) * 0.1,
+                  vy: -(0.5 + Math.random() * 0.3),
+                  radius: 2.5 + Math.random() * 1.5,
+                  life: 0.55 + Math.random() * 0.15,
+                  maxLife: 0.55 + Math.random() * 0.15
                 });
                 requestRender();
               }
             }
 
-            // 5. Cheerful Celebration Star Confetti
+            // 4. Cheerful Tiny Star Confetti
             else if (player.afkAction === "cheer") {
-              if (player.afkParticleTimer >= 0.15) {
+              if (player.afkParticleTimer >= 0.24) {
                 player.afkParticleTimer = 0;
-                const cheerColors = ["#facc15", "#38bdf8", "#ec4899", "#a855f7", "#4ade80", "#fb923c", "#f43f5e"];
+                const cheerColors = ["#fde047", "#38bdf8", "#f472b6", "#4ade80"];
                 gameParticles.push({
                   type: "cheer_star",
-                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 28,
-                  y: player.y - 6 + (Math.random() - 0.5) * 12,
-                  vx: (Math.random() - 0.5) * 1.6,
-                  vy: -(1.4 + Math.random() * 1.2),
-                  size: 3.0 + Math.random() * 2.5,
+                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 20,
+                  y: player.y - 2 + (Math.random() - 0.5) * 6,
+                  vx: (Math.random() - 0.5) * 0.8,
+                  vy: -(0.9 + Math.random() * 0.6),
+                  size: 2.5 + Math.random() * 1.5,
                   color: cheerColors[Math.floor(Math.random() * cheerColors.length)],
                   rot: Math.random() * Math.PI * 2,
-                  rotSpeed: (Math.random() - 0.5) * 7.0,
-                  life: 0.75 + Math.random() * 0.25,
-                  maxLife: 0.75 + Math.random() * 0.25
-                });
-                requestRender();
-              }
-            }
-
-            // 6. Friendly Wave Hand Twinkle
-            else if (player.afkAction === "wave") {
-              if (player.afkParticleTimer >= 0.35) {
-                player.afkParticleTimer = 0;
-                gameParticles.push({
-                  type: "gleam_sparkle",
-                  x: player.x + player.width / 2 + (player.facing * 14) + (Math.random() - 0.5) * 6,
-                  y: player.y - 2 + (Math.random() - 0.5) * 6,
-                  vx: 0,
-                  vy: -0.2,
-                  size: 4.5 + Math.random() * 2.0,
-                  color: "#38bdf8",
-                  life: 0.45,
-                  maxLife: 0.45
-                });
-                requestRender();
-              }
-            }
-
-            // 7. Laughing Joy Tear Droplets
-            else if (player.afkAction === "laugh") {
-              if (player.afkParticleTimer >= 0.25) {
-                player.afkParticleTimer = 0;
-                const side = Math.random() < 0.5 ? -1 : 1;
-                gameParticles.push({
-                  type: "joy_tear",
-                  x: player.x + player.width / 2 + side * 8,
-                  y: player.y + 2,
-                  vx: side * (0.8 + Math.random() * 0.6),
-                  vy: -(0.8 + Math.random() * 0.5),
-                  life: 0.55,
-                  maxLife: 0.55
-                });
-                requestRender();
-              }
-            }
-
-            // 8. Muscle Flex Bicep Shine
-            else if (player.afkAction === "flex") {
-              if (player.afkParticleTimer >= 0.32) {
-                player.afkParticleTimer = 0;
-                gameParticles.push({
-                  type: "gleam_sparkle",
-                  x: player.x + player.width / 2 + (player.facing * 10),
-                  y: player.y + 6,
-                  vx: 0,
-                  vy: -0.15,
-                  size: 6.0,
-                  color: "#fde047",
-                  life: 0.40,
-                  maxLife: 0.40
+                  rotSpeed: (Math.random() - 0.5) * 4.0,
+                  life: 0.70 + Math.random() * 0.20,
+                  maxLife: 0.70 + Math.random() * 0.20
                 });
                 requestRender();
               }
@@ -5013,72 +4840,57 @@
         if (player.afkAction && player.isGrounded && !isWalking) {
           if (player.afkAction === "sleep") {
             isBlinking = true;
-            afkHeadAngle = 0.18 + Math.sin(t * 2.0) * 0.05;
-            afkHeadY = 1.6 + Math.sin(t * 2.0) * 0.4;
-            afkTorsoY = Math.sin(t * 2.0) * 1.4;
-            afkBackArmAngle = 0.42 + Math.sin(t * 2.0) * 0.04;
-            afkFrontArmAngle = 0.55 + Math.sin(t * 2.0) * 0.04;
-            afkLegROffset = 0.8;
-            afkLegLOffset = 0.8;
+            afkHeadAngle = 0.12;
+            afkHeadY = 0.8;
+            afkTorsoY = Math.sin(t * 2.2) * 0.6;
+            afkBackArmAngle = 0.20;
+            afkFrontArmAngle = 0.25;
+            afkLegROffset = 0.4;
+            afkLegLOffset = 0.4;
           } else if (player.afkAction === "dance") {
-            afkTorsoX = Math.sin(t * 8.0) * 4.5;
-            afkTorsoAngle = Math.sin(t * 8.0) * 0.25;
-            afkHeadAngle = -Math.sin(t * 8.0) * 0.20;
-            afkHeadY = Math.abs(Math.sin(t * 8.0)) * -1.2;
-            afkBackArmAngle = -Math.cos(t * 8.0) * 1.60 + Math.sin(t * 16.0) * 0.20;
-            afkFrontArmAngle = Math.sin(t * 8.0) * 1.60 - Math.cos(t * 16.0) * 0.20;
-            afkLegROffset = Math.max(0, Math.sin(t * 8.0)) * 4.0;
-            afkLegLOffset = Math.max(0, -Math.sin(t * 8.0)) * 4.0;
-            if (Math.floor(t * 2.5) % 4 === 0 && (t * 2.5) % 1 < 0.22) isBlinking = true;
+            afkTorsoX = Math.sin(t * 5.5) * 2.2;
+            afkTorsoAngle = Math.sin(t * 5.5) * 0.10;
+            afkHeadAngle = -Math.sin(t * 5.5) * 0.08;
+            afkHeadY = Math.abs(Math.sin(t * 5.5)) * -0.6;
+            afkBackArmAngle = -Math.cos(t * 5.5) * 0.85;
+            afkFrontArmAngle = Math.sin(t * 5.5) * 0.85;
+            afkLegROffset = Math.max(0, Math.sin(t * 5.5)) * 1.8;
+            afkLegLOffset = Math.max(0, -Math.sin(t * 5.5)) * 1.8;
           } else if (player.afkAction === "think") {
-            afkHeadAngle = -0.18 + Math.sin(t * 2.0) * 0.03;
-            afkHeadY = -0.6;
-            afkFrontArmAngle = -1.95 + Math.sin(t * 14.0) * 0.08;
-            afkBackArmAngle = 0.60;
-            afkTorsoAngle = -0.05 + Math.sin(t * 1.8) * 0.03;
-            afkTorsoX = Math.sin(t * 1.8) * 1.0;
+            afkHeadAngle = -0.12;
+            afkHeadY = -0.4;
+            afkFrontArmAngle = -1.65;
+            afkBackArmAngle = 0.35;
+            afkTorsoY = Math.sin(t * 2.0) * 0.4;
           } else if (player.afkAction === "cheer") {
-            const cheerCycle = (t * 6.5) % Math.PI;
-            const springHop = -Math.pow(Math.sin(cheerCycle), 1.6) * 8.5;
-            afkTorsoY = springHop;
-            afkHeadY = springHop * 0.4;
-            afkBackArmAngle = -2.45 + Math.sin(t * 12.0) * 0.35;
-            afkFrontArmAngle = -2.45 - Math.sin(t * 12.0) * 0.35;
-            afkLegROffset = Math.max(0, -springHop * 0.35);
-            afkLegLOffset = Math.max(0, -springHop * 0.35);
+            const cheerSin = Math.sin(t * 7.0);
+            const hop = -Math.max(0, cheerSin) * 3.8;
+            afkTorsoY = hop;
+            afkHeadY = hop * 0.3;
+            afkBackArmAngle = -1.85 + Math.sin(t * 7.0) * 0.18;
+            afkFrontArmAngle = -1.85 - Math.sin(t * 7.0) * 0.18;
+            afkLegROffset = Math.max(0, -hop * 0.4);
+            afkLegLOffset = Math.max(0, -hop * 0.4);
           } else if (player.afkAction === "angry") {
-            afkTorsoX = (Math.random() - 0.5) * 3.5;
-            afkTorsoY = 1.2 + (Math.random() - 0.5) * 1.0;
-            afkTorsoAngle = (Math.random() - 0.5) * 0.12;
-            afkHeadAngle = (Math.random() - 0.5) * 0.15;
-            afkBackArmAngle = -0.85 + Math.sin(t * 45.0) * 0.22;
-            afkFrontArmAngle = -0.85 + Math.cos(t * 45.0) * 0.22;
-            afkLegROffset = Math.max(0, Math.sin(t * 22.0)) * 4.5;
-            afkLegLOffset = Math.max(0, -Math.sin(t * 22.0)) * 4.5;
+            afkTorsoAngle = Math.sin(t * 12.0) * 0.04;
+            afkTorsoY = 0.4;
+            afkHeadAngle = -0.06;
+            afkBackArmAngle = -0.45;
+            afkFrontArmAngle = -0.45;
+            afkLegROffset = Math.max(0, Math.sin(t * 12.0)) * 2.2;
           } else if (player.afkAction === "wave") {
-            afkTorsoAngle = 0.08 + Math.sin(t * 3.0) * 0.04;
-            afkTorsoX = Math.sin(t * 3.0) * 1.5;
-            afkHeadAngle = -0.15 + Math.sin(t * 4.0) * 0.06;
-            afkHeadY = -0.5;
-            afkFrontArmAngle = -2.25 + Math.sin(t * 12.0) * 0.55;
-            afkBackArmAngle = 0.25 + Math.sin(t * 3.0) * 0.08;
-            afkLegROffset = 0.3;
+            afkTorsoAngle = 0.04;
+            afkHeadAngle = -0.08;
+            afkFrontArmAngle = -1.85 + Math.sin(t * 8.0) * 0.35;
+            afkBackArmAngle = 0.15;
+            afkTorsoY = Math.sin(t * 3.0) * 0.4;
           } else if (player.afkAction === "laugh") {
-            const laughWave = Math.sin(t * 6.0);
-            afkTorsoAngle = 0.25 + laughWave * 0.18;
-            afkHeadAngle = 0.20 + laughWave * 0.22;
-            afkTorsoY = Math.abs(Math.sin(t * 16.0)) * 2.8;
-            afkFrontArmAngle = -1.35 + Math.sin(t * 16.0) * 0.15;
-            afkBackArmAngle = -0.80 + Math.cos(t * 16.0) * 0.15;
-          } else if (player.afkAction === "flex") {
-            const flexSide = Math.sin(t * 3.5) > 0 ? 1 : -1;
-            afkTorsoAngle = flexSide * 0.12;
-            afkHeadAngle = -flexSide * 0.15;
-            afkTorsoY = -1.5;
-            afkFrontArmAngle = -1.85 + Math.sin(t * 7.0) * 0.10;
-            afkBackArmAngle = -1.85 - Math.sin(t * 7.0) * 0.10;
-            afkLegROffset = 1.0;
-            afkLegLOffset = 1.0;
+            const chuckle = Math.abs(Math.sin(t * 10.0)) * 1.5;
+            afkTorsoY = chuckle;
+            afkTorsoAngle = 0.10 + Math.sin(t * 5.0) * 0.05;
+            afkHeadAngle = 0.08;
+            afkFrontArmAngle = -0.85;
+            afkBackArmAngle = -0.50;
           }
         }
 
@@ -5626,20 +5438,20 @@
           ctx.restore();
         }
 
-        // AFK Sleeping Multi-Layer Glowing "Zzz..." Animation
+        // AFK Sleeping Soft Cyan "Zzz" Animation
         if (player.afkAction === "sleep" && !player.isDead) {
           ctx.save();
-          const zProgress = (t * 1.1) % 1.0;
+          const zProgress = (t * 0.8) % 1.0;
           const alphaZ = Math.sin(zProgress * Math.PI);
           ctx.shadowColor = "#38bdf8";
-          ctx.shadowBlur = 6;
-          ctx.fillStyle = `rgba(103, 232, 249, ${alphaZ})`;
-          ctx.font = "bold 12px 'Century Gothic', sans-serif";
-          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 2.5) * 4, py - 10 - zProgress * 14);
-          ctx.font = "bold 10px 'Century Gothic', sans-serif";
-          ctx.fillText("z", px + pw / 2 + 7 + Math.sin(t * 2.5 + 1) * 3, py - 6 - zProgress * 14);
-          ctx.font = "bold 8px 'Century Gothic', sans-serif";
-          ctx.fillText("z", px + pw / 2 + 13 + Math.sin(t * 2.5 + 2) * 2, py - 2 - zProgress * 14);
+          ctx.shadowBlur = 5;
+          ctx.fillStyle = `rgba(103, 232, 249, ${alphaZ * 0.90})`;
+          ctx.font = "bold 11px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("Z", px + pw / 2 + Math.sin(t * 2.0) * 3, py - 10 - zProgress * 12);
+          ctx.font = "bold 9px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("z", px + pw / 2 + 6 + Math.sin(t * 2.0 + 1) * 2, py - 6 - zProgress * 12);
+          ctx.font = "bold 7px 'Century Gothic', Arial, sans-serif";
+          ctx.fillText("z", px + pw / 2 + 11 + Math.sin(t * 2.0 + 2) * 1.5, py - 2 - zProgress * 12);
           ctx.restore();
         }
 
