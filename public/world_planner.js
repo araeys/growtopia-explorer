@@ -3900,38 +3900,53 @@
             player.isClimbing = false;
           }
 
-          // Horizontal Movement & Skid Detection
-          const wasFastMoving = player.isGrounded && Math.abs(player.vx) > 1.8;
+          // Horizontal Movement & Skid Brake Detection (Turn-around & Sudden Stop)
           if (player.keys.left) {
-            if (player.isGrounded && player.vx > 1.6) {
-              player.skidTimer = 0.26; // Trigger 260ms Skid Drift!
+            if (player.isGrounded && player.vx > 2.0 && player.skidTimer <= 0) {
+              player.skidTimer = 0.34;
+              player.skidMaxTimer = 0.34;
               player.skidDir = 1;
             }
             player.vx -= 1.62 * timeScale;
             player.facing = -1;
-            if (player.isGrounded && !player.isClimbing) player.state = "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = (player.skidTimer > 0) ? "skid" : "walk";
           } else if (player.keys.right) {
-            if (player.isGrounded && player.vx < -1.6) {
-              player.skidTimer = 0.26; // Trigger 260ms Skid Drift!
+            if (player.isGrounded && player.vx < -2.0 && player.skidTimer <= 0) {
+              player.skidTimer = 0.34;
+              player.skidMaxTimer = 0.34;
               player.skidDir = -1;
             }
             player.vx += 1.62 * timeScale;
             player.facing = 1;
-            if (player.isGrounded && !player.isClimbing) player.state = "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = (player.skidTimer > 0) ? "skid" : "walk";
           } else {
-            player.vx *= Math.pow(0.68, timeScale);
-            if (Math.abs(player.vx) < 0.1) player.vx = 0;
-            if (player.isGrounded && !player.isClimbing) player.state = "idle";
+            // Sudden Stop from Fast Run (trigger slippery kepleset brake!)
+            if (player.isGrounded && Math.abs(player.vx) > 2.4 && player.skidTimer <= 0) {
+              player.skidTimer = 0.34;
+              player.skidMaxTimer = 0.34;
+              player.skidDir = player.vx > 0 ? 1 : -1;
+            }
+
+            // Slippery ground inertia during skid/brake
+            const groundFriction = (player.skidTimer > 0) ? 0.90 : 0.68;
+            player.vx *= Math.pow(groundFriction, timeScale);
+            if (Math.abs(player.vx) < 0.1) {
+              player.vx = 0;
+              player.skidTimer = 0;
+            }
+            if (player.isGrounded && !player.isClimbing) {
+              player.state = (player.skidTimer > 0) ? "skid" : "idle";
+            }
           }
 
-          // Max walk speed: 5.58 px/frame (10% decrease from 6.2)
+          // Max walk speed: 5.58 px/frame
           player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
-          // Active Skid Drift State
-          player.isSkidding = player.isGrounded && (player.skidTimer > 0);
+          // Active Skid Drift & Slip State
+          player.isSkidding = player.isGrounded && (player.skidTimer > 0) && (Math.abs(player.vx) > 0.2);
           if (player.isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-            if (player.stepParticleTimer >= 0.05) { // Rapid continuous skid spray
+            if (player.stepParticleTimer >= 0.04) { // Rapid continuous skid spray
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
               spawnFootstepDust(footX, player.y + player.height, player.skidDir || player.facing, true);
@@ -4904,7 +4919,8 @@
           ctx.globalAlpha = 0.96;
         }
 
-        const isWalking = player.state === "walk";
+        const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
+        const isWalking = (player.state === "walk") && !isSkidding;
         const isJumping = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
         const isFalling = !player.isGrounded && player.vy > 0.8;
         const isLanding = (player.landingSquashTimer > 0) || (player.impactShakeTimer > 0) || (player.highFallBounceTimer > 0);
@@ -4977,7 +4993,7 @@
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
 
         // Blended kinematic weights (Continuous zero jump-cut blending)
-        const wBlend = player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0);
+        const wBlend = isSkidding ? 0.0 : (player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0));
         const jBlend = player.jumpBlend !== undefined ? player.jumpBlend : (isJumping ? 1.0 : 0.0);
         const fBlend = player.fallBlend !== undefined ? player.fallBlend : (isFalling ? 1.0 : 0.0);
         const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
@@ -5150,7 +5166,7 @@
             if (isJumpSpinning) {
               backArmAngle = jumpSpinAngleBack;
             } else if (isSkidding) {
-              backArmAngle = 0.85; // Raised back arm counter-balancing skid
+              backArmAngle = 1.15 + Math.sin(t * 22) * 0.30; // Raised back arm flailing in kepleset slip
             } else if (isWallSliding) {
               backArmAngle = -1.25; // Hand pressed against wall
             } else if (isClimbing) {
@@ -5183,7 +5199,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isSkidding ? 0.35 : (isWallSliding ? 0.35 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend))));
+            legRAngle = isSkidding ? 0.65 : (isWallSliding ? 0.35 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend))));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5203,7 +5219,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isSkidding ? -0.55 : (isWallSliding ? 0.55 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend))));
+            legLAngle = isSkidding ? -0.75 : (isWallSliding ? 0.55 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend))));
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
