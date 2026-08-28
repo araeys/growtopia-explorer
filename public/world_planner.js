@@ -3879,30 +3879,60 @@
         } else {
           // Normal Game Mode Physics
 
-          // Check Climbable Vine / Ladder Tile Overlap
-          const cTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
-          const cTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
-          const cIdx = cTileY * world.width + cTileX;
-          const fgTileItem = getItem(world.fg[cIdx]);
-          const bgTileItem = getItem(world.bg[cIdx]);
-          const isAtClimbable = isClimbableBlock(fgTileItem) || isClimbableBlock(bgTileItem);
+          // Check Climbable Vine / Ladder Tile Overlap across entire avatar body
+          const cLeftX = Math.floor((player.x + 2) / TILE_SIZE);
+          const cRightX = Math.floor((player.x + player.width - 2) / TILE_SIZE);
+          const cTopY = Math.floor((player.y + 4) / TILE_SIZE);
+          const cBottomY = Math.floor((player.y + player.height - 2) / TILE_SIZE);
+          let isAtClimbable = false;
 
-          if (isAtClimbable && (player.keys.up || player.keys.down) && !player.keys.jump) {
-            player.isClimbing = true;
-            player.isGrounded = false;
-            player.jumpCount = 0;
-            player.vy = player.keys.up ? -3.4 : 3.4;
-            if (player.keys.left) player.vx = -2.2;
-            else if (player.keys.right) player.vx = 2.2;
-            else player.vx = 0;
-          } else if (isAtClimbable && player.isClimbing && !player.keys.jump) {
-            player.vy *= 0.70;
-            if (Math.abs(player.vy) < 0.1) player.vy = 0;
+          for (let ty = cTopY; ty <= cBottomY; ty++) {
+            for (let tx = cLeftX; tx <= cRightX; tx++) {
+              if (tx >= 0 && tx < world.width && ty >= 0 && ty < world.height) {
+                const idx = ty * world.width + tx;
+                const fgItem = getItem(world.fg[idx]);
+                const bgItem = getItem(world.bg[idx]);
+                if (isClimbableBlock(fgItem) || isClimbableBlock(bgItem)) {
+                  isAtClimbable = true;
+                  break;
+                }
+              }
+            }
+            if (isAtClimbable) break;
+          }
+
+          const wantsClimbUp = player.keys.up || player.keys.jump;
+          const wantsClimbDown = player.keys.down;
+
+          if (isAtClimbable) {
+            if (wantsClimbUp) {
+              player.isClimbing = true;
+              player.isGrounded = false;
+              player.jumpCount = 0;
+              player.vy = -3.8; // Smooth upward climb on Up arrow or Jump/Space/W!
+              if (player.keys.left) player.vx = -2.4;
+              else if (player.keys.right) player.vx = 2.4;
+              else player.vx = 0;
+            } else if (wantsClimbDown) {
+              player.isClimbing = true;
+              player.isGrounded = false;
+              player.vy = 3.8; // Smooth downward climb on Down arrow / S!
+              if (player.keys.left) player.vx = -2.4;
+              else if (player.keys.right) player.vx = 2.4;
+              else player.vx = 0;
+            } else if (player.isClimbing) {
+              // Holding position on ladder/vine (zero gravity)
+              player.vy = 0;
+              if (player.keys.left) player.vx = -2.4;
+              else if (player.keys.right) player.vx = 2.4;
+              else player.vx = 0;
+            }
           } else {
             player.isClimbing = false;
           }
 
-          // Horizontal Movement (Instant crisp turning, Sudden Stop brake skid only)
+          // Horizontal Movement (Instant crisp turning, Sudden Stop brake skid only on fast sprint)
+          const wasSprintingFast = (player.continuousRunTimer >= 0.55) && (Math.abs(player.vx) >= 3.8);
           if (player.keys.left) {
             player.skidTimer = 0; // Instant crisp turn without backwards skid!
             player.vx -= 1.62 * timeScale;
@@ -3914,8 +3944,8 @@
             player.facing = 1;
             if (player.isGrounded && !player.isClimbing) player.state = "walk";
           } else {
-            // Sudden Stop from Fast Run (trigger slippery kepleset brake!)
-            if (player.isGrounded && Math.abs(player.vx) > 2.2 && player.skidTimer <= 0) {
+            // Sudden Stop from Fast Sprint (trigger slippery kepleset brake ONLY after sprinting)
+            if (player.isGrounded && wasSprintingFast && player.skidTimer <= 0) {
               player.skidTimer = 0.38;
               player.skidMaxTimer = 0.38;
               player.skidDir = player.vx > 0 ? 1 : -1;
