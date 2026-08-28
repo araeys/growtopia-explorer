@@ -129,6 +129,11 @@
         highFallBounceMaxTimer: 0.42,
         jumpLaunchTimer: 0,
         jumpLaunchMaxTimer: 0.18,
+        skidTimer: 0,
+        skidMaxTimer: 0.26,
+        isSkidding: false,
+        isWallSliding: false,
+        isClimbing: false,
         modTransformTimer: 0,
         entranceAnimTimer: 0,
         entranceMaxTimer: 0.65,
@@ -374,6 +379,24 @@
             vy: -(0.5 + Math.random() * 1.0 * (isSkid ? 1.5 : 1.0)),
             radius: baseRadius,
             color: Math.random() > 0.4 ? "#ffffff" : "#f1f5f9",
+            borderColor: "rgba(148, 163, 184, 0.40)",
+            life: lifeTime,
+            maxLife: lifeTime
+          });
+        }
+      }
+
+            function spawnWallDust(x, y, facing) {
+        for (let i = 0; i < 2; i++) {
+          const lifeTime = 0.25 + Math.random() * 0.10;
+          gameParticles.push({
+            type: "dust",
+            x: x + (Math.random() - 0.5) * 3,
+            y: y + (Math.random() - 0.5) * 4,
+            vx: -facing * (0.3 + Math.random() * 0.6),
+            vy: -(0.2 + Math.random() * 0.5),
+            radius: 1.8 + Math.random() * 1.4,
+            color: Math.random() > 0.4 ? "#ffffff" : "#e2e8f0",
             borderColor: "rgba(148, 163, 184, 0.40)",
             life: lifeTime,
             maxLife: lifeTime
@@ -3399,6 +3422,12 @@
         return item.action === 21 || name.includes("platform") || name.includes("cloud") || name.includes("bridge") || name.includes("bannister") || name.includes("ledge");
       }
 
+      function isClimbableBlock(item) {
+        if (!item) return false;
+        const name = (item.name || "").toLowerCase();
+        return name.includes("vine") || name.includes("ladder") || name.includes("rope") || name.includes("lattice") || name.includes("trellis") || name.includes("chain") || name.includes("ivy");
+      }
+
       function isHazardItem(item) {
         if (!item) return false;
         const name = (item.name || "").toLowerCase();
@@ -3664,6 +3693,7 @@
         if (player.landingSquashTimer > 0) player.landingSquashTimer = Math.max(0, player.landingSquashTimer - dt);
         if (player.highFallBounceTimer > 0) player.highFallBounceTimer = Math.max(0, player.highFallBounceTimer - dt);
         if (player.jumpLaunchTimer > 0) player.jumpLaunchTimer = Math.max(0, player.jumpLaunchTimer - dt);
+        if (player.skidTimer > 0) player.skidTimer = Math.max(0, player.skidTimer - dt);
         if (player.respawnInvincible > 0) player.respawnInvincible = Math.max(0, player.respawnInvincible - dt);
         if (player.respawnRingRadius > 0) player.respawnRingRadius += dt * 80;
         if (player.entranceAnimTimer > 0) player.entranceAnimTimer = Math.max(0, player.entranceAnimTimer - dt);
@@ -3847,38 +3877,67 @@
         } else {
           // Normal Game Mode Physics
 
-          // Horizontal Movement (10% tuned speed for authentic platforming)
+          // Check Climbable Vine / Ladder Tile Overlap
+          const cTileX = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+          const cTileY = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+          const cIdx = cTileY * world.width + cTileX;
+          const fgTileItem = getItem(world.fg[cIdx]);
+          const bgTileItem = getItem(world.bg[cIdx]);
+          const isAtClimbable = isClimbableBlock(fgTileItem) || isClimbableBlock(bgTileItem);
+
+          if (isAtClimbable && (player.keys.up || player.keys.down) && !player.keys.jump) {
+            player.isClimbing = true;
+            player.isGrounded = false;
+            player.jumpCount = 0;
+            player.vy = player.keys.up ? -3.4 : 3.4;
+            if (player.keys.left) player.vx = -2.2;
+            else if (player.keys.right) player.vx = 2.2;
+            else player.vx = 0;
+          } else if (isAtClimbable && player.isClimbing && !player.keys.jump) {
+            player.vy *= 0.70;
+            if (Math.abs(player.vy) < 0.1) player.vy = 0;
+          } else {
+            player.isClimbing = false;
+          }
+
+          // Horizontal Movement & Skid Detection
+          const wasFastMoving = player.isGrounded && Math.abs(player.vx) > 1.8;
           if (player.keys.left) {
+            if (player.isGrounded && player.vx > 1.6) {
+              player.skidTimer = 0.26; // Trigger 260ms Skid Drift!
+              player.skidDir = 1;
+            }
             player.vx -= 1.62 * timeScale;
             player.facing = -1;
-            if (player.isGrounded) player.state = "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = "walk";
           } else if (player.keys.right) {
+            if (player.isGrounded && player.vx < -1.6) {
+              player.skidTimer = 0.26; // Trigger 260ms Skid Drift!
+              player.skidDir = -1;
+            }
             player.vx += 1.62 * timeScale;
             player.facing = 1;
-            if (player.isGrounded) player.state = "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = "walk";
           } else {
             player.vx *= Math.pow(0.68, timeScale);
             if (Math.abs(player.vx) < 0.1) player.vx = 0;
-            if (player.isGrounded) player.state = "idle";
+            if (player.isGrounded && !player.isClimbing) player.state = "idle";
           }
 
           // Max walk speed: 5.58 px/frame (10% decrease from 6.2)
           player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
 
-          // Dynamic Footstep & Skid Drift Particles + Sound Effects
-          const isMovingOnGround = player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35);
-          const isSkidding = player.isGrounded && Math.abs(player.vx) > 1.6 && ((player.vx > 0 && player.keys.left) || (player.vx < 0 && player.keys.right));
-          player.isSkidding = isSkidding;
-
-          if (isSkidding) {
+          // Active Skid Drift State
+          player.isSkidding = player.isGrounded && (player.skidTimer > 0);
+          if (player.isSkidding) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
             if (player.stepParticleTimer >= 0.05) { // Rapid continuous skid spray
               player.stepParticleTimer = 0;
               const footX = player.x + player.width / 2;
-              spawnFootstepDust(footX, player.y + player.height, player.facing, true);
+              spawnFootstepDust(footX, player.y + player.height, player.skidDir || player.facing, true);
               playRandomFootstepSfx(0.95);
             }
-          } else if (isMovingOnGround) {
+          } else if (player.isGrounded && (player.keys.left || player.keys.right || Math.abs(player.vx) > 0.35)) {
             player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
             if (player.stepParticleTimer >= 0.20) { // Exact 200ms gap continuous loop
               player.stepParticleTimer = 0;
@@ -3887,14 +3946,61 @@
               playRandomFootstepSfx(0.85);
             }
           } else {
-            // When user stops moving, immediately reset timer to 0.19 so next step starts promptly
             player.stepParticleTimer = 0.19;
           }
 
-          // Jump & Double Jump
+          // Wall Slide & Wall Cling Detection (When airborne and pushing against a solid wall)
+          let touchingWall = false;
+          let wallContactX = player.x;
+          if (!player.isGrounded && !player.isClimbing && player.vy > 0.2) {
+            const checkDir = (player.keys.right && player.facing === 1) ? 1 : ((player.keys.left && player.facing === -1) ? -1 : 0);
+            if (checkDir !== 0) {
+              const testX = checkDir > 0 ? Math.floor((player.x + player.width + 3) / TILE_SIZE) : Math.floor((player.x - 3) / TILE_SIZE);
+              const testY1 = Math.floor((player.y + 6) / TILE_SIZE);
+              const testY2 = Math.floor((player.y + player.height - 4) / TILE_SIZE);
+              const idx1 = testY1 * world.width + testX;
+              const idx2 = testY2 * world.width + testX;
+              const wallItem1 = getItem(world.fg[idx1]);
+              const wallItem2 = getItem(world.fg[idx2]);
+              if ((wallItem1 && isSolidBlock(wallItem1)) || (wallItem2 && isSolidBlock(wallItem2))) {
+                touchingWall = true;
+                wallContactX = checkDir > 0 ? (player.x + player.width) : player.x;
+              }
+            }
+          }
+
+          player.isWallSliding = touchingWall;
+          if (player.isWallSliding) {
+            // Slow down falling speed (wall friction slide)
+            if (player.vy > 2.0) player.vy = 2.0;
+            player.wallDustTimer = (player.wallDustTimer || 0) + dt;
+            if (player.wallDustTimer >= 0.08) {
+              player.wallDustTimer = 0;
+              spawnWallDust(wallContactX, player.y + 12, player.facing);
+            }
+          }
+
+          // Jump, Double Jump, and Wall Jump
           const wantsJump = player.keys.jump || player.keys.up;
           if (wantsJump && !player.jumpConsumed) {
-            if (player.isGrounded || player.jumpCount === 0) {
+            if (player.isWallSliding) {
+              // Wall Jump Kick-off!
+              player.vy = -10.2;
+              player.vx = -player.facing * 5.2; // Kick off the wall!
+              player.facing = -player.facing;
+              player.isWallSliding = false;
+              player.isGrounded = false;
+              player.jumpCount = 1;
+              player.jumpConsumed = true;
+              player.jumpLaunchTimer = 0.18;
+              player.jumpLaunchMaxTimer = 0.18;
+              player.jumpThrustTimer = 0.22;
+              player.jumpSpinTimer = 0.28;
+              player.state = "jump";
+              spawnLandingDust(wallContactX, player.y + 12);
+              playJumpSound(false);
+            } else if (player.isGrounded || player.isClimbing || player.jumpCount === 0) {
+              player.isClimbing = false;
               player.vy = -10.5;
               player.isGrounded = false;
               player.jumpCount = 1;
@@ -3919,9 +4025,11 @@
             }
           }
 
-          // Snappy, Crisp Gravity
-          player.vy += 0.58 * timeScale;
-          if (player.vy > 11.5) player.vy = 11.5;
+          // Snappy Gravity (Zero gravity when climbing)
+          if (!player.isClimbing) {
+            player.vy += 0.58 * timeScale;
+            if (player.vy > 11.5) player.vy = 11.5;
+          }
 
           // Apply X movement and check collision
           player.x += player.vx * timeScale;
@@ -5014,8 +5122,10 @@
             const imgSclera = getSpriteImage("character_base_assets/gt_parts/eyeballs_sclera.png");
             const isAirborne = !player.isGrounded && !player.moderatorMode;
             const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding) && !player.moderatorMode && !isAirborne;
-            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode;
+            const isWallSliding = player.isWallSliding && !player.isGrounded && !player.moderatorMode;
+            const isClimbing = player.isClimbing && !player.moderatorMode;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding || isWallSliding) && !player.moderatorMode && !isAirborne;
+            const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isWallSliding && !isClimbing;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
             if (isJumpFace) {
@@ -5041,6 +5151,11 @@
               backArmAngle = jumpSpinAngleBack;
             } else if (isSkidding) {
               backArmAngle = 0.85; // Raised back arm counter-balancing skid
+            } else if (isWallSliding) {
+              backArmAngle = -1.25; // Hand pressed against wall
+            } else if (isClimbing) {
+              const climbPhase = player.y * 0.22;
+              backArmAngle = -1.95 + Math.sin(climbPhase) * 0.75;
             } else if (isActionActive) {
               backArmAngle = 0.55 + Math.sin(actionProg * Math.PI) * 0.40;
             } else if (afkBackArmAngle !== null) {
@@ -5068,7 +5183,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isSkidding ? 0.35 : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend));
+            legRAngle = isSkidding ? 0.35 : (isWallSliding ? 0.35 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend))));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5088,7 +5203,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isSkidding ? -0.55 : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend));
+            legLAngle = isSkidding ? -0.55 : (isWallSliding ? 0.55 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend))));
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
