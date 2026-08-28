@@ -4912,7 +4912,7 @@
         const t = player.animTimer;
         const fallIntensity = isFalling ? Math.min(1.0, Math.max(0, (player.vy - 0.8) / 8.0)) : 0;
 
-        // Dynamic Jump Launch Anticipation, Rocket Stretch, and Falling Aerodynamic Stretch
+        // Dynamic Jump Launch Anticipation, Rocket Stretch, and Falling Aerodynamic Stretch (Subtle & Crisp)
         if (!player.isDead && !player.moderatorMode) {
           if (player.jumpLaunchTimer > 0) {
             // Jump Takeoff Spring Anticipation into Kinetic Stretch
@@ -4920,32 +4920,32 @@
             let launchScaleX = 1.0;
             let launchScaleY = 1.0;
             if (launchProg < 0.25) {
-              // Spring squash anticipation
-              const squashAmt = Math.sin((launchProg / 0.25) * Math.PI) * 0.14;
+              // Subtle spring squash anticipation
+              const squashAmt = Math.sin((launchProg / 0.25) * Math.PI) * 0.06;
               launchScaleX = 1.0 + squashAmt;
               launchScaleY = 1.0 - squashAmt;
             } else {
-              // Kinetic upward rocket stretch
-              const stretchAmt = Math.sin(((launchProg - 0.25) / 0.75) * Math.PI) * 0.18;
-              launchScaleX = 1.0 - stretchAmt * 0.5;
+              // Subtle kinetic upward stretch
+              const stretchAmt = Math.sin(((launchProg - 0.25) / 0.75) * Math.PI) * 0.08;
+              launchScaleX = 1.0 - stretchAmt * 0.4;
               launchScaleY = 1.0 + stretchAmt;
             }
             ctx.translate(0, ph / 2);
             ctx.scale(launchScaleX, launchScaleY);
             ctx.translate(0, -ph / 2);
           } else if (isJumping && player.vy < -2.0) {
-            // Airborne upward rocket stretch
+            // Subtle airborne upward stretch
             const upIntensity = Math.min(1.0, Math.abs(player.vy) / 10.5);
-            const upStretchY = 1.0 + upIntensity * 0.12;
-            const upStretchX = 1.0 - upIntensity * 0.06;
+            const upStretchY = 1.0 + upIntensity * 0.05;
+            const upStretchX = 1.0 - upIntensity * 0.025;
             ctx.translate(0, ph / 2);
             ctx.scale(upStretchX, upStretchY);
             ctx.translate(0, -ph / 2);
           } else if (isFalling && player.vy > 1.5) {
-            // Airborne downward velocity stretch
+            // Subtle airborne downward velocity stretch
             const fallStretchIntensity = Math.min(1.0, (player.vy - 1.5) / 8.0);
-            const fallStretchY = 1.0 + fallStretchIntensity * 0.10;
-            const fallStretchX = 1.0 - fallStretchIntensity * 0.05;
+            const fallStretchY = 1.0 + fallStretchIntensity * 0.04;
+            const fallStretchX = 1.0 - fallStretchIntensity * 0.02;
             ctx.translate(0, -ph / 2);
             ctx.scale(fallStretchX, fallStretchY);
             ctx.translate(0, ph / 2);
