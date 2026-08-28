@@ -4105,7 +4105,13 @@
         }
 
         // Continuous Smooth Animation Blend Weights (Zero jump-cut transition)
-        const isWalkingOnGround = (player.state === "walk" && player.isGrounded) || (player.isGrounded && Math.abs(player.vx) > 0.15);
+        if (player.isSkidding) {
+          player.skidBlend = Math.min(1.0, (player.skidBlend || 0) + dt * 14.0);
+        } else {
+          player.skidBlend = Math.max(0.0, (player.skidBlend || 0) - dt * 8.0);
+        }
+
+        const isWalkingOnGround = (player.state === "walk" && player.isGrounded && !player.isSkidding) || (player.isGrounded && Math.abs(player.vx) > 0.15 && !player.isSkidding);
         if (isWalkingOnGround) {
           player.walkBlend = Math.min(1.0, (player.walkBlend || 0) + dt * 10.0);
           const strideSpeed = 15;
@@ -4971,11 +4977,36 @@
         const jumpThrustY = player.jumpThrustTimer > 0 ? Math.sin((1.0 - player.jumpThrustTimer / 0.22) * Math.PI) * 4.0 : 0;
 
         // Blended kinematic weights (Continuous zero jump-cut blending)
-        const wBlend = isSkidding ? 0.0 : (player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0));
+        const skidBlend = player.skidBlend !== undefined ? player.skidBlend : (isSkidding ? 1.0 : 0.0);
+        const wBlend = (player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0)) * (1.0 - skidBlend);
         const jBlend = player.jumpBlend !== undefined ? player.jumpBlend : (isJumping ? 1.0 : 0.0);
         const fBlend = player.fallBlend !== undefined ? player.fallBlend : (isFalling ? 1.0 : 0.0);
         const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
-        const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend);
+        const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend - skidBlend);
+
+        // ── ELASTIC SKID BRAKE BOUNCE WAVE (Badan ke belakang, lalu bounce ke depan, tangan juga bounce) ──
+        const sProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.skidTimer / (player.skidMaxTimer || 0.38))));
+        const skidWave = Math.sin(sProg * Math.PI * 1.8);
+        const skidDamp = Math.exp(-sProg * 1.8);
+
+        // Badan ke belakang (-0.32 rad) lalu elastis rebound bounce ke depan (+0.10 rad):
+        const rawSkidLean = -0.32 * skidWave * skidDamp;
+        const skidLean = rawSkidLean * skidBlend;
+
+        // Torso vertical compression dip and bounce:
+        const skidTorsoY = (Math.max(0, Math.sin(sProg * Math.PI * 1.5)) * 1.2 * skidDamp) * skidBlend;
+
+        // Tangan Belakang (Back Arm) bounce:
+        const rawBackArmSkid = 0.65 * skidWave * skidDamp;
+        const skidBackArmAngle = rawBackArmSkid * skidBlend;
+
+        // Tangan Depan (Front Arm) bounce:
+        const rawFrontArmSkid = -0.85 * skidWave * skidDamp;
+        const skidFrontArmAngle = rawFrontArmSkid * skidBlend;
+
+        // Kaki Menancap Rem Grounded:
+        const skidLegR = (0.28 * skidDamp) * skidBlend;
+        const skidLegL = (-0.32 * skidDamp) * skidBlend;
 
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
@@ -5142,9 +5173,7 @@
             let backArmAngle = 0;
             if (isJumpSpinning) {
               backArmAngle = jumpSpinAngleBack;
-            } else if (isSkidding) {
-              backArmAngle = 0.45; // Clean, natural back arm brake brace
-                        } else if (isClimbing) {
+            } else if (isClimbing) {
               const climbPhase = player.y * 0.22;
               backArmAngle = -1.95 + Math.sin(climbPhase) * 0.75;
             } else if (isActionActive) {
@@ -5157,7 +5186,7 @@
               const jumpAng = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
               const fallAng = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
               const floatAng = -0.75 + Math.sin(t * 5) * 0.1;
-              backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend);
+              backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend) + skidBackArmAngle;
             }
 
             tCtx.save();
@@ -5174,7 +5203,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isSkidding ? 0.18 : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend)));
+            legRAngle = isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend) + skidLegR);
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY);
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5194,7 +5223,7 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isSkidding ? -0.22 : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend)));
+            legLAngle = isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend) + skidLegL);
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY);
             tCtx.save();
@@ -5209,10 +5238,8 @@
             const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
-            const skidLean = isSkidding ? -0.10 : 0; // Clean, subtle backward lean
-            const skidTorsoY = isSkidding ? 0.5 : 0;  // Perfectly grounded torso, fully visible legs
             const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
-            const torsoLean = (isSkidding ? skidLean : (runLean + torsoTwist + actionTorsoLean + afkTorsoAngle)) + climbTorsoLean;
+            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean;
 
             tCtx.save();
             tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY);
@@ -5424,8 +5451,6 @@
               let frontArmAngle = 0;
               if (isJumpSpinning) {
                 frontArmAngle = jumpSpinAngleFront;
-              } else if (isSkidding) {
-                frontArmAngle = -0.75; // Clean, natural front arm brake brace
               } else if (isPlacing) {
                 frontArmAngle = placeSpinAngle;
               } else if (isActionActive) {
@@ -5438,7 +5463,7 @@
                 const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
                 const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
                 const floatFront = 0.45 - Math.sin(t * 5) * 0.1;
-                frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend);
+                frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend) + skidFrontArmAngle;
               }
 
               tCtx.save();
