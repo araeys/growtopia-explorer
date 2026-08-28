@@ -4380,6 +4380,14 @@
                 if (!isSkin) continue;
               }
 
+              // ── Protect Non-Skin Facial Features in Head Sprites ──
+              // 1. Teeth: Pure White (255, 255, 255) in serious face grit
+              if (r >= 245 && g >= 245 && b >= 245) continue;
+              // 2. Teeth Shadow: Cool bluish-grey shading (180, 185, 195)
+              if (b > g && g >= r && b >= 170) continue;
+              // 3. Open Mouth Cavity: Dark mouth interior (20, 14, 10) in jump face
+              if (r <= 35 && g <= 25 && b <= 20) continue;
+
               // Compute normalized luminance factor (0.0 to 1.0) from the base Tone 6 skin pixels:
               // Highlights (230, 210, 180) -> 1.00
               // Base skin  (218, 199, 170) -> 0.94
