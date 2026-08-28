@@ -1595,6 +1595,11 @@
       <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ffffff" stroke-width="2.2" fill="none"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="11" x2="15.01" y2="11"/><line x1="18" y1="13" x2="18.01" y2="13"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
       <span style="font-size:12px;font-weight:900;color:#ffffff;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;">PLAY</span>
     </button>
+    <button class="world-tool-btn" id="world-multiplayer-btn" title="Multiplayer P2P Room" style="width:auto;min-width:44px;height:40px;padding:0 10px;background:linear-gradient(180deg,#7c3aed 0%,#6d28d9 100%);border:2px solid #a855f7;box-shadow:inset 0 1px 0 #c084fc, 0 0 10px rgba(168,85,247,0.5);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="#ffffff" stroke-width="2.2" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span style="font-size:12px;font-weight:900;color:#ffffff;text-shadow:1px 1px 0 #000;letter-spacing:0.5px;">CO-OP</span>
+      <span id="mp-active-dot" style="width:7px;height:7px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
+    </button>
     <button class="world-tool-btn" id="world-music-btn" title="Music Sequencer (M)">
       <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     </button>
@@ -2307,7 +2312,9 @@
 <script src="world_catalog.js"></script>
 <script src="autotile.js"></script>
 <script src="render_converter.js"></script>
-<script src="world_planner.js"></script>
+<script src="vendor/peerjs.min.js"></script>
+  <script src="world_multiplayer.js"></script>
+  <script src="world_planner.js"></script>
 <script>
 (function initWorldPage() {
   const loadingOverlay = document.getElementById('loading-overlay');
@@ -2892,6 +2899,212 @@
   }
 
   window.setWelcomeLanguage = setWelcomeLanguage;
+
+  // ── Real-Time Multiplayer Client Logic ──
+  const mpModal = document.getElementById('multiplayer-modal');
+  const mpHudPill = document.getElementById('multiplayer-hud-pill');
+  const mpHudCode = document.getElementById('mp-hud-code');
+  const mpHudCount = document.getElementById('mp-hud-count');
+  const mpActiveDot = document.getElementById('mp-active-dot');
+  const mpStatusIndicatorDot = document.getElementById('mp-status-indicator-dot');
+  const mpStatusText = document.getElementById('mp-status-text');
+  const mpPlayerNameInput = document.getElementById('mp-player-name-input');
+  const mpHostCodeDisplay = document.getElementById('mp-host-code-display');
+  const mpJoinInput = document.getElementById('mp-join-input');
+  const mpPlayersList = document.getElementById('mp-players-list');
+  const mpLobbyCount = document.getElementById('mp-lobby-count');
+
+  let mpClient = null;
+
+  function initMpClient() {
+    if (!mpClient && typeof GTWorldMultiplayer !== 'undefined' && engine) {
+      mpClient = GTWorldMultiplayer.createMultiplayerClient(engine);
+      engine.setMultiplayerClient(mpClient);
+
+      mpClient.setCallbacks({
+        onStatus: (msg, type) => {
+          if (typeof engine.onStatusMessage === 'function') {
+            engine.onStatusMessage(msg);
+          }
+        },
+        onConnect: (code, isHost) => {
+          updateMpUI();
+        },
+        onDisconnect: () => {
+          updateMpUI();
+        },
+        onPlayerJoin: (id, p) => {
+          updateMpUI();
+        },
+        onPlayerLeave: (id) => {
+          updateMpUI();
+        },
+        onChatMessage: (id, name, text) => {
+          // Handled visually in canvas
+        }
+      });
+    }
+  }
+
+  function updateMpUI() {
+    if (!mpClient) return;
+    const connected = mpClient.isConnected();
+    const code = mpClient.getRoomCode();
+    const count = mpClient.getRemotePlayers().size + (connected ? 1 : 0);
+
+    if (mpActiveDot) mpActiveDot.style.background = connected ? "#4ade80" : "#94a3b8";
+    if (mpStatusIndicatorDot) mpStatusIndicatorDot.style.background = connected ? "#4ade80" : "#64748b";
+    if (mpStatusText) {
+      mpStatusText.textContent = connected ? (mpClient.isHost() ? `HOST (${code})` : `CONNECTED (${code})`) : "OFFLINE";
+      mpStatusText.style.color = connected ? "#4ade80" : "#94a3b8";
+    }
+    if (mpHostCodeDisplay && code) mpHostCodeDisplay.textContent = code;
+
+    if (mpHudPill) {
+      mpHudPill.style.display = connected ? "flex" : "none";
+      if (mpHudCode) mpHudCode.textContent = code;
+      if (mpHudCount) mpHudCount.textContent = `(${count} online)`;
+    }
+    if (mpLobbyCount) mpLobbyCount.textContent = count;
+
+    // Render players list in lobby tab
+    if (mpPlayersList) {
+      const localName = engine.getPlayerName();
+      const rows = [];
+      // Local player
+      rows.push(`
+        <div style="background:#182535;border:1px solid #334d66;border-radius:4px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;font-weight:900;color:${mpClient.isHost() ? '#fde047' : '#ffffff'};">${localName} (You)</span>
+            ${mpClient.isHost() ? '<span style="font-size:9px;font-weight:900;color:#fde047;background:rgba(253,224,71,0.15);padding:1px 5px;border-radius:3px;border:1px solid #fde047;">HOST</span>' : ''}
+          </div>
+          <span style="font-size:10px;color:#4ade80;font-weight:700;">● Online</span>
+        </div>
+      `);
+
+      // Remote players
+      mpClient.getRemotePlayers().forEach((rp, id) => {
+        rows.push(`
+          <div style="background:#182535;border:1px solid #334d66;border-radius:4px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:12px;font-weight:900;color:${rp.isHost ? '#fde047' : '#ffffff'};">${rp.name || 'Player'}</span>
+              ${rp.isHost ? '<span style="font-size:9px;font-weight:900;color:#fde047;background:rgba(253,224,71,0.15);padding:1px 5px;border-radius:3px;border:1px solid #fde047;">HOST</span>' : ''}
+            </div>
+            <span style="font-size:10px;color:#4ade80;font-weight:700;">● ${rp.ping || 25}ms</span>
+          </div>
+        `);
+      });
+
+      mpPlayersList.innerHTML = rows.join('');
+    }
+  }
+
+  function switchMpTab(tabName) {
+    const tabs = ['host', 'join', 'lobby'];
+    tabs.forEach(t => {
+      const pane = document.getElementById('mp-tab-' + t);
+      const btn = document.getElementById('mp-tab-btn-' + t);
+      if (pane) pane.style.display = (t === tabName) ? 'block' : 'none';
+      if (btn) btn.classList.toggle('active', t === tabName);
+    });
+  }
+  window.switchMpTab = switchMpTab;
+
+  function openMultiplayerModal() {
+    initMpClient();
+    updateMpUI();
+    if (mpPlayerNameInput) mpPlayerNameInput.value = engine.getPlayerName();
+    mpModal?.classList.remove('hidden');
+  }
+
+  function closeMultiplayerModal() {
+    mpModal?.classList.add('hidden');
+  }
+  window.openMultiplayerModal = openMultiplayerModal;
+  window.closeMultiplayerModal = closeMultiplayerModal;
+
+  document.getElementById('world-multiplayer-btn')?.addEventListener('click', openMultiplayerModal);
+  document.getElementById('multiplayer-hud-pill')?.addEventListener('click', openMultiplayerModal);
+  document.getElementById('mp-modal-close-btn')?.addEventListener('click', closeMultiplayerModal);
+  document.getElementById('mp-modal-done-btn')?.addEventListener('click', closeMultiplayerModal);
+  mpModal?.addEventListener('click', (e) => {
+    if (e.target === mpModal) closeMultiplayerModal();
+  });
+
+  mpPlayerNameInput?.addEventListener('input', (e) => {
+    const name = e.target.value.trim().slice(0, 16);
+    if (engine && typeof engine.setPlayerName === 'function') {
+      engine.setPlayerName(name);
+    }
+  });
+
+  document.getElementById('mp-host-start-btn')?.addEventListener('click', () => {
+    initMpClient();
+    if (mpClient) {
+      mpClient.hostRoom().then((code) => {
+        updateMpUI();
+        switchMpTab('lobby');
+      }).catch(err => {
+        alert("Could not start hosting: " + (err.message || err));
+      });
+    }
+  });
+
+  document.getElementById('mp-copy-link-btn')?.addEventListener('click', () => {
+    const code = mpClient ? mpClient.getRoomCode() : '';
+    if (!code) {
+      alert("Please create a room first!");
+      return;
+    }
+    const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert(`Invite link copied to clipboard!
+${shareUrl}`);
+    }).catch(() => {
+      prompt("Copy room link:", shareUrl);
+    });
+  });
+
+  document.getElementById('mp-join-btn')?.addEventListener('click', () => {
+    initMpClient();
+    const code = mpJoinInput ? mpJoinInput.value.trim() : '';
+    if (!code) {
+      alert("Please enter a room code (e.g. GT-8A92)");
+      return;
+    }
+    if (mpClient) {
+      mpClient.joinRoom(code).then(() => {
+        updateMpUI();
+        switchMpTab('lobby');
+      }).catch(err => {
+        alert("Failed to join room: " + (err.message || err));
+      });
+    }
+  });
+
+  document.getElementById('mp-disconnect-btn')?.addEventListener('click', () => {
+    if (mpClient) {
+      mpClient.disconnect();
+      updateMpUI();
+      switchMpTab('host');
+    }
+  });
+
+  // URL Query Parameter Auto-Join Handler (?room=GT-XXXX or ?join=GT-XXXX)
+  window.addEventListener('DOMContentLoaded', () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room') || params.get('join');
+      if (roomParam) {
+        setTimeout(() => {
+          openMultiplayerModal();
+          switchMpTab('join');
+          if (mpJoinInput) mpJoinInput.value = roomParam.toUpperCase();
+        }, 600);
+      }
+    } catch(e) {}
+  });
+
 
 
   // ── Render / Export PNG Upscale Modal Handlers ──

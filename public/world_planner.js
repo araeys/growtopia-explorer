@@ -146,9 +146,16 @@
 
       // Settings State
       let cameraShakeEnabled = true;
+      let playerName = "Raey";
+      let multiplayerClient = null;
+      let isNetworkTileOp = false;
       try {
-        const savedShake = localStorage.getItem("gt_camera_shake_enabled");
-        if (savedShake !== null) cameraShakeEnabled = (savedShake === "true");
+        if (typeof localStorage !== "undefined") {
+          const savedName = localStorage.getItem("gt_player_name");
+          if (savedName) playerName = savedName;
+          const savedShake = localStorage.getItem("gt_camera_shake_enabled");
+          if (savedShake !== null) cameraShakeEnabled = (savedShake === "true");
+        }
       } catch(e) {}
 
       // Interaction State
@@ -316,6 +323,9 @@
         if (!world.paint) world.paint = new Uint16Array(world.fg.length);
         if (prev.paint) world.paint.set(prev.paint);
         world.flags.set(prev.flags);
+        if (multiplayerClient && !isNetworkTileOp) {
+          multiplayerClient.broadcastTileErase(x, y);
+        }
         render();
         onWorldChange(world);
         return true;
@@ -925,6 +935,50 @@
         }
       }
 
+            // Network receiver methods (invoked by GTWorldMultiplayer without re-broadcasting)
+            function loadCustomWorldState(newState) {
+        if (!newState) return;
+        pushUndoSnapshot("Multiplayer World Sync");
+        world.width = newState.width || world.width;
+        world.height = newState.height || world.height;
+        world.name = newState.name || world.name;
+        world.fg = new Uint16Array(newState.fg);
+        world.bg = new Uint16Array(newState.bg);
+        world.flags = new Uint8Array(newState.flags);
+        world.paint = newState.paint ? new Uint16Array(newState.paint) : new Uint16Array(world.width * world.height);
+        if (newState.weather) setWeather(newState.weather);
+        render();
+        onWorldChange(world);
+      }
+
+      function setTileNetwork(x, y, item, options = {}) {
+        isNetworkTileOp = true;
+        setTile(x, y, item, options);
+        isNetworkTileOp = false;
+        render();
+      }
+
+      function eraseTileNetwork(x, y) {
+        isNetworkTileOp = true;
+        eraseTile(x, y);
+        isNetworkTileOp = false;
+        render();
+      }
+
+      function floodFillNetwork(startX, startY, item) {
+        isNetworkTileOp = true;
+        floodFill(startX, startY, item);
+        isNetworkTileOp = false;
+        render();
+      }
+
+      function setWeatherNetwork(weatherId) {
+        isNetworkTileOp = true;
+        setWeather(weatherId);
+        isNetworkTileOp = false;
+        render();
+      }
+
       function setTile(x, y, item, { isBg = null, flip = isFlipped } = {}) {
         const idx = getTileIndex(x, y);
         if (idx === -1) return false;
@@ -960,6 +1014,9 @@
         }
         if (item) {
           playBlockPlacingSfx(x, y, item);
+        }
+        if (multiplayerClient && !isNetworkTileOp) {
+          multiplayerClient.broadcastTileSet(x, y, item, { isBg: determineBg, flip });
         }
         return true;
       }
@@ -1200,6 +1257,9 @@
         }
         if (filledCount > 0 && newItem) {
           playBlockPlacingSfx(startX, startY, newItem);
+        }
+        if (multiplayerClient && !isNetworkTileOp) {
+          multiplayerClient.broadcastFloodFill(startX, startY, newItem);
         }
         render();
         onWorldChange(world);
@@ -1801,9 +1861,18 @@
         }
 
         // 8. Player Avatar & Dynamic Particles (Play Mode)
-        if (player.active || gameParticles.length > 0) {
+        const hasRemotePlayers = multiplayerClient && multiplayerClient.getRemotePlayers().size > 0;
+        if (player.active || gameParticles.length > 0 || hasRemotePlayers) {
           updateAndDrawParticles(ctx, 0.016);
-          if (player.active) drawPlayerAvatar(ctx);
+          if (multiplayerClient) {
+            multiplayerClient.updateRemotePlayers(0.016);
+            multiplayerClient.getRemotePlayers().forEach((rp) => {
+              if (!rp.isDead) {
+                drawPlayerAvatar(ctx, rp, false);
+              }
+            });
+          }
+          if (player.active) drawPlayerAvatar(ctx, player, true);
         }
 
         // 9. Hover Indicator (in Build/Erase mode)
@@ -4339,12 +4408,54 @@
         }
       }
 
-      function drawPlayerAvatar(ctx) {
+      function drawPlayerSpeechBubble(ctx, p, centerX, topY) {
+        if (!p.chatMessage || p.chatTimer <= 0) return;
         ctx.save();
-        const px = player.x;
-        const py = player.y;
-        const pw = player.width;
-        const ph = player.height;
+        ctx.font = "bold 10px 'Outfit', 'Inter', sans-serif";
+        const textMetrics = ctx.measureText ? ctx.measureText(p.chatMessage) : { width: 40 };
+        const textW = textMetrics.width || 40;
+        const padH = 8;
+        const padV = 4;
+        const boxW = Math.min(240, textW + padH * 2);
+        const boxH = 20;
+        const boxX = centerX - boxW / 2;
+        const boxY = topY - boxH - 4;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(boxX, boxY, boxW, boxH, 5);
+        } else {
+          ctx.rect(boxX, boxY, boxW, boxH);
+        }
+        ctx.fill();
+
+        ctx.strokeStyle = p.moderatorMode ? "#c084fc" : "#38bdf8";
+        ctx.lineWidth = 1.2 / viewport.zoom;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(centerX - 3, boxY + boxH);
+        ctx.lineTo(centerX, boxY + boxH + 3);
+        ctx.lineTo(centerX + 3, boxY + boxH);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.fillText(p.chatMessage, centerX, boxY + boxH - 6);
+        ctx.restore();
+      }
+
+      function drawPlayerAvatar(ctx, targetPlayer = player, isLocal = true) {
+        ctx.save();
+        const p = targetPlayer || player;
+        const px = p.x;
+        const py = p.y;
+        const pw = p.width || 24;
+        const ph = p.height || 28;
 
         // Shadow beneath player (Adjusted height and natural soft spread)
         if (!player.isDead) {
@@ -5251,19 +5362,20 @@
           ctx.restore();
         }
 
-        if (!player.isDead) {
-          drawPlayerNametag(ctx, px + pw / 2, py - 18);
+        if (!p.isDead) {
+          drawPlayerNametag(ctx, p, px + pw / 2, py - 18);
+          drawPlayerSpeechBubble(ctx, p, px + pw / 2, py - 22);
         }
         ctx.restore();
       }
 
-      function drawPlayerNametag(ctx, centerX, topY) {
+      function drawPlayerNametag(ctx, p, centerX, topY) {
         ctx.save();
-        const isMod = player.moderatorMode;
-        const isTransforming = player.modTransformTimer > 0;
-        const transProg = isTransforming ? (1.0 - (player.modTransformTimer / 0.65)) : 1.0;
-        
-        let nameText = isMod ? "[MOD] Raey" : "Raey";
+        const isMod = Boolean(p && p.moderatorMode);
+        const isTransforming = Boolean(p && p.modTransformTimer > 0);
+        const transProg = isTransforming ? (1.0 - (p.modTransformTimer / 0.65)) : 1.0;
+        const basePlayerName = (p && p.name) ? p.name : playerName;
+        let nameText = isMod ? `[MOD] ${basePlayerName}` : basePlayerName;
         let textJitterX = 0;
         let textJitterY = 0;
 
@@ -6202,6 +6314,18 @@
           onStatusMessage(humanVocalSfxEnabled ? "Human Vocal SFX: ON" : "Human Vocal SFX: OFF");
         },
         getHumanVocalSfx: () => humanVocalSfxEnabled,
+        setMultiplayerClient: (client) => { multiplayerClient = client; },
+        getMultiplayerClient: () => multiplayerClient,
+        setPlayerName: (name) => {
+          playerName = String(name || "Raey").trim().slice(0, 16);
+          try { localStorage.setItem("gt_player_name", playerName); } catch(e) {}
+        },
+        getPlayerName: () => playerName,
+        setTileNetwork,
+        eraseTileNetwork,
+        floodFillNetwork,
+        setWeatherNetwork,
+        loadCustomWorldState,
         loadPreset,
         createCustomWorld,
         generateMaze,
