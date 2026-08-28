@@ -1,6 +1,6 @@
 /**
  * GTWorldMultiplayer - Ultra-Reliable Real-Time Peer-to-Peer Multiplayer Engine
- * Optimized for WebRTC DataChannels with RLE World Compression & STUN/TURN Reliability
+ * Powered by Native WebRTC DataChannels with Global MQTT Signaling & Zero Server Lag
  * 
  * Original creator and developer: Raey (@araeys / @aryhaan)
  * Repository: https://github.com/araeys/growtopia-explorer
@@ -9,9 +9,11 @@
 (function (global) {
   "use strict";
 
-  const PEER_PREFIX = "gt-room-";
-  
-  // Public Google STUN servers with high-availability fallbacks
+  const MQTT_BROKERS = [
+    "wss://broker.emqx.io:8084/mqtt",
+    "wss://broker.hivemq.com:8884/mqtt"
+  ];
+
   const ICE_SERVERS = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
@@ -94,12 +96,14 @@
   }
 
   function createMultiplayerClient(engine) {
-    let peer = null;
+    let mqttClient = null;
+    let peerClient = null;
     let roomCode = "";
     let isHost = false;
-    let localPeerId = "";
+    let localPeerId = "user_" + Math.random().toString(36).slice(2, 9);
     let isConnected = false;
-    const connections = new Map(); // peerId -> DataConnection
+    const connections = new Map(); // peerId -> RTCDataChannel / DataConnection
+    const peerConnections = new Map(); // peerId -> RTCPeerConnection
     const remotePlayers = new Map(); // peerId -> player state object
     let sendTickTimer = null;
 
@@ -127,29 +131,25 @@
       return { name: pName, skin: pSkin, skinColor: pSkinColor, isMod: pMod };
     }
 
-    // Safe broadcast packet to all active peer connections
+    // Direct WebRTC broadcast across all open DataChannels
     function broadcast(packet, excludePeerId = null) {
       const dataStr = typeof packet === "string" ? packet : JSON.stringify(packet);
-      connections.forEach((conn, peerId) => {
-        if (peerId !== excludePeerId && conn && conn.open) {
+      connections.forEach((channel, peerId) => {
+        if (peerId !== excludePeerId && channel && channel.readyState === "open") {
           try {
-            conn.send(dataStr);
-          } catch (e) {
-            console.warn("Broadcast send failed to peer:", peerId, e);
-          }
+            channel.send(dataStr);
+          } catch (e) {}
         }
       });
     }
 
-    // Safe send packet to specific peer
+    // Direct WebRTC send to specific peer
     function sendTo(peerId, packet) {
-      const conn = connections.get(peerId);
-      if (conn && conn.open) {
+      const channel = connections.get(peerId);
+      if (channel && channel.readyState === "open") {
         try {
-          conn.send(typeof packet === "string" ? packet : JSON.stringify(packet));
-        } catch (e) {
-          console.warn("Send failed to peer:", peerId, e);
-        }
+          channel.send(typeof packet === "string" ? packet : JSON.stringify(packet));
+        } catch (e) {}
       }
     }
 
@@ -188,7 +188,7 @@
             remotePlayers.set(fromPeerId, remoteP);
 
             if (isHost) {
-              // Host responds with ultra-compact RLE WORLD_SYNC and list of existing peers
+              // Host responds with ultra-compact RLE WORLD_SYNC
               const worldState = engine.getWorldState();
 
               sendTo(fromPeerId, {
@@ -213,7 +213,7 @@
                 }))
               });
 
-              // Notify existing peers about the newcomer
+              // Notify other existing peers
               broadcast({
                 type: "PLAYER_JOINED",
                 peerId: fromPeerId,
@@ -231,7 +231,7 @@
           }
 
           case "WORLD_SYNC": {
-            // Guest receives full world sync from host
+            // Guest receives world sync from host
             if (!isHost && msg.world) {
               const totalTiles = msg.world.width * msg.world.height;
               const fg = msg.world.fgRLE ? decompressLayerRLE(msg.world.fgRLE, totalTiles) : new Uint16Array(msg.world.fg || totalTiles);
@@ -370,7 +370,6 @@
                 p.chatTimer = Number(msg.chatTimer || 5.0);
               }
             }
-            // If host, relay tick to other peers
             if (isHost) {
               broadcast(msg, fromPeerId);
             }
@@ -437,11 +436,11 @@
       }
     }
 
-    function setupConnection(conn) {
-      const peerId = conn.peer;
-      connections.set(peerId, conn);
+    function setupDataChannel(channel, peerId) {
+      connections.set(peerId, channel);
 
-      conn.on("open", () => {
+      channel.onopen = () => {
+        isConnected = true;
         const localPos = engine.getPlayerPosition();
         const profile = getLocalPlayerProfile();
         sendTo(peerId, {
@@ -451,19 +450,20 @@
           y: localPos.y,
           facing: localPos.facing
         });
-      });
+        startTickLoop();
+      };
 
-      conn.on("data", (data) => {
-        handleIncomingData(peerId, data);
-      });
+      channel.onmessage = (event) => {
+        handleIncomingData(peerId, event.data);
+      };
 
-      conn.on("close", () => {
+      channel.onclose = () => {
         handlePeerDisconnect(peerId);
-      });
+      };
 
-      conn.on("error", (err) => {
+      channel.onerror = () => {
         handlePeerDisconnect(peerId);
-      });
+      };
     }
 
     function handlePeerDisconnect(peerId) {
@@ -476,29 +476,17 @@
         }
       }
       connections.delete(peerId);
+      const pc = peerConnections.get(peerId);
+      if (pc) {
+        try { pc.close(); } catch (e) {}
+        peerConnections.delete(peerId);
+      }
       if (isHost) {
         broadcast({ type: "PLAYER_LEFT", peerId });
       }
     }
 
-    // Continuous tick loop (30Hz rate-limited broadcast of player state)
-        let keepAliveTimer = null;
-    function startSignalingKeepAlive() {
-      if (keepAliveTimer) clearInterval(keepAliveTimer);
-      keepAliveTimer = setInterval(() => {
-        if (peer && !peer.destroyed) {
-          if (peer.disconnected) {
-            try { peer.reconnect(); } catch (e) {}
-          }
-          if (peer.socket && peer.socket._ws && peer.socket._ws.readyState === 1) {
-            try {
-              peer.socket._ws.send(JSON.stringify({ type: "HEARTBEAT" }));
-            } catch (e) {}
-          }
-        }
-      }, 12000); // 12-second heartbeat
-    }
-
+    // 30Hz rate-limited broadcast of local player state
     function startTickLoop() {
       if (sendTickTimer) clearInterval(sendTickTimer);
       sendTickTimer = setInterval(() => {
@@ -529,7 +517,50 @@
         };
 
         broadcast(tickData);
-      }, 33); // ~30 times per second
+      }, 33);
+    }
+
+    // Connect to global MQTT signaling network
+    function connectMqttSignaling() {
+      const mqttLib = (typeof window !== "undefined" && window.mqtt) ? window.mqtt : null;
+      if (!mqttLib) {
+        return Promise.reject(new Error("MQTT client library not loaded"));
+      }
+
+      if (mqttClient && mqttClient.connected) {
+        return Promise.resolve(mqttClient);
+      }
+
+      return new Promise((resolve, reject) => {
+        let currentIdx = 0;
+        function tryNextBroker() {
+          if (currentIdx >= MQTT_BROKERS.length) {
+            reject(new Error("Unable to connect to WebRTC signaling brokers"));
+            return;
+          }
+
+          const brokerUrl = MQTT_BROKERS[currentIdx];
+          const client = mqttLib.connect(brokerUrl, {
+            clientId: "gt_p2p_" + Math.random().toString(16).slice(2, 10),
+            clean: true,
+            connectTimeout: 5000,
+            reconnectPeriod: 3000
+          });
+
+          client.on("connect", () => {
+            mqttClient = client;
+            resolve(client);
+          });
+
+          client.on("error", () => {
+            client.end(true);
+            currentIdx++;
+            tryNextBroker();
+          });
+        }
+
+        tryNextBroker();
+      });
     }
 
     // Host Room
@@ -539,57 +570,69 @@
       const pureId = getPureCode(code);
       roomCode = code;
       isHost = true;
-      const fullPeerId = `${PEER_PREFIX}${pureId}`;
+      localPeerId = "host_" + pureId;
 
-      notifyStatus(`Creating Room ${code}...`, "info");
+      notifyStatus(`Opening Room ${code}...`, "info");
 
-      const PeerClass = (typeof window !== "undefined" && window.Peer) ? window.Peer : null;
-      if (!PeerClass) {
-        notifyStatus("PeerJS library not loaded. Please refresh.", "error");
-        return Promise.reject(new Error("PeerJS not loaded"));
-      }
+      return connectMqttSignaling().then((mqtt) => {
+        const topicOffer = `gt-exp-v1/room/${pureId}/offer`;
+        const topicIce = `gt-exp-v1/room/${pureId}/ice/to-host`;
 
-      return new Promise((resolve, reject) => {
-        try {
-          peer = new PeerClass(fullPeerId, {
-            config: { iceServers: ICE_SERVERS }
-          });
+        mqtt.subscribe([topicOffer, topicIce], { qos: 1 });
 
-          peer.on("open", (id) => {
-            localPeerId = id;
-            isConnected = true;
-            notifyStatus(`Room ${code} is open! Share the code with friends.`, "success");
-            startTickLoop();
-            startSignalingKeepAlive();
-            if (typeof eventCallbacks.onConnect === "function") {
-              eventCallbacks.onConnect(code, true);
+        mqtt.on("message", (topic, message) => {
+          try {
+            const data = JSON.parse(message.toString());
+            if (!data) return;
+
+            if (topic === topicOffer && data.guestId && data.offer) {
+              const guestId = data.guestId;
+              let pc = peerConnections.get(guestId);
+              if (pc) pc.close();
+
+              pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+              peerConnections.set(guestId, pc);
+
+              pc.ondatachannel = (e) => {
+                setupDataChannel(e.channel, guestId);
+              };
+
+              pc.onicecandidate = (e) => {
+                if (e.candidate) {
+                  mqtt.publish(`gt-exp-v1/room/${pureId}/ice/to-guest/${guestId}`, JSON.stringify({
+                    candidate: e.candidate
+                  }));
+                }
+              };
+
+              pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => {
+                return pc.createAnswer();
+              }).then((answer) => {
+                return pc.setLocalDescription(answer);
+              }).then(() => {
+                mqtt.publish(`gt-exp-v1/room/${pureId}/answer/${guestId}`, JSON.stringify({
+                  answer: pc.localDescription
+                }), { qos: 1 });
+              }).catch((err) => {
+                console.error("Host WebRTC answer error:", err);
+              });
+            } else if (topic === topicIce && data.guestId && data.candidate) {
+              const pc = peerConnections.get(data.guestId);
+              if (pc && pc.remoteDescription) {
+                pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(() => {});
+              }
             }
-            resolve(code);
-          });
+          } catch (err) {
+            console.error("Signaling parse error:", err);
+          }
+        });
 
-          peer.on("connection", (conn) => {
-            setupConnection(conn);
-          });
-
-          peer.on("error", (err) => {
-            console.error("Peer host error:", err);
-            if (err.type === "unavailable-id") {
-              // ID already taken, retry with a fresh code
-              notifyStatus("Code already in use, generating a fresh room code...", "warning");
-              hostRoom().then(resolve).catch(reject);
-            } else {
-              notifyStatus(`Host error: ${err.message || err}`, "error");
-              reject(err);
-            }
-          });
-
-          peer.on("disconnected", () => {
-            notifyStatus("Reconnecting to signaling network...", "warning");
-            try { peer.reconnect(); } catch (e) {}
-          });
-        } catch (err) {
-          reject(err);
+        isConnected = true;
+        notifyStatus(`Room ${code} is open! Keep this tab open for friends to join.`, "success");
+        if (typeof eventCallbacks.onConnect === "function") {
+          eventCallbacks.onConnect(code, true);
         }
+        return code;
       });
     }
 
@@ -605,82 +648,95 @@
 
       roomCode = code;
       isHost = false;
-      const targetHostPeerId = `${PEER_PREFIX}${pureId}`;
+      const guestId = "guest_" + Math.random().toString(36).slice(2, 9);
+      localPeerId = guestId;
 
       notifyStatus(`Connecting to Room ${code}...`, "info");
-
-      const PeerClass = (typeof window !== "undefined" && window.Peer) ? window.Peer : null;
-      if (!PeerClass) {
-        notifyStatus("PeerJS library not loaded. Please refresh.", "error");
-        return Promise.reject(new Error("PeerJS not loaded"));
-      }
 
       return new Promise((resolve, reject) => {
         let isResolved = false;
         const joinTimeout = setTimeout(() => {
           if (!isResolved) {
             isResolved = true;
-            notifyStatus(`Could not reach Host (${code}). Make sure Host created the room first!`, "error");
+            notifyStatus(`Could not reach Host (${code}). Make sure the Host tab is open!`, "error");
             disconnect();
             reject(new Error(`Timeout: Host room ${code} not reachable`));
           }
-        }, 12000);
+        }, 10000);
 
-        try {
-          peer = new PeerClass({
-            config: { iceServers: ICE_SERVERS }
-          });
+        connectMqttSignaling().then((mqtt) => {
+          const topicAnswer = `gt-exp-v1/room/${pureId}/answer/${guestId}`;
+          const topicIce = `gt-exp-v1/room/${pureId}/ice/to-guest/${guestId}`;
 
-          peer.on("open", (id) => {
-            localPeerId = id;
-            const conn = peer.connect(targetHostPeerId, { reliable: true });
-            setupConnection(conn);
+          mqtt.subscribe([topicAnswer, topicIce], { qos: 1 });
 
-            conn.on("open", () => {
-              if (!isResolved) {
-                isResolved = true;
-                clearTimeout(joinTimeout);
-                isConnected = true;
-                notifyStatus(`Joined Room ${code} successfully!`, "success");
-                startTickLoop();
-                if (typeof eventCallbacks.onConnect === "function") {
-                  eventCallbacks.onConnect(code, false);
-                }
-                resolve(code);
-              }
-            });
+          const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+          peerConnections.set("host", pc);
 
-            conn.on("error", (err) => {
-              if (!isResolved) {
-                isResolved = true;
-                clearTimeout(joinTimeout);
-                notifyStatus(`Failed to connect to host: ${err.message || err}`, "error");
-                reject(err);
-              }
-            });
-          });
+          const channel = pc.createDataChannel("gt-multiplayer", { ordered: true });
+          setupDataChannel(channel, "host");
 
-          peer.on("error", (err) => {
+          channel.onopen = () => {
             if (!isResolved) {
               isResolved = true;
               clearTimeout(joinTimeout);
-              console.error("Peer join error:", err);
-              notifyStatus(`Join error: ${err.message || err}`, "error");
+              isConnected = true;
+              notifyStatus(`Joined Room ${code} successfully!`, "success");
+              startTickLoop();
+              if (typeof eventCallbacks.onConnect === "function") {
+                eventCallbacks.onConnect(code, false);
+              }
+              resolve(code);
+            }
+          };
+
+          pc.onicecandidate = (e) => {
+            if (e.candidate) {
+              mqtt.publish(`gt-exp-v1/room/${pureId}/ice/to-host`, JSON.stringify({
+                guestId,
+                candidate: e.candidate
+              }));
+            }
+          };
+
+          mqtt.on("message", (topic, message) => {
+            try {
+              const data = JSON.parse(message.toString());
+              if (topic === topicAnswer && data.answer) {
+                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch((err) => {
+                  console.error("Guest setRemoteDescription error:", err);
+                });
+              } else if (topic === topicIce && data.candidate) {
+                pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(() => {});
+              }
+            } catch (e) {}
+          });
+
+          pc.createOffer().then((offer) => {
+            return pc.setLocalDescription(offer);
+          }).then(() => {
+            mqtt.publish(`gt-exp-v1/room/${pureId}/offer`, JSON.stringify({
+              guestId,
+              offer: pc.localDescription
+            }), { qos: 1 });
+          }).catch((err) => {
+            if (!isResolved) {
+              isResolved = true;
+              clearTimeout(joinTimeout);
               reject(err);
             }
           });
-        } catch (err) {
-          clearTimeout(joinTimeout);
-          reject(err);
-        }
+        }).catch((err) => {
+          if (!isResolved) {
+            isResolved = true;
+            clearTimeout(joinTimeout);
+            reject(err);
+          }
+        });
       });
     }
 
     function disconnect() {
-      if (keepAliveTimer) {
-        clearInterval(keepAliveTimer);
-        keepAliveTimer = null;
-      }
       if (sendTickTimer) {
         clearInterval(sendTickTimer);
         sendTickTimer = null;
@@ -689,10 +745,14 @@
         try { conn.close(); } catch (e) {}
       });
       connections.clear();
+      peerConnections.forEach((pc) => {
+        try { pc.close(); } catch (e) {}
+      });
+      peerConnections.clear();
       remotePlayers.clear();
-      if (peer) {
-        try { peer.destroy(); } catch (e) {}
-        peer = null;
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch (e) {}
+        mqttClient = null;
       }
       const wasConnected = isConnected;
       isConnected = false;
@@ -765,7 +825,6 @@
     // Smooth remote players interpolation (called every render frame at 60fps)
     function updateRemotePlayers(dt) {
       remotePlayers.forEach((p) => {
-        // Smooth lerp on position (exponential decay towards target)
         const lerpFactor = Math.min(1.0, dt * 14.0);
         p.x += (p.targetX - p.x) * lerpFactor;
         p.y += (p.targetY - p.y) * lerpFactor;
