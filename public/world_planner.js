@@ -4106,9 +4106,9 @@
 
         // Continuous Smooth Animation Blend Weights (Zero jump-cut transition)
         if (player.isSkidding) {
-          player.skidBlend = Math.min(1.0, (player.skidBlend || 0) + dt * 14.0);
+          player.skidBlend = Math.min(1.0, (player.skidBlend || 0) + dt * 32.0); // Instant 1-frame attack
         } else {
-          player.skidBlend = Math.max(0.0, (player.skidBlend || 0) - dt * 8.0);
+          player.skidBlend = Math.max(0.0, (player.skidBlend || 0) - dt * 7.0);  // Smooth gentle settle to idle
         }
 
         const isWalkingOnGround = (player.state === "walk" && player.isGrounded && !player.isSkidding) || (player.isGrounded && Math.abs(player.vx) > 0.15 && !player.isSkidding);
@@ -4984,29 +4984,56 @@
         const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
         const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend - skidBlend);
 
-        // ── ELASTIC SKID BRAKE BOUNCE WAVE (Badan ke belakang, lalu bounce ke depan, tangan juga bounce) ──
+        // ── FLUID MULTI-PART ACTIVE SKELETAL BRAKE KINEMATICS ──
         const sProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.skidTimer / (player.skidMaxTimer || 0.38))));
-        const skidWave = Math.sin(sProg * Math.PI * 1.8);
-        const skidDamp = Math.exp(-sProg * 1.8);
+        
+        let rawSkidLean = 0;
+        let rawBackArmSkid = 0;
+        let rawFrontArmSkid = 0;
+        let rawHeadTilt = 0;
+        let rawHairBend = 0;
+        let rawTorsoY = 0;
+        let rawLegR = 0;
+        let rawLegL = 0;
 
-        // Badan ke belakang (-0.32 rad) lalu elastis rebound bounce ke depan (+0.10 rad):
-        const rawSkidLean = -0.32 * skidWave * skidDamp;
+        if (sProg < 0.62) {
+          // Phase 1: High-Speed Inertial Brake Slide (Deep Lean, Extended Arms with Balance Counter-Oscillation)
+          const p = sProg / 0.62;
+          const slideDecay = 1.0 - p * 0.35;
+          const balanceWobble = Math.sin(sProg * 22.0) * 0.12;
+
+          rawSkidLean = -0.44 * slideDecay + balanceWobble * 0.3; // Deep energetic backward lean
+          rawBackArmSkid = 1.15 * slideDecay + Math.sin(sProg * 20.0) * 0.22; // High back arm counter-balance
+          rawFrontArmSkid = -1.40 * slideDecay - Math.cos(sProg * 20.0) * 0.22; // Extended forward arm counter-balance
+          rawHeadTilt = 0.16 * slideDecay + balanceWobble * 0.2; // Head pitch against inertia
+          rawHairBend = -0.32 * slideDecay; // Hair whipping forward over forehead
+          rawTorsoY = (1.2 + Math.sin(sProg * 20.0) * 0.5); // Athletic brake crouch
+          rawLegL = -0.38 * slideDecay; // Front foot planted forward
+          rawLegR = 0.30 * slideDecay;  // Back foot planted bracing
+        } else {
+          // Phase 2: Elastic Rebound Spring Settle into Idle (Torso bounces forward, arms swing naturally)
+          const p = (sProg - 0.62) / 0.38;
+          const springSin = Math.sin(p * Math.PI);
+          const springDamp = (1.0 - p);
+
+          rawSkidLean = (-0.44 * 0.65 * springDamp) + (springSin * 0.16); // Rebound bounce forward then settle
+          rawBackArmSkid = (1.15 * 0.65 * springDamp) - (springSin * 0.32); // Back arm swings forward on rebound
+          rawFrontArmSkid = (-1.40 * 0.65 * springDamp) + (springSin * 0.35); // Front arm swings back on rebound
+          rawHeadTilt = (0.16 * 0.65 * springDamp) - (springSin * 0.10);
+          rawHairBend = (-0.32 * 0.65 * springDamp) + (springSin * 0.12);
+          rawTorsoY = springSin * -0.6; // Soft vertical spring bounce
+          rawLegL = -0.38 * 0.65 * springDamp;
+          rawLegR = 0.30 * 0.65 * springDamp;
+        }
+
         const skidLean = rawSkidLean * skidBlend;
-
-        // Torso vertical compression dip and bounce:
-        const skidTorsoY = (Math.max(0, Math.sin(sProg * Math.PI * 1.5)) * 1.2 * skidDamp) * skidBlend;
-
-        // Tangan Belakang (Back Arm) bounce:
-        const rawBackArmSkid = 0.65 * skidWave * skidDamp;
         const skidBackArmAngle = rawBackArmSkid * skidBlend;
-
-        // Tangan Depan (Front Arm) bounce:
-        const rawFrontArmSkid = -0.85 * skidWave * skidDamp;
         const skidFrontArmAngle = rawFrontArmSkid * skidBlend;
-
-        // Kaki Menancap Rem Grounded:
-        const skidLegR = (0.28 * skidDamp) * skidBlend;
-        const skidLegL = (-0.32 * skidDamp) * skidBlend;
+        const skidHeadTilt = rawHeadTilt * skidBlend;
+        const skidHairBend = rawHairBend * skidBlend;
+        const skidTorsoY = rawTorsoY * skidBlend;
+        const skidLegR = rawLegR * skidBlend;
+        const skidLegL = rawLegL * skidBlend;
 
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
@@ -5254,7 +5281,7 @@
             const fallHeadTilt = (0.12 + fallIntensity * 0.10) * fBlend;
             const jumpHeadTilt = (-0.10 * jumpIntensity) * jBlend;
             tCtx.translate(afkHeadX - sxShirt + actionStepX * 0.5, afkHeadY - syShirt + headBobLag);
-            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend));
+            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend) + skidHeadTilt);
 
             if (player.moderatorMode) {
               // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -5325,7 +5352,7 @@
                 const hairFallLift = (-player.vy * 0.015 * fBlend);
                 const hairIdleSway = (Math.sin(t * 3.0) * 0.022 * idleBlend);
 
-                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway;
+                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + skidHairBend;
                 tCtx.rotate(totalHairBend);
 
                 // Elastic vertical bounce / wind lift
