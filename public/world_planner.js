@@ -3356,7 +3356,7 @@
         playSfx("boo_death", 1.0, 0.95);
         playSfx("hit", 1.15, 0.75);
         playSfx("splat", 1.0, 0.70);
-        playSfx("new/ouch.WAV", 1.0, 0.95);
+        if (humanVocalSfxEnabled) playSfx("new/ouch.WAV", 1.0, 0.95);
         onStatusMessage(reason);
       }
 
@@ -3819,7 +3819,7 @@
 
             if (fallBlocks >= 15) {
               // High fall impact (>= 15 blocks): Play extra ouch sound!
-              playSfx("new/ouch.WAV", 1.0, 0.95);
+              if (humanVocalSfxEnabled) playSfx("new/ouch.WAV", 1.0, 0.95);
               player.impactShakeTimer = 0.28;
               spawnLandingDust(player.x + player.width / 2, player.y + player.height);
             } else {
@@ -5411,9 +5411,16 @@
           .catch(() => {});
       }
 
-            const JUMP_EXTRA_SFX_POOL = ["new/jump1.WAV", "new/jump2.WAV", "new/jump3.WAV"];
+            let humanVocalSfxEnabled = true;
+      try {
+        const storedVocal = localStorage.getItem("gt_human_vocal_sfx_enabled");
+        if (storedVocal !== null) humanVocalSfxEnabled = storedVocal === "true";
+      } catch(e) {}
+
+      const JUMP_EXTRA_SFX_POOL = ["new/jump1.WAV", "new/jump2.WAV", "new/jump3.WAV"];
       let lastJumpExtraIdx = -1;
       function playRandomJumpExtraSfx(volume = 0.70) {
+        if (!humanVocalSfxEnabled) return;
         let idx = Math.floor(Math.random() * JUMP_EXTRA_SFX_POOL.length);
         if (idx === lastJumpExtraIdx && JUMP_EXTRA_SFX_POOL.length > 1) {
           idx = (idx + 1) % JUMP_EXTRA_SFX_POOL.length;
@@ -5427,6 +5434,7 @@
       const LANDING_EXTRA_SFX_POOL = ["new/landing.WAV", "new/landing2.WAV", "new/landing3.WAV"];
       let lastLandingExtraIdx = -1;
       function playRandomLandingExtraSfx(volume = 0.75) {
+        if (!humanVocalSfxEnabled) return;
         let idx = Math.floor(Math.random() * LANDING_EXTRA_SFX_POOL.length);
         if (idx === lastLandingExtraIdx && LANDING_EXTRA_SFX_POOL.length > 1) {
           idx = (idx + 1) % LANDING_EXTRA_SFX_POOL.length;
@@ -6180,6 +6188,12 @@
           render();
         },
         getCameraShake: () => cameraShakeEnabled,
+        setHumanVocalSfx: (enabled) => {
+          humanVocalSfxEnabled = Boolean(enabled);
+          try { localStorage.setItem("gt_human_vocal_sfx_enabled", humanVocalSfxEnabled ? "true" : "false"); } catch(e) {}
+          onStatusMessage(humanVocalSfxEnabled ? "Human Vocal SFX: ON" : "Human Vocal SFX: OFF");
+        },
+        getHumanVocalSfx: () => humanVocalSfxEnabled,
         loadPreset,
         createCustomWorld,
         generateMaze,

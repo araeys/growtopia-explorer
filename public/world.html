@@ -1509,6 +1509,9 @@
   <button class="world-menu-item" id="world-menu-camera-shake">
     <span id="camera-shake-status-text">Camera Shake: ON</span>
   </button>
+  <button class="world-menu-item" id="world-menu-human-sfx">
+    <span id="human-sfx-status-text">Human Vocal SFX: ON</span>
+  </button>
   <button class="world-menu-item" id="world-menu-render-png">Render Full World PNG</button>
 </div>
 
@@ -1668,12 +1671,18 @@
         </span>
         <div>
           <h2 class="welcome-title">GT WORLD PLANNER STUDIO</h2>
-          <div class="welcome-subtitle">Live Physics Simulator & Interactive World Builder</div>
+          <div class="welcome-subtitle" id="welcome-subtitle-text">Live Physics Simulator & Interactive World Builder</div>
         </div>
       </div>
-      <button id="welcome-modal-close" class="welcome-close-btn" title="Tutup">
-        
-      </button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="welcome-lang-switcher" style="display:inline-flex;align-items:center;background:rgba(15,23,42,0.85);border:1.5px solid #334155;border-radius:6px;padding:2px;gap:2px;">
+          <button id="welcome-lang-en" onclick="setWelcomeLanguage('en');" style="padding:3px 8px;font-size:11px;font-weight:900;border:none;background:transparent;color:#94a3b8;border-radius:4px;cursor:pointer;transition:all 0.15s ease;">EN</button>
+          <button id="welcome-lang-id" onclick="setWelcomeLanguage('id');" style="padding:3px 8px;font-size:11px;font-weight:900;border:none;background:transparent;color:#94a3b8;border-radius:4px;cursor:pointer;transition:all 0.15s ease;">ID</button>
+        </div>
+        <button id="welcome-modal-close" class="welcome-close-btn" title="Close">
+          
+        </button>
+      </div>
     </div>
 
     <!-- Navigation Tabs -->
@@ -2379,6 +2388,229 @@
   document.getElementById('world-settings-btn')?.addEventListener('click', () => {
     updateCameraShakeMenu();
   });
+
+  // ── Human Vocal SFX Settings Toggle ──
+  const humanSfxMenuItem = document.getElementById('world-menu-human-sfx');
+  const humanSfxStatusText = document.getElementById('human-sfx-status-text');
+
+  function updateHumanSfxMenu() {
+    if (typeof engine.getHumanVocalSfx === 'function') {
+      const isVoice = engine.getHumanVocalSfx();
+      if (humanSfxStatusText) humanSfxStatusText.textContent = isVoice ? "Human Vocal SFX: ON" : "Human Vocal SFX: OFF";
+      if (humanSfxMenuItem) humanSfxMenuItem.style.color = isVoice ? "#4ade80" : "#94a3b8";
+    }
+  }
+
+  humanSfxMenuItem?.addEventListener('click', () => {
+    if (typeof engine.getHumanVocalSfx === 'function') {
+      const next = !engine.getHumanVocalSfx();
+      engine.setHumanVocalSfx(next);
+      updateHumanSfxMenu();
+    }
+  });
+
+  document.getElementById('world-settings-btn')?.addEventListener('click', () => {
+    updateCameraShakeMenu();
+    updateHumanSfxMenu();
+  });
+
+
+  // ── Welcome Modal Language Switcher (EN / ID) ──
+  let welcomeCurrentLang = localStorage.getItem('gt_welcome_lang') || 'en';
+
+  const WELCOME_TRANSLATIONS = {
+    en: {
+      subtitle: "Live Physics Simulator & Interactive World Builder",
+      tabUpdates: "Update Logs / Changelog",
+      tabFeatures: "Features & Controls",
+      escTip: "Press <kbd style=\"background:#1e293b;padding:2px 5px;border-radius:3px;color:#e2e8f0;font-size:10px;\">ESC</kbd> to close",
+      playBtn: "LET'S PLAY / ENTER",
+      v27Title: "v2.7 — Entrance Animations, 17 Skin Tones & Dynamic SFX",
+      v27Date: "LATEST PATCH",
+      v27List: [
+        "<strong>Authentic Entrance & Spawn VFX:</strong> Spectacular spawn animation featuring astral dimensional portal swirls (ModPortal sequence), elastic pop-in spring curve, 16 colorful starburst particles, ground shockwave ripples, and vertical shimmer beam when entering Play Mode, respawning (R key), or door teleportation.",
+        "<strong>17 Skin Color Tones System:</strong> Complete skin customization (White, Tone 8 to Tone 1, Aqua, Red, Green, Purple, Blue, Orange) with Set Planner luminance matching. Green shirt and blue jeans stay authentic and never get recolored.",
+        "<strong>Layered Audio & High Fall Impact SFX:</strong> Randomized extra vocal jump sounds (jump1-3) and landing sounds (landing1-3). Plus bone-cracking \"Ouch!\" sound when landing from &ge; 15 blocks free fall or dying on lethal hazards. Configurable via World Menu.",
+        "<strong>Procedural Auto-Maze & Dungeon Generator:</strong> Interactive maze creator (DFS Backtracking) with entrance door, exit gold chest, checkpoints, and random hazards.",
+        "<strong>Polished Block Placing & Bidirectional Mod Shortcut:</strong> Smoother 10-frame placing overlay animation and bidirectional <kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;\">M</kbd> shortcut to toggle Moderator Mode seamlessly."
+      ],
+      v26Title: "v2.6 — AFK Overhaul, Notes Sequence & Face Expressions",
+      v26Date: "PREVIOUS",
+      v26List: [
+        "<strong>Dancing Musical Notes:</strong> Dynamic floating musical note particles (yellow & orange) with soft radiant glow during Dance animation.",
+        "<strong>7 Randomized AFK Animations:</strong> Sleeping Zzz, Dancing, Deep Thinking, Cheering with confetti, Angry rage steam fumes, Friendly Waving to camera, and Laughing.",
+        "<strong>1:1 Authentic Character Expressions:</strong> Serious mouth grit during sprint with blink lock, open mouth yell on jumps, and natural blink cycles.",
+        "<strong>Mod Transformation & Glitch VFX:</strong> Dynamic holographic name glitch on Mod Mode transform with purple ray flashes and aerodynamic wind ribbons.",
+        "<strong>Dynamic Camera Shake System:</strong> Kinetic running camera shake and high fall turbulence rumble with toggle in World Menu.",
+        "<strong>Universal Double Jump:</strong> Arrow Up and Jump buttons both support 360-degree spin kick double jumps."
+      ],
+      featCards: [
+        {
+          title: "Platformer & Parkour",
+          desc: "Responsive WASD controls, 360° spin kick double jump, landing squash, and realistic footstep dust particles."
+        },
+        {
+          title: "Mod Noclip & Electro Aura",
+          desc: "8-directional flight (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;\">M</kbd>), 12-frame looping lightning aura, and glowing white eyes."
+        },
+        {
+          title: "Speech Chat & 7 AFK Actions",
+          desc: "Live speech bubbles (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;\">Enter</kbd>) and 7 AFK animations: Sleep Zzz, Dance, Thinking, Cheer, Angry, Wave & Laugh."
+        },
+        {
+          title: "Audio & Settings",
+          desc: "Toggle Human Vocal SFX and Camera Shake effects directly from the World Menu dropdown (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;\">Menu</kbd>)."
+        },
+        {
+          title: "16,000+ Items & Autotile",
+          desc: "Accurate autotile connections, background weather machines, item bookmarks, and <code style=\"color:#fde047;\">.dat</code> import/export."
+        }
+      ]
+    },
+    id: {
+      subtitle: "Simulator Fisika Real-Time & Pembangun Dunia Interaktif",
+      tabUpdates: "Log Pembaruan / Changelog",
+      tabFeatures: "Fitur & Kontrol",
+      escTip: "Tekan <kbd style=\"background:#1e293b;padding:2px 5px;border-radius:3px;color:#e2e8f0;font-size:10px;\">ESC</kbd> untuk tutup",
+      playBtn: "LET'S PLAY / MASUK",
+      v27Title: "v2.7 — Animasi Entrance, 17 Warna Kulit & SFX Dinamis",
+      v27Date: "LATEST PATCH",
+      v27List: [
+        "<strong>Authentic Entrance & Spawn VFX:</strong> Animasi kemunculan spektakuler dengan pusaran portal dimensi astral (ModPortal sequence), kurva elastic pop-in spring, 16 partikel bintang warna-warni, gelombang kejut lantai (shockwave), dan pilar cahaya vertikal saat masuk Play Mode, respawn (tombol R), maupun teleportasi antar pintu.",
+        "<strong>17 Skin Color Tones System:</strong> Kustomisasi warna kulit lengkap (White, Tone 8 s/d Tone 1, Aqua, Red, Green, Purple, Blue, Orange) dengan algoritma luminansi presisi Set Planner. Warna kemeja hijau dan celana jeans tetap cerah orisinil tanpa ter-recolor.",
+        "<strong>Layered Audio & High Fall Impact SFX:</strong> Suara tambahan acak saat melompat (jump1-3) dan mendarat (landing1-3). Serta efek suara benturan dan jeritan \"Ouch!\" ketika terjun bebas dari ketinggian &ge; 15 blok atau saat karakter mati terkena rintangan maut. Dapat diatur on/off di menu World.",
+        "<strong>Procedural Auto-Maze & Dungeon Generator:</strong> Pembuat labirin otomatis interaktif (DFS Backtracking) lengkap dengan pintu masuk, peti harta karun keluar (exit chest), pos checkpoint, dan jebakan acak.",
+        "<strong>Polished Block Placing & Bidirectional Mod Shortcut:</strong> Animasi 10-frame placing overlay yang lebih halus serta shortcut keyboard <kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;\">M</kbd> dua arah untuk masuk dan keluar Moderator Mode dengan mulus."
+      ],
+      v26Title: "v2.6 — AFK Overhaul, Notes Sequence & Face Expressions",
+      v26Date: "PREVIOUS",
+      v26List: [
+        "<strong>Dancing Musical Notes:</strong> Partikel not balok (kuning & oranye) melayang dinamis dengan pendaran cahaya lembut saat animasi Dance aktif.",
+        "<strong>7 Randomized AFK Animations:</strong> Menambahkan 7 aksi gerak acak: Dancing, Sleeping Zzz, Deep Thinking, Cheering dengan konfeti bintang, Angry rage steam fumes, Friendly Waving ke kamera, dan Laughing membungkuk.",
+        "<strong>1:1 Authentic Character Expressions:</strong> Mulut serius menggigit gigi saat berlari dengan kunci kedip (*blink lock*), serta mulut terbuka berteriak saat melompat.",
+        "<strong>Mod Transformation & Glitch VFX:</strong> Efek animasi teks nama glitch saat transformasi Mod Mode, kilatan ray ungu, dan pita angin aerodinamis halus.",
+        "<strong>Dynamic Camera Shake System:</strong> Guncangan kamera kinetik saat lari dan getaran turbulensi jatuh bebas (&ge; 0.5s) dengan tombol ON/OFF terpadu.",
+        "<strong>Universal Double Jump:</strong> Tombol Panah Atas (*Arrow Up*) dan tombol Jump kini mendukung double jump spin kick di desktop maupun mobile."
+      ],
+      featCards: [
+        {
+          title: "Platformer & Parkour",
+          desc: "Kontrol WASD responsif, 360° spin kick double jump, landing squash, dan partikel debu langkah kaki alami."
+        },
+        {
+          title: "Mod Noclip & Electro Aura",
+          desc: "Terbang bebas 8 arah (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#c084fc;font-size:10px;\">M</kbd>), 12-frame looping lightning aura, dan mata bercahaya putih."
+        },
+        {
+          title: "Speech Chat & 7 AFK Actions",
+          desc: "Gelembung chat langsung (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;\">Enter</kbd>) serta 7 animasi AFK: Tidur Zzz, Dance, Thinking, Cheer, Angry, Wave & Laugh."
+        },
+        {
+          title: "Audio & Pengaturan",
+          desc: "Pengaturan On/Off Suara Human Vocal dan Efek Guncangan Kamera langsung dari menu World (<kbd style=\"background:#1e293b;padding:1px 4px;border-radius:3px;color:#38bdf8;font-size:10px;\">Menu</kbd>)."
+        },
+        {
+          title: "16,000+ Items & Autotile",
+          desc: "Koneksi autotile presisi, background weather machines, item favorit, serta import/export file <code style=\"color:#fde047;\">.dat</code>."
+        }
+      ]
+    }
+  };
+
+  function setWelcomeLanguage(lang) {
+    if (lang !== 'en' && lang !== 'id') lang = 'en';
+    welcomeCurrentLang = lang;
+    try { localStorage.setItem('gt_welcome_lang', lang); } catch(e) {}
+
+    const btnEn = document.getElementById('welcome-lang-en');
+    const btnId = document.getElementById('welcome-lang-id');
+    if (btnEn && btnId) {
+      if (lang === 'en') {
+        btnEn.style.background = '#38bdf8';
+        btnEn.style.color = '#0f172a';
+        btnEn.style.boxShadow = '0 0 8px rgba(56, 189, 248, 0.4)';
+        btnId.style.background = 'transparent';
+        btnId.style.color = '#94a3b8';
+        btnId.style.boxShadow = 'none';
+      } else {
+        btnId.style.background = '#38bdf8';
+        btnId.style.color = '#0f172a';
+        btnId.style.boxShadow = '0 0 8px rgba(56, 189, 248, 0.4)';
+        btnEn.style.background = 'transparent';
+        btnEn.style.color = '#94a3b8';
+        btnEn.style.boxShadow = 'none';
+      }
+    }
+
+    const t = WELCOME_TRANSLATIONS[lang] || WELCOME_TRANSLATIONS.en;
+    const sub = document.getElementById('welcome-subtitle-text');
+    if (sub) sub.textContent = t.subtitle;
+
+    const tabUpdatesSpan = document.querySelector('.welcome-tab-btn[data-tab="updates"] span');
+    if (tabUpdatesSpan) tabUpdatesSpan.textContent = t.tabUpdates;
+
+    const tabFeaturesSpan = document.querySelector('.welcome-tab-btn[data-tab="features"] span');
+    if (tabFeaturesSpan) tabFeaturesSpan.textContent = t.tabFeatures;
+
+    const ackBtnSpan = document.querySelector('#welcome-modal-ack-btn span');
+    if (ackBtnSpan) ackBtnSpan.textContent = t.playBtn;
+
+    const escTip = document.querySelector('.welcome-footer-bar div');
+    if (escTip) escTip.innerHTML = t.escTip;
+
+    // Render Updates tab
+    const updatesContainer = document.getElementById('welcome-tab-updates');
+    if (updatesContainer) {
+      updatesContainer.innerHTML = `
+        <div class="changelog-card">
+          <div class="changelog-header">
+            <div class="changelog-version">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="#fde047" stroke-width="2.4" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>${t.v27Title}</span>
+            </div>
+            <span class="changelog-date">${t.v27Date}</span>
+          </div>
+          <ul class="changelog-list">
+            ${t.v27List.map(li => `<li>${li}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="changelog-card">
+          <div class="changelog-header">
+            <div class="changelog-version">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="#38bdf8" stroke-width="2.2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>${t.v26Title}</span>
+            </div>
+            <span class="changelog-date">${t.v26Date}</span>
+          </div>
+          <ul class="changelog-list">
+            ${t.v26List.map(li => `<li>${li}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Render Features tab
+    const featuresContainer = document.getElementById('welcome-tab-features');
+    if (featuresContainer) {
+      featuresContainer.innerHTML = `
+        <div class="welcome-feature-grid">
+          ${t.featCards.map(fc => `
+            <div class="welcome-feature-card">
+              <div class="welcome-feature-card-header">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="#38bdf8" stroke-width="2.2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span class="welcome-feature-card-title">${fc.title}</span>
+              </div>
+              <div class="welcome-feature-card-desc">${fc.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  }
+
+  window.setWelcomeLanguage = setWelcomeLanguage;
+
 
   // ── Render / Export PNG Upscale Modal Handlers ──
   const renderModal = document.getElementById('render-export-modal');

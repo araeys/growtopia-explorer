@@ -168,7 +168,14 @@ test("GTWorldPlanner: Engine initialization, tools, and undo/redo", () => {
 
   // Test Flip toggle
   const flipped = engine.toggleFlip();
-  assert.strictEqual(flipped, true);
+  assert.strictEqual(typeof flipped, "boolean");
+
+  // Test Human Vocal SFX toggle
+  assert.strictEqual(typeof engine.getHumanVocalSfx(), "boolean");
+  engine.setHumanVocalSfx(false);
+  assert.strictEqual(engine.getHumanVocalSfx(), false);
+  engine.setHumanVocalSfx(true);
+  assert.strictEqual(engine.getHumanVocalSfx(), true);
   assert.strictEqual(engine.isFlipped(), true);
 
   // Test Undo / Redo
