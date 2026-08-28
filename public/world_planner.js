@@ -3902,35 +3902,27 @@
             player.isClimbing = false;
           }
 
-          // Horizontal Movement & Skid Brake Detection (Turn-around & Sudden Stop)
+          // Horizontal Movement (Instant crisp turning, Sudden Stop brake skid only)
           if (player.keys.left) {
-            if (player.isGrounded && player.vx > 2.0 && player.skidTimer <= 0) {
-              player.skidTimer = 0.34;
-              player.skidMaxTimer = 0.34;
-              player.skidDir = 1;
-            }
+            player.skidTimer = 0; // Instant crisp turn without backwards skid!
             player.vx -= 1.62 * timeScale;
             player.facing = -1;
-            if (player.isGrounded && !player.isClimbing) player.state = (player.skidTimer > 0) ? "skid" : "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = "walk";
           } else if (player.keys.right) {
-            if (player.isGrounded && player.vx < -2.0 && player.skidTimer <= 0) {
-              player.skidTimer = 0.34;
-              player.skidMaxTimer = 0.34;
-              player.skidDir = -1;
-            }
+            player.skidTimer = 0; // Instant crisp turn without backwards skid!
             player.vx += 1.62 * timeScale;
             player.facing = 1;
-            if (player.isGrounded && !player.isClimbing) player.state = (player.skidTimer > 0) ? "skid" : "walk";
+            if (player.isGrounded && !player.isClimbing) player.state = "walk";
           } else {
             // Sudden Stop from Fast Run (trigger slippery kepleset brake!)
-            if (player.isGrounded && Math.abs(player.vx) > 2.4 && player.skidTimer <= 0) {
-              player.skidTimer = 0.34;
-              player.skidMaxTimer = 0.34;
+            if (player.isGrounded && Math.abs(player.vx) > 2.2 && player.skidTimer <= 0) {
+              player.skidTimer = 0.38;
+              player.skidMaxTimer = 0.38;
               player.skidDir = player.vx > 0 ? 1 : -1;
             }
 
-            // Slippery ground inertia during skid/brake
-            const groundFriction = (player.skidTimer > 0) ? 0.90 : 0.68;
+            // Slippery ground inertia during sudden stop brake
+            const groundFriction = (player.skidTimer > 0) ? 0.91 : 0.68;
             player.vx *= Math.pow(groundFriction, timeScale);
             if (Math.abs(player.vx) < 0.1) {
               player.vx = 0;
@@ -5054,8 +5046,8 @@
         const afkLegLOffset = rawAfkLegLOffset * afkBlend;
 
         const breatheBob = (player.isGrounded ? (Math.sin(t * 4) * 0.75 * idleBlend - walkStepBob + afkTorsoY) : 0) + (isJumping ? -1.8 * jBlend : 0) + (isFalling ? 1.2 * fBlend : 0) + (floatBob * flBlend);
-        const legRLift = isWalking ? (Math.max(0, walkCycleSin) * 2.8) : afkLegROffset;
-        const legLLift = isWalking ? (Math.max(0, -walkCycleSin) * 2.8) : afkLegLOffset;
+        const legRLift = isSkidding ? 0 : (isWalking ? (Math.max(0, walkCycleSin) * 2.8) : afkLegROffset);
+        const legLLift = isSkidding ? 0 : (isWalking ? (Math.max(0, -walkCycleSin) * 2.8) : afkLegLOffset);
         const idleArmWiggle = (player.isGrounded && !isWalking) ? (Math.sin(t * 2.5) * 0.08 * idleBlend) : 0;
 
         // ── Ultra-Subtle Pupil Gaze Vector & 100% Strict Lock Forward Support ──
@@ -5186,10 +5178,14 @@
             const sxShirt = (cOffsets.shirt ? cOffsets.shirt.x : 0) || 0;
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
+            const skidLean = isSkidding ? (-0.32 - Math.sin(t * 26) * 0.08) : 0;
+            const skidTorsoY = isSkidding ? (2.6 + Math.sin(t * 26) * 0.4) : 0;
+            const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
+            const torsoLean = (isSkidding ? skidLean : (runLean + torsoTwist + actionTorsoLean + afkTorsoAngle)) + climbTorsoLean;
 
             tCtx.save();
-            tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt);
-            tCtx.rotate(afkTorsoAngle + runLean + torsoTwist + actionTorsoLean);
+            tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY);
+            tCtx.rotate(torsoLean);
             if (isReadyDrawable(imgBody)) {
               tCtx.drawImage(imgBody, -16, -16, 32, 32);
             }
