@@ -621,6 +621,40 @@
             continue;
           }
 
+          if (p.type === "dodge_speed_streak") {
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.max(0, 1.0 - progress) * 0.85;
+            ctx.save();
+            ctx.strokeStyle = p.color || "#38bdf8";
+            ctx.lineWidth = Math.max(1, p.width * (1.0 - progress * 0.5));
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.length * p.dir, p.y + (p.offsetY || 0));
+            ctx.stroke();
+            ctx.restore();
+            continue;
+          }
+
+          if (p.type === "block_break_debris") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.45; // Debris gravity
+            p.rot = (p.rot || 0) + (p.rotSpeed || 0.15);
+            const progress = 1.0 - (p.life / p.maxLife);
+            const alpha = Math.max(0, 1.0 - Math.pow(progress, 2.0));
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = p.color || "#854d0e";
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            // Highlight pixel on debris chunk
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.fillRect(-p.size / 2, -p.size / 2, Math.max(1, p.size * 0.4), Math.max(1, p.size * 0.4));
+            ctx.restore();
+            continue;
+          }
+
           if (p.type === "entrance_light_beam") {
             const progress = 1.0 - (p.life / p.maxLife);
             const alpha = Math.sin(progress * Math.PI) * 0.65;
@@ -3412,7 +3446,8 @@
 
         player.dodgeTimer = 0.46;
         player.dodgeMaxTimer = 0.46;
-        player.dodgeCooldown = 0.48;
+        player.dodgeCooldown = 3.0; // 3.0 Second Anti-Spam Cooldown
+        player.dodgeMaxCooldown = 3.0;
         player.dodgeDir = player.facing || 1;
         player.isDodging = true;
 
@@ -3424,52 +3459,73 @@
           // Fast Ground Slide Dash (Enhanced forward slide momentum)
           player.isGroundPound = false;
           player.vx = player.dodgeDir * 10.8;
-          gameParticles.push({
-            type: "entrance_shockwave",
-            x: centerX,
-            y: groundY - 6,
-            radius: 3,
-            maxRadius: 24,
-            color: "#38bdf8",
-            life: 0.28,
-            maxLife: 0.28
-          });
+
+          // Stylized Sharp Wind Jets & Speed Streaks (Replaces generic oval shockwave)
+          for (let s = 0; s < 5; s++) {
+            const streakY = groundY - 4 - Math.random() * 20;
+            const streakLen = 18 + Math.random() * 22;
+            gameParticles.push({
+              type: "dodge_speed_streak",
+              x: centerX - player.dodgeDir * 4,
+              y: streakY,
+              dir: -player.dodgeDir,
+              length: streakLen,
+              offsetY: (Math.random() - 0.5) * 4,
+              width: 1.8 + Math.random() * 1.4,
+              color: s % 2 === 0 ? "#38bdf8" : "#ffffff",
+              life: 0.24 + Math.random() * 0.12,
+              maxLife: 0.32
+            });
+          }
+
           spawnFootstepDust(centerX, groundY, -player.dodgeDir, true);
           spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 4 : player.width - 4), groundY, -player.dodgeDir, true);
           playSfx("hitground", 1.45, 0.85);
         } else {
-          // Airborne Downward Action: Check if moving or vertical slam
+          // Airborne Action: Vertical Ground Pound or Forward Air Dive
           if (!isHoldingMove) {
             // User did NOT press move keys: Vertical Ground Pound Slam!
             player.isGroundPound = true;
             player.vx = 0;
             player.vy = 14.0; // Rapid downward plunge!
-            gameParticles.push({
-              type: "entrance_shockwave",
-              x: centerX,
-              y: player.y + player.height / 2,
-              radius: 4,
-              maxRadius: 26,
-              color: "#f87171",
-              life: 0.30,
-              maxLife: 0.30
-            });
+
+            // Downward Speed Streaks
+            for (let s = 0; s < 4; s++) {
+              gameParticles.push({
+                type: "dodge_speed_streak",
+                x: centerX + (Math.random() - 0.5) * 16,
+                y: player.y + (Math.random() - 0.5) * 10,
+                dir: 1,
+                length: 0,
+                offsetY: -(18 + Math.random() * 16),
+                width: 2.2,
+                color: "#f87171",
+                life: 0.28,
+                maxLife: 0.28
+              });
+            }
             playSfx("hitground", 1.15, 0.85);
           } else {
             // User held left/right: 45-degree Forward Dive Slide
             player.isGroundPound = false;
             player.vx = player.dodgeDir * 9.8;
             player.vy = 10.8;
-            gameParticles.push({
-              type: "entrance_shockwave",
-              x: centerX,
-              y: player.y + player.height / 2,
-              radius: 3,
-              maxRadius: 24,
-              color: "#a855f7",
-              life: 0.28,
-              maxLife: 0.28
-            });
+
+            // 45-degree Dive Streaks
+            for (let s = 0; s < 5; s++) {
+              gameParticles.push({
+                type: "dodge_speed_streak",
+                x: centerX,
+                y: player.y + 8,
+                dir: -player.dodgeDir,
+                length: 22 + Math.random() * 18,
+                offsetY: -(14 + Math.random() * 12),
+                width: 2.0,
+                color: "#c084fc",
+                life: 0.28,
+                maxLife: 0.28
+              });
+            }
             playSfx("hitground", 1.25, 0.75);
           }
         }
@@ -4221,40 +4277,64 @@
           // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX + 20+ block High Fall Ouch
           if (!wasGrounded && player.isGrounded) {
             if (player.isGroundPound) {
-              // Heavy Ground Pound Slam Landing Crash!
+              // Heavy Ground Pound Slam Landing Crash with Block Break Debris!
               player.isGroundPound = false;
               player.dodgeTimer = 0;
               player.isDodging = false;
-              player.landingSquashTimer = 0.32;
-              player.landingSquashMaxTimer = 0.32;
-              player.impactShakeTimer = 0.35;
+              player.landingSquashTimer = 0.35;
+              player.landingSquashMaxTimer = 0.35;
+              player.impactShakeTimer = 0.40;
 
-              // Heavy Shockwave + Dual Dust + Impact Sparks
-              gameParticles.push({
-                type: "entrance_shockwave",
-                x: player.x + player.width / 2,
-                y: player.y + player.height,
-                radius: 4,
-                maxRadius: 36,
-                color: "#f59e0b",
-                life: 0.35,
-                maxLife: 0.35
-              });
-              spawnLandingDust(player.x - 4, player.y + player.height);
-              spawnLandingDust(player.x + player.width + 4, player.y + player.height);
-              for (let sp = 0; sp < 6; sp++) {
+              const hitCenterX = player.x + player.width / 2;
+              const hitGroundY = player.y + player.height;
+
+              // Detect ground tile to match break chunk colors
+              const tileX = Math.floor(hitCenterX / TILE_SIZE);
+              const tileY = Math.floor((hitGroundY + 2) / TILE_SIZE);
+              let chunkColors = ["#854d0e", "#a16207", "#713f12", "#52525b", "#d97706"];
+              if (tileX >= 0 && tileX < world.width && tileY >= 0 && tileY < world.height) {
+                const fgId = world.fg[tileY * world.width + tileX];
+                if (fgId === 2 || fgId === 3) chunkColors = ["#854d0e", "#65a30d", "#a16207", "#4d7c0f"]; // Grass & Dirt
+                else if (fgId === 10 || fgId === 11) chunkColors = ["#52525b", "#71717a", "#3f3f46", "#a1a1aa"]; // Rock
+                else if (fgId === 14) chunkColors = ["#78350f", "#92400e", "#b45309", "#d97706"]; // Wood
+                else if (fgId === 12) chunkColors = ["#2563eb", "#38bdf8", "#60a5fa", "#93c5fd"]; // Glass
+              }
+
+              // Spawn 14-16 authentic block breakage debris shards flying in all directions!
+              for (let db = 0; db < 16; db++) {
+                const debrisColor = chunkColors[Math.floor(Math.random() * chunkColors.length)];
+                gameParticles.push({
+                  type: "block_break_debris",
+                  x: hitCenterX + (Math.random() - 0.5) * 14,
+                  y: hitGroundY - 4 - Math.random() * 6,
+                  vx: (Math.random() - 0.5) * 6.5,
+                  vy: -(2.5 + Math.random() * 4.2),
+                  size: 3.5 + Math.random() * 3.5,
+                  rot: Math.random() * Math.PI * 2,
+                  rotSpeed: (Math.random() - 0.5) * 0.35,
+                  color: debrisColor,
+                  life: 0.45 + Math.random() * 0.25,
+                  maxLife: 0.70
+                });
+              }
+
+              // Golden Impact Sparks & Dual Smoke Columns
+              for (let sp = 0; sp < 8; sp++) {
                 gameParticles.push({
                   type: "particle",
-                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 16,
-                  y: player.y + player.height - 2,
-                  vx: (Math.random() - 0.5) * 4.5,
-                  vy: -(1.5 + Math.random() * 2.5),
+                  x: hitCenterX + (Math.random() - 0.5) * 18,
+                  y: hitGroundY - 2,
+                  vx: (Math.random() - 0.5) * 5.5,
+                  vy: -(2.0 + Math.random() * 3.0),
                   size: 3.0,
-                  color: Math.random() > 0.5 ? "#f59e0b" : "#ef4444",
+                  color: Math.random() > 0.4 ? "#facc15" : "#ffffff",
                   life: 0.30,
                   maxLife: 0.30
                 });
               }
+
+              spawnLandingDust(player.x - 6, hitGroundY);
+              spawnLandingDust(player.x + player.width + 6, hitGroundY);
               playSfx("hitground", 0.75, 1.0); // Heavy bass crash!
             } else {
               player.landingSquashTimer = 0.22;
@@ -6025,6 +6105,21 @@
         if (!p.isDead) {
           drawPlayerNametag(ctx, p, px + pw / 2, py - 18);
           drawPlayerSpeechBubble(ctx, p, px + pw / 2, py - 22);
+
+          // Subtle Dodge Cooldown Meter (Shows 3s recharge arc when on cooldown)
+          if ((p.dodgeCooldown || 0) > 0 && !p.moderatorMode) {
+            const cdRatio = Math.max(0, p.dodgeCooldown / (p.dodgeMaxCooldown || 3.0));
+            ctx.save();
+            const cdW = 20;
+            const cdH = 2.5;
+            const cdX = px + pw / 2 - cdW / 2;
+            const cdY = py - 6;
+            ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+            ctx.fillRect(cdX, cdY, cdW, cdH);
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillRect(cdX, cdY, cdW * (1.0 - cdRatio), cdH);
+            ctx.restore();
+          }
         }
         ctx.restore();
       }
