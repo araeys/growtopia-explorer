@@ -5065,14 +5065,55 @@
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
 
-        // Mod Flying Dynamic Aerodynamic Hover & Flight Banking Physics
-        const flightVelMag = isFloating ? Math.hypot(player.vx, player.vy) : 0;
-        const flightMovingRatio = isFloating ? Math.min(1.0, flightVelMag / 7.0) : 0;
-        const floatBob = isFloating ? (Math.sin(t * 3.2) * (2.2 * (1.0 - flightMovingRatio * 0.6))) : 0;
-        const floatSway = isFloating ? (Math.sin(t * 2.2) * 0.05 * (1.0 - flightMovingRatio)) : 0;
+        // Mod Flying Physically-Accurate Aerodynamic Flight Kinematics
+        const flightHorizSpeed = isFloating ? Math.abs(player.vx) : 0;
+        const flightHorizRatio = isFloating ? Math.min(1.0, flightHorizSpeed / 7.0) : 0;
+        const flightUpRatio = isFloating ? Math.min(1.0, Math.max(0, -player.vy / 7.0)) : 0;
+        const flightDownRatio = isFloating ? Math.min(1.0, Math.max(0, player.vy / 7.0)) : 0;
+        const flightMovingRatio = isFloating ? Math.min(1.0, Math.hypot(player.vx, player.vy) / 6.5) : 0;
+        const hoverRatio = isFloating ? Math.max(0, 1.0 - flightMovingRatio * 1.25) : 0;
 
-        // Aerodynamic Flight Pitch & Banking Angle
-        const flightBankAngle = isFloating ? ((player.vx * (player.facing || 1) * 0.038) + (player.vy * 0.016)) : 0;
+        const floatBob = isFloating ? (Math.sin(t * 3.0) * 1.8 * hoverRatio) : 0;
+        const floatSway = isFloating ? (Math.sin(t * 2.2) * 0.03 * hoverRatio) : 0;
+
+        // 1. Torso Lean (Forward hunch when ascending/flying forward, gentle dive when descending)
+        const torsoForwardLean = 0.24 * flightHorizRatio;
+        const torsoUpLean = 0.20 * flightUpRatio; // Hunched slightly forward when pushing UP against gravity
+        const torsoDownLean = 0.28 * flightDownRatio; // Streamlined dive forward when flying DOWN
+        const flightTorsoAngle = isFloating ? (torsoForwardLean + torsoUpLean + torsoDownLean + floatSway) : 0;
+
+        // 2. Head Tilt (Pitches UP looking at sky when ascending, focused ahead when flying forward)
+        const headUpTilt = -0.34 * flightUpRatio; // Looking up into the sky!
+        const headForwardTilt = -0.06 * flightHorizRatio;
+        const headDownTilt = 0.22 * flightDownRatio;
+        const headHoverTilt = Math.sin(t * 2.5) * 0.03 * hoverRatio;
+        const flightHeadTilt = isFloating ? (headUpTilt + headForwardTilt + headDownTilt + headHoverTilt) : 0;
+
+        // 3. Both Arms Angles (Both stream BACKWARDS when flying forward, both point DOWNWARDS inverted-V when ascending)
+        // Back Arm (Right Arm)
+        const backArmHoriz = 1.30 * flightHorizRatio; // Straight BACKWARDS
+        const backArmUp = -0.15 * flightUpRatio;      // Pointing DOWNWARDS along side
+        const backArmDown = 1.35 * flightDownRatio;   // Trailing UPWARDS in dive
+        const backArmHover = (-0.35 + Math.sin(t * 3.0) * 0.08) * hoverRatio;
+        const floatAng = isFloating ? (backArmHoriz + backArmUp + backArmDown + backArmHover) : -0.75;
+
+        // Front Arm (Left Arm)
+        const frontArmHoriz = 1.20 * flightHorizRatio; // Straight BACKWARDS along with back arm!
+        const frontArmUp = 0.15 * flightUpRatio;       // Pointing DOWNWARDS along side (Inverted V shape!)
+        const frontArmDown = 1.25 * flightDownRatio;   // Trailing UPWARDS in dive
+        const frontArmHover = (0.30 - Math.sin(t * 3.0) * 0.08) * hoverRatio;
+        const floatFront = isFloating ? (frontArmHoriz + frontArmUp + frontArmDown + frontArmHover) : 0.45;
+
+        // 4. Legs Angles (Streamlining backwards in flight, straight down when ascending)
+        const legRHoriz = 0.65 * flightHorizRatio;
+        const legRUp = 0.10 * flightUpRatio;
+        const legRHover = (0.28 + Math.sin(t * 2.8) * 0.08) * hoverRatio;
+        const floatLegRAng = isFloating ? (legRHoriz + legRUp + legRHover) : 0.40;
+
+        const legLHoriz = 0.55 * flightHorizRatio;
+        const legLUp = -0.10 * flightUpRatio;
+        const legLHover = (0.18 - Math.sin(t * 2.8) * 0.08) * hoverRatio;
+        const floatLegLAng = isFloating ? (legLHoriz + legLUp + legLHover) : 0.30;
 
         // Fluid Striding Walk Cycle with Organic Foot-Plant Physics
         const walkPhase = player.walkPhase || (t * 16);
@@ -5080,7 +5121,7 @@
         const walkCycleCos = Math.cos(walkPhase) * wBlend;
         // Dual-dip step impact bob with natural stride bounce
         const walkStepBob = (player.isGrounded && !isFloating) ? (Math.pow(Math.sin(walkPhase), 2) * 2.2 * wBlend) : 0;
-        const legHoverWave = isFloating ? (Math.sin(t * 3.2) * (1.8 * (1.0 - flightMovingRatio * 0.5))) : Math.sin(t * 4.0) * 1.4;
+        const legHoverWave = isFloating ? (Math.sin(t * 3.0) * 1.5 * hoverRatio) : Math.sin(t * 4.0) * 1.4;
 
         // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS WITH SILKY BLEND ──
         const afkBlend = player.afkBlend || 0;
@@ -5245,7 +5286,7 @@
               const walkAng = -walkCycleCos * 0.85;
               const jumpAng = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
               const fallAng = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
-              const floatAng = isFloating ? ((-0.45 + Math.sin(t * 3.2) * 0.12) * (1.0 - flightMovingRatio) + (-1.35 + Math.sin(t * 12.0) * 0.06) * flightMovingRatio) : -0.75;
+              // floatAng is computed in drawPlayerAvatar based on flight direction and physics
               backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend) + skidBackArmAngle;
             }
 
@@ -5259,7 +5300,7 @@
 
             // 2. Back Leg (Kaki Kanan)
             let legRAngle = 0;
-            const floatLegRAng = isFloating ? ((0.35 + Math.sin(t * 3.0) * 0.12) * (1.0 - flightMovingRatio) + (0.65 + Math.sin(t * 8.0) * 0.06) * flightMovingRatio) : 0.40;
+            // floatLegRAng is computed in drawPlayerAvatar based on flight direction and physics
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
@@ -5279,7 +5320,7 @@
 
             // 3. Front Leg (Kaki Kiri)
             let legLAngle = 0;
-            const floatLegLAng = isFloating ? ((0.25 - Math.sin(t * 3.0) * 0.12) * (1.0 - flightMovingRatio) + (0.55 - Math.sin(t * 8.0) * 0.06) * flightMovingRatio) : 0.30;
+            // floatLegLAng is computed in drawPlayerAvatar based on flight direction and physics
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
@@ -5299,7 +5340,7 @@
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
             const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
-            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean + (flightBankAngle * flBlend) + (floatSway * flBlend);
+            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean + (flightTorsoAngle * flBlend);
 
             tCtx.save();
             tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY);
@@ -5314,7 +5355,7 @@
             const fallHeadTilt = (0.12 + fallIntensity * 0.10) * fBlend;
             const jumpHeadTilt = (-0.10 * jumpIntensity) * jBlend;
             tCtx.translate(afkHeadX - sxShirt + actionStepX * 0.5, afkHeadY - syShirt + headBobLag);
-            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend) + skidHeadTilt);
+            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend) + skidHeadTilt + (flightHeadTilt * flBlend));
 
             if (player.moderatorMode) {
               // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -5523,7 +5564,7 @@
                 const walkFront = walkCycleCos * 0.85;
                 const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
                 const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
-                const floatFront = isFloating ? ((0.35 - Math.sin(t * 3.2) * 0.12) * (1.0 - flightMovingRatio) + (-1.75 + Math.sin(t * 12.0) * 0.06) * flightMovingRatio) : 0.45;
+                // floatFront is computed in drawPlayerAvatar based on flight direction and physics
                 frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend) + skidFrontArmAngle;
               }
 
