@@ -4143,14 +4143,14 @@
           }
         }
 
-        const isJumpingState = player.state === "jump" || (!player.isGrounded && player.vy < -0.5);
+        const isJumpingState = !player.moderatorMode && (player.state === "jump" || (!player.isGrounded && player.vy < -0.5));
         if (isJumpingState) {
           player.jumpBlend = Math.min(1.0, (player.jumpBlend || 0) + dt * 14.0);
         } else {
           player.jumpBlend = Math.max(0.0, (player.jumpBlend || 0) - dt * 12.0);
         }
 
-        const isFallingState = !player.isGrounded && player.vy > 0.8;
+        const isFallingState = !player.moderatorMode && !player.isGrounded && player.vy > 0.8;
         if (isFallingState) {
           player.fallBlend = Math.min(1.0, (player.fallBlend || 0) + dt * 10.0);
         } else {
@@ -4997,10 +4997,10 @@
 
         // Blended kinematic weights (Continuous zero jump-cut blending)
         const skidBlend = player.skidBlend !== undefined ? player.skidBlend : (isSkidding ? 1.0 : 0.0);
-        const wBlend = (player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0)) * (1.0 - skidBlend);
-        const jBlend = player.jumpBlend !== undefined ? player.jumpBlend : (isJumping ? 1.0 : 0.0);
-        const fBlend = player.fallBlend !== undefined ? player.fallBlend : (isFalling ? 1.0 : 0.0);
-        const flBlend = player.floatBlend !== undefined ? player.floatBlend : (isFloating ? 1.0 : 0.0);
+        const wBlend = isFloating ? 0.0 : ((player.walkBlend !== undefined ? player.walkBlend : (isWalking ? 1.0 : 0.0)) * (1.0 - skidBlend));
+        const jBlend = isFloating ? 0.0 : (player.jumpBlend !== undefined ? player.jumpBlend : (isJumping ? 1.0 : 0.0));
+        const fBlend = isFloating ? 0.0 : (player.fallBlend !== undefined ? player.fallBlend : (isFalling ? 1.0 : 0.0));
+        const flBlend = isFloating ? 1.0 : (player.floatBlend !== undefined ? player.floatBlend : 0.0);
         const idleBlend = Math.max(0, 1.0 - wBlend - jBlend - fBlend - flBlend - skidBlend);
 
         // ── FLUID MULTI-PART ACTIVE SKELETAL BRAKE & BOUNCE KINEMATICS ──
@@ -5419,20 +5419,20 @@
                 tCtx.save();
                 tCtx.translate(hx, hy);
 
-                // Inertial Sway & Physics Bend Angles (Sweet spot responsive dynamics)
-                const hairWalkSway = (-Math.sin(walkPhase - 0.7) * 0.072 * wBlend);
-                const hairVelLag = isSkidding ? 0.04 : ((isWalking || !player.isGrounded) ? (-player.vx * 0.016 * (player.facing || 1)) : 0);
-                const hairJumpSway = (-player.vy * 0.013 * jBlend);
-                const hairFallLift = (-player.vy * 0.015 * fBlend);
-                const hairIdleSway = (Math.sin(t * 3.0) * 0.022 * idleBlend);
-                const hairFlightStream = isFloating ? ((-player.vx * (player.facing || 1) * 0.020 - player.vy * 0.012 + Math.sin(t * 6.0) * 0.04) * flBlend) : 0;
+                // Inertial Sway & Physics Bend Angles (Calm, subtle, and natural dynamics)
+                const hairWalkSway = (-Math.sin(walkPhase - 0.7) * 0.052 * wBlend);
+                const hairVelLag = isSkidding ? 0.03 : ((isWalking || !player.isGrounded) ? (-player.vx * 0.012 * (player.facing || 1)) : 0);
+                const hairJumpSway = (-player.vy * 0.009 * jBlend);
+                const hairFallLift = (-player.vy * 0.010 * fBlend);
+                const hairIdleSway = (Math.sin(t * 3.0) * 0.016 * idleBlend);
+                const hairFlightStream = isFloating ? ((-player.vx * (player.facing || 1) * 0.014 - player.vy * 0.008 + Math.sin(t * 6.0) * 0.025) * flBlend) : 0;
 
-                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + skidHairBend + hairFlightStream;
+                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + (skidHairBend * 0.8) + hairFlightStream;
                 tCtx.rotate(totalHairBend);
 
                 // Elastic vertical bounce / wind lift
-                const hairScaleY = 1.0 + (isJumping ? 0.05 * jBlend : (isFalling ? -0.04 * fBlend : (Math.sin(walkPhase) * 0.03 * wBlend)));
-                const hairScaleX = 1.0 + (isFalling ? 0.035 * fBlend : 0);
+                const hairScaleY = 1.0 + (isJumping ? 0.03 * jBlend : (isFalling ? -0.025 * fBlend : (Math.sin(walkPhase) * 0.02 * wBlend)));
+                const hairScaleX = 1.0 + (isFalling ? 0.025 * fBlend : 0);
                 tCtx.scale(hairScaleX, hairScaleY);
 
                 tCtx.drawImage(imgHair, -16, -16, 32, 32);
