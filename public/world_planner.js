@@ -3416,16 +3416,31 @@
         player.dodgeDir = player.facing || 1;
         player.isDodging = true;
 
+        const centerX = player.x + player.width / 2;
+        const groundY = player.y + player.height;
+
+        // 1. Initial Sonic Boom Dash Shockwave
+        gameParticles.push({
+          type: "entrance_shockwave",
+          x: centerX,
+          y: player.isGrounded ? groundY - 6 : (player.y + player.height / 2),
+          radius: 3,
+          maxRadius: 24,
+          color: player.isGrounded ? "#38bdf8" : "#a855f7",
+          life: 0.28,
+          maxLife: 0.28
+        });
+
         if (player.isGrounded) {
           // Fast Ground Slide Dash (Enhanced forward slide momentum)
-          player.vx = player.dodgeDir * 10.2;
-          spawnFootstepDust(player.x + player.width / 2, player.y + player.height, -player.dodgeDir, true);
-          spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 4 : player.width - 4), player.y + player.height, -player.dodgeDir, true);
+          player.vx = player.dodgeDir * 10.8;
+          spawnFootstepDust(centerX, groundY, -player.dodgeDir, true);
+          spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 4 : player.width - 4), groundY, -player.dodgeDir, true);
           playSfx("hitground", 1.45, 0.85);
         } else {
           // Fast Airborne 45-degree Downward Dive Slide
-          player.vx = player.dodgeDir * 9.2;
-          player.vy = 10.5;
+          player.vx = player.dodgeDir * 9.6;
+          player.vy = 10.8;
           playSfx("hitground", 1.25, 0.75);
         }
       }
@@ -3936,15 +3951,44 @@
               // Slippery fast forward slide friction
               player.vx *= Math.pow(0.955, timeScale);
               player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
-              if (player.stepParticleTimer >= 0.035) {
+              if (player.stepParticleTimer >= 0.032) {
                 player.stepParticleTimer = 0;
-                spawnFootstepDust(player.x + player.width / 2, player.y + player.height, -player.dodgeDir, true);
-                spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 2 : player.width - 2), player.y + player.height, -player.dodgeDir, true);
+                const centerX = player.x + player.width / 2;
+                const groundY = player.y + player.height;
+                spawnFootstepDust(centerX, groundY, -player.dodgeDir, true);
+                spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 2 : player.width - 2), groundY, -player.dodgeDir, true);
+                // Golden friction sparks
+                gameParticles.push({
+                  type: "particle",
+                  x: centerX + (Math.random() - 0.5) * 8,
+                  y: groundY - 2,
+                  vx: -player.dodgeDir * (1.5 + Math.random() * 2.0),
+                  vy: -(0.5 + Math.random() * 1.5),
+                  size: 2.5,
+                  color: Math.random() > 0.4 ? "#facc15" : "#ffffff",
+                  life: 0.22,
+                  maxLife: 0.22
+                });
               }
             } else {
-              // Air dive downward trajectory with dive speed
+              // Air dive downward trajectory with supersonic speed trail
               player.vx *= Math.pow(0.975, timeScale);
               player.vy = Math.min(13.5, player.vy + 0.7 * timeScale);
+              player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
+              if (player.stepParticleTimer >= 0.035) {
+                player.stepParticleTimer = 0;
+                gameParticles.push({
+                  type: "particle",
+                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 10,
+                  y: player.y + player.height / 2 + (Math.random() - 0.5) * 10,
+                  vx: -player.vx * 0.15,
+                  vy: -player.vy * 0.15,
+                  size: 3.0,
+                  color: "#38bdf8",
+                  life: 0.25,
+                  maxLife: 0.25
+                });
+              }
             }
 
             if (player.dodgeTimer <= 0) {
@@ -5224,9 +5268,9 @@
         const frontArmHover = (0.30 - Math.sin(t * 3.0) * 0.08) * hoverRatio;
         const floatFront = isFloating ? (frontArmHoriz + frontArmUp + frontArmDown + frontArmHover) : 0.45;
 
-        // 4. Legs Angles and Backward Position Synchronization in Flight
-        const flightLegBackShift = isFloating ? ((flightUpRatio * 4.2) + (flightDownRatio * 3.8) + (flightHorizRatio * 2.5)) : 0;
-        const airDodgeLegBackShift = (player.isDodging && !player.isGrounded) ? 3.5 : 0;
+        // 4. Legs Angles and Backward Position Synchronization in Flight (Negative X shifts backwards to rear!)
+        const flightLegBackShift = isFloating ? -((flightUpRatio * 5.0) + (flightDownRatio * 4.5) + (flightHorizRatio * 3.0)) : 0;
+        const airDodgeLegBackShift = (player.isDodging && !player.isGrounded) ? -4.5 : 0;
         const totalLegBackShift = flightLegBackShift + airDodgeLegBackShift;
 
         const legRHoriz = 0.65 * flightHorizRatio;
