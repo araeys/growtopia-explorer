@@ -2975,6 +2975,9 @@
                 event.preventDefault();
               } else if (k === "s" || event.key === "ArrowDown") {
                 player.keys.down = true;
+                if (!player.moderatorMode && !player.isDead) {
+                  triggerDodge();
+                }
                 event.preventDefault();
               } else if (k === "r") {
                 respawnPlayer("Respawned at spawn door!");
@@ -3401,6 +3404,30 @@
         playSfx("teleport", 1.1, 0.70);
         onStatusMessage(`Warped through door to (${targetDoor.x}, ${targetDoor.y})!`);
         return true;
+      }
+
+      function triggerDodge() {
+        if (!player.active || player.moderatorMode || player.isDead || player.isClimbing) return;
+        if ((player.dodgeCooldown || 0) > 0 || (player.dodgeTimer || 0) > 0) return;
+
+        player.dodgeTimer = 0.46;
+        player.dodgeMaxTimer = 0.46;
+        player.dodgeCooldown = 0.52;
+        player.dodgeDir = player.facing || 1;
+        player.isDodging = true;
+
+        if (player.isGrounded) {
+          // Fast Ground Slide Dash (Enhanced forward slide momentum)
+          player.vx = player.dodgeDir * 10.2;
+          spawnFootstepDust(player.x + player.width / 2, player.y + player.height, -player.dodgeDir, true);
+          spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 4 : player.width - 4), player.y + player.height, -player.dodgeDir, true);
+          playSfx("hitground", 1.45, 0.85);
+        } else {
+          // Fast Airborne 45-degree Downward Dive Slide
+          player.vx = player.dodgeDir * 9.2;
+          player.vy = 10.5;
+          playSfx("hitground", 1.25, 0.75);
+        }
       }
 
       function isClimbableBlock(item) {
@@ -3899,6 +3926,34 @@
         } else {
           // Normal Game Mode Physics
 
+          // Dodge Slide & Air Dive Physics
+          if (player.dodgeCooldown > 0) player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
+          if (player.dodgeTimer > 0) {
+            player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
+            player.isDodging = true;
+
+            if (player.isGrounded) {
+              // Slippery fast forward slide friction
+              player.vx *= Math.pow(0.955, timeScale);
+              player.stepParticleTimer = (player.stepParticleTimer || 0) + dt;
+              if (player.stepParticleTimer >= 0.035) {
+                player.stepParticleTimer = 0;
+                spawnFootstepDust(player.x + player.width / 2, player.y + player.height, -player.dodgeDir, true);
+                spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 2 : player.width - 2), player.y + player.height, -player.dodgeDir, true);
+              }
+            } else {
+              // Air dive downward trajectory with dive speed
+              player.vx *= Math.pow(0.975, timeScale);
+              player.vy = Math.min(13.5, player.vy + 0.7 * timeScale);
+            }
+
+            if (player.dodgeTimer <= 0) {
+              player.isDodging = false;
+            }
+          } else {
+            player.isDodging = false;
+          }
+
           // Check Climbable Vine / Ladder Tile Overlap across entire avatar body
           const cLeftX = Math.floor((player.x + 2) / TILE_SIZE);
           const cRightX = Math.floor((player.x + player.width - 2) / TILE_SIZE);
@@ -3982,8 +4037,9 @@
             }
           }
 
-          // Max walk speed: 5.58 px/frame
-          player.vx = Math.max(-5.58, Math.min(5.58, player.vx));
+          // Max walk speed clamp (allow faster velocity during dodge slide)
+          const maxHorizSpeed = player.isDodging ? 10.5 : 5.58;
+          player.vx = Math.max(-maxHorizSpeed, Math.min(maxHorizSpeed, player.vx));
 
           // Active Sudden Stop Skid & Kepleset Brake State (stays active for full slide + bounce duration)
           player.isSkidding = player.isGrounded && (player.skidTimer > 0);
@@ -5062,6 +5118,70 @@
         const skidLegL = rawLegL * skidBlend;
         const skidLegLY = rawLegLY * skidBlend;
 
+        // ── DODGE GROUND SLIDE & AIR DIVE KINEMATICS (Enhanced Kepleset Action Slide & Rebound) ──
+        const isDodging = Boolean(player.isDodging && (player.dodgeTimer > 0) && !player.moderatorMode);
+        let dodgeTorsoLean = 0;
+        let dodgeTorsoY = 0;
+        let dodgeBackArmAngle = 0;
+        let dodgeFrontArmAngle = 0;
+        let dodgeLegR = 0;
+        let dodgeLegL = 0;
+        let dodgeHeadTilt = 0;
+        let dodgeHairBend = 0;
+        let dodgeLegLY = 0;
+
+        if (isDodging) {
+          const dProg = Math.min(1.0, Math.max(0.0, 1.0 - (player.dodgeTimer / (player.dodgeMaxTimer || 0.46))));
+          const isAirDodge = !player.isGrounded;
+
+          if (isAirDodge) {
+            // 45-Degree Airborne Dive Slide Rocket Pose
+            dodgeTorsoLean = 0.65;
+            dodgeTorsoY = 0;
+            dodgeBackArmAngle = 1.35;
+            dodgeFrontArmAngle = 1.25;
+            dodgeLegR = 0.60;
+            dodgeLegL = 0.50;
+            dodgeHeadTilt = -0.15;
+            dodgeHairBend = -0.35;
+            dodgeLegLY = 0;
+          } else {
+            // Enhanced Action Kepleset Ground Slide with Elastic Rebound Bounce
+            if (dProg < 0.55) {
+              // Phase 1: High-Speed Forward Kepleset Slide (Torso elevated so legs stay visible, arms stream back, front foot up)
+              const p = dProg / 0.55;
+              const slideDecay = 1.0 - p * 0.30;
+              const balanceWobble = Math.sin(dProg * 22.0) * 0.08;
+
+              dodgeTorsoLean = -0.78 * slideDecay + balanceWobble * 0.2; // Deep backward slide lean
+              dodgeBackArmAngle = 1.30 * slideDecay + Math.sin(dProg * 18.0) * 0.18; // Back arm streaming back
+              dodgeFrontArmAngle = 1.15 * slideDecay - Math.cos(dProg * 18.0) * 0.18; // Front arm streaming back
+              dodgeHeadTilt = 0.22 * slideDecay + balanceWobble * 0.15; // Focused forward
+              dodgeHairBend = -0.35 * slideDecay; // Hair whips forward
+              dodgeTorsoY = -2.0 * slideDecay; // Elevated so legs are never covered!
+              dodgeLegL = -0.88 * slideDecay; // Front leg extended/lifted forward
+              dodgeLegLY = -3.5 * slideDecay; // Front foot lifted off floor
+              dodgeLegR = 0.78 * slideDecay;  // Back leg rotated back anchored on heel
+            } else {
+              // Phase 2: Elastic Forward Spring Rebound into Standing Pose!
+              const p = (dProg - 0.55) / 0.45;
+              const bouncePhase = p * Math.PI * 1.5;
+              const bounceDamp = Math.exp(-p * 3.2);
+              const bounceSine = Math.sin(p * Math.PI);
+
+              dodgeTorsoLean = (-0.78 * 0.65 * (1.0 - p)) + (Math.sin(bouncePhase) * 0.34 * bounceDamp);
+              dodgeBackArmAngle = (1.30 * 0.65 * (1.0 - p)) - (bounceSine * 0.75);
+              dodgeFrontArmAngle = (1.15 * 0.65 * (1.0 - p)) - (bounceSine * 0.85);
+              dodgeHeadTilt = (0.22 * 0.65 * (1.0 - p)) - (bounceSine * 0.22);
+              dodgeHairBend = (-0.35 * 0.65 * (1.0 - p)) + (bounceSine * 0.25);
+              dodgeTorsoY = -bounceSine * 3.8; // Spring hop into air!
+              dodgeLegL = -0.88 * 0.65 * (1.0 - p);
+              dodgeLegLY = -3.5 * 0.65 * (1.0 - p);
+              dodgeLegR = 0.78 * 0.65 * (1.0 - p);
+            }
+          }
+        }
+
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
 
@@ -5249,7 +5369,7 @@
             const isAirborne = !player.isGrounded && !player.moderatorMode;
             const isSkidding = player.isSkidding && player.isGrounded && !player.moderatorMode;
                         const isClimbing = player.isClimbing && !player.moderatorMode;
-            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding) && !player.moderatorMode && !isAirborne;
+            const isSeriousFace = ((player.continuousRunTimer >= 1.5) || player.afkAction === "angry" || isSkidding || isDodging) && !player.moderatorMode && !isAirborne;
             const isJumpFace = (isAirborne || player.afkAction === "cheer" || player.afkAction === "laugh") && !player.moderatorMode && !isClimbing && !isSkidding;
 
             let headMaskPath = "character_base_assets/gt_parts/head_mask.png";
@@ -5287,7 +5407,7 @@
               const jumpAng = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
               const fallAng = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
               // floatAng is computed in drawPlayerAvatar based on flight direction and physics
-              backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend) + skidBackArmAngle;
+              backArmAngle = isDodging ? dodgeBackArmAngle : ((idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend) + skidBackArmAngle);
             }
 
             tCtx.save();
@@ -5304,7 +5424,7 @@
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
-            legRAngle = isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend) + skidLegR);
+            legRAngle = isDodging ? dodgeLegR : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend) + skidLegR));
 
             const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY + (skidTorsoY * 0.35));
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
@@ -5324,9 +5444,9 @@
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
-            legLAngle = isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend) + skidLegL);
+            legLAngle = isDodging ? dodgeLegL : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend) + skidLegL));
 
-            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY + skidLegLY);
+            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY + skidLegLY + (isDodging ? dodgeLegLY : 0));
             tCtx.save();
             tCtx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
             tCtx.rotate(legLAngle);
@@ -5340,10 +5460,10 @@
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
             const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
-            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean + (flightTorsoAngle * flBlend);
+            const torsoLean = isDodging ? dodgeTorsoLean : (runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean + (flightTorsoAngle * flBlend));
 
             tCtx.save();
-            tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY);
+            tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY + dodgeTorsoY);
             tCtx.rotate(torsoLean);
             if (isReadyDrawable(imgBody)) {
               tCtx.drawImage(imgBody, -16, -16, 32, 32);
@@ -5355,7 +5475,7 @@
             const fallHeadTilt = (0.12 + fallIntensity * 0.10) * fBlend;
             const jumpHeadTilt = (-0.10 * jumpIntensity) * jBlend;
             tCtx.translate(afkHeadX - sxShirt + actionStepX * 0.5, afkHeadY - syShirt + headBobLag);
-            tCtx.rotate(afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend) + skidHeadTilt + (flightHeadTilt * flBlend));
+            tCtx.rotate(isDodging ? dodgeHeadTilt : (afkHeadAngle + fallHeadTilt + jumpHeadTilt + actionHeadDip + (-walkCycleSin * 0.05 * wBlend) + skidHeadTilt + (flightHeadTilt * flBlend)));
 
             if (player.moderatorMode) {
               // ── Glowing Pure White Eyeballs (Mod Mode - Clean Authentic Sclera Glow, No Pupils) ──
@@ -5427,7 +5547,7 @@
                 const hairIdleSway = (Math.sin(t * 3.0) * 0.016 * idleBlend);
                 const hairFlightStream = isFloating ? ((-player.vx * (player.facing || 1) * 0.014 - player.vy * 0.008 + Math.sin(t * 6.0) * 0.025) * flBlend) : 0;
 
-                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + (skidHairBend * 0.8) + hairFlightStream;
+                const totalHairBend = isDodging ? dodgeHairBend : (hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + (skidHairBend * 0.8) + hairFlightStream);
                 tCtx.rotate(totalHairBend);
 
                 // Elastic vertical bounce / wind lift
@@ -5565,7 +5685,7 @@
                 const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
                 const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
                 // floatFront is computed in drawPlayerAvatar based on flight direction and physics
-                frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend) + skidFrontArmAngle;
+                frontArmAngle = isDodging ? dodgeFrontArmAngle : ((idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend) + skidFrontArmAngle);
               }
 
               tCtx.save();
