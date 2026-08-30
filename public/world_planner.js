@@ -3412,36 +3412,66 @@
 
         player.dodgeTimer = 0.46;
         player.dodgeMaxTimer = 0.46;
-        player.dodgeCooldown = 0.52;
+        player.dodgeCooldown = 0.48;
         player.dodgeDir = player.facing || 1;
         player.isDodging = true;
 
         const centerX = player.x + player.width / 2;
         const groundY = player.y + player.height;
-
-        // 1. Initial Sonic Boom Dash Shockwave
-        gameParticles.push({
-          type: "entrance_shockwave",
-          x: centerX,
-          y: player.isGrounded ? groundY - 6 : (player.y + player.height / 2),
-          radius: 3,
-          maxRadius: 24,
-          color: player.isGrounded ? "#38bdf8" : "#a855f7",
-          life: 0.28,
-          maxLife: 0.28
-        });
+        const isHoldingMove = Boolean(player.keys.left || player.keys.right);
 
         if (player.isGrounded) {
           // Fast Ground Slide Dash (Enhanced forward slide momentum)
+          player.isGroundPound = false;
           player.vx = player.dodgeDir * 10.8;
+          gameParticles.push({
+            type: "entrance_shockwave",
+            x: centerX,
+            y: groundY - 6,
+            radius: 3,
+            maxRadius: 24,
+            color: "#38bdf8",
+            life: 0.28,
+            maxLife: 0.28
+          });
           spawnFootstepDust(centerX, groundY, -player.dodgeDir, true);
           spawnFootstepDust(player.x + (player.dodgeDir > 0 ? 4 : player.width - 4), groundY, -player.dodgeDir, true);
           playSfx("hitground", 1.45, 0.85);
         } else {
-          // Fast Airborne 45-degree Downward Dive Slide
-          player.vx = player.dodgeDir * 9.6;
-          player.vy = 10.8;
-          playSfx("hitground", 1.25, 0.75);
+          // Airborne Downward Action: Check if moving or vertical slam
+          if (!isHoldingMove) {
+            // User did NOT press move keys: Vertical Ground Pound Slam!
+            player.isGroundPound = true;
+            player.vx = 0;
+            player.vy = 14.0; // Rapid downward plunge!
+            gameParticles.push({
+              type: "entrance_shockwave",
+              x: centerX,
+              y: player.y + player.height / 2,
+              radius: 4,
+              maxRadius: 26,
+              color: "#f87171",
+              life: 0.30,
+              maxLife: 0.30
+            });
+            playSfx("hitground", 1.15, 0.85);
+          } else {
+            // User held left/right: 45-degree Forward Dive Slide
+            player.isGroundPound = false;
+            player.vx = player.dodgeDir * 9.8;
+            player.vy = 10.8;
+            gameParticles.push({
+              type: "entrance_shockwave",
+              x: centerX,
+              y: player.y + player.height / 2,
+              radius: 3,
+              maxRadius: 24,
+              color: "#a855f7",
+              life: 0.28,
+              maxLife: 0.28
+            });
+            playSfx("hitground", 1.25, 0.75);
+          }
         }
       }
 
@@ -4108,12 +4138,18 @@
             player.stepParticleTimer = 0.19;
           }
 
-          // Jump & Double Jump
+          // Jump & Double Jump (Seamless Super Slide Jump)
           const wantsJump = player.keys.jump || (player.keys.up && !isAtClimbable);
           if (wantsJump && !player.jumpConsumed) {
+            // Cancel ground slide cleanly so jump reaches full height with preserved momentum
+            if (player.isDodging) {
+              player.dodgeTimer = 0;
+              player.isDodging = false;
+              player.isGroundPound = false;
+            }
             if (player.isGrounded || player.isClimbing || player.jumpCount === 0) {
               player.isClimbing = false;
-              player.vy = -10.5;
+              player.vy = -10.8; // Full high jump velocity!
               player.isGrounded = false;
               player.jumpCount = 1;
               player.jumpConsumed = true;
@@ -4184,9 +4220,47 @@
 
           // Landing Dust Puff Burst & Squash + hitground.wav Impact SFX + 20+ block High Fall Ouch
           if (!wasGrounded && player.isGrounded) {
-            player.landingSquashTimer = 0.22;
-            player.landingSquashMaxTimer = 0.22;
-            spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+            if (player.isGroundPound) {
+              // Heavy Ground Pound Slam Landing Crash!
+              player.isGroundPound = false;
+              player.dodgeTimer = 0;
+              player.isDodging = false;
+              player.landingSquashTimer = 0.32;
+              player.landingSquashMaxTimer = 0.32;
+              player.impactShakeTimer = 0.35;
+
+              // Heavy Shockwave + Dual Dust + Impact Sparks
+              gameParticles.push({
+                type: "entrance_shockwave",
+                x: player.x + player.width / 2,
+                y: player.y + player.height,
+                radius: 4,
+                maxRadius: 36,
+                color: "#f59e0b",
+                life: 0.35,
+                maxLife: 0.35
+              });
+              spawnLandingDust(player.x - 4, player.y + player.height);
+              spawnLandingDust(player.x + player.width + 4, player.y + player.height);
+              for (let sp = 0; sp < 6; sp++) {
+                gameParticles.push({
+                  type: "particle",
+                  x: player.x + player.width / 2 + (Math.random() - 0.5) * 16,
+                  y: player.y + player.height - 2,
+                  vx: (Math.random() - 0.5) * 4.5,
+                  vy: -(1.5 + Math.random() * 2.5),
+                  size: 3.0,
+                  color: Math.random() > 0.5 ? "#f59e0b" : "#ef4444",
+                  life: 0.30,
+                  maxLife: 0.30
+                });
+              }
+              playSfx("hitground", 0.75, 1.0); // Heavy bass crash!
+            } else {
+              player.landingSquashTimer = 0.22;
+              player.landingSquashMaxTimer = 0.22;
+              spawnLandingDust(player.x + player.width / 2, player.y + player.height);
+            }
             
             // 1. Authentic Growtopia hitground impact SFX
             playSfx("hitground", 0.96 + Math.random() * 0.08, 0.85);
@@ -5268,21 +5342,21 @@
         const frontArmHover = (0.30 - Math.sin(t * 3.0) * 0.08) * hoverRatio;
         const floatFront = isFloating ? (frontArmHoriz + frontArmUp + frontArmDown + frontArmHover) : 0.45;
 
-        // 4. Legs Angles and Backward Position Synchronization in Flight (Negative X shifts backwards to rear!)
-        const flightLegBackShift = isFloating ? -((flightUpRatio * 5.0) + (flightDownRatio * 4.5) + (flightHorizRatio * 3.0)) : 0;
-        const airDodgeLegBackShift = (player.isDodging && !player.isGrounded) ? -4.5 : 0;
+        // 4. Legs Angles and Backward Position Synchronization in Flight
+        const flightLegBackShift = isFloating ? -((flightUpRatio * 3.0) + (flightDownRatio * 2.5) + (flightHorizRatio * 2.0)) : 0;
+        const airDodgeLegBackShift = (player.isDodging && !player.isGrounded) ? -3.0 : 0;
         const totalLegBackShift = flightLegBackShift + airDodgeLegBackShift;
 
-        const legRHoriz = 0.65 * flightHorizRatio;
-        const legRUp = 0.05 * flightUpRatio; // Dangles straight down aligned with pant sockets
-        const legRDown = 0.15 * flightDownRatio;
-        const legRHover = (0.28 + Math.sin(t * 2.8) * 0.08) * hoverRatio;
+        const legRHoriz = 0.60 * flightHorizRatio;
+        const legRUp = 0.20 * flightUpRatio; // Clean backward angle aligned with torso lean
+        const legRDown = 0.35 * flightDownRatio;
+        const legRHover = (0.22 + Math.sin(t * 2.8) * 0.06) * hoverRatio;
         const floatLegRAng = isFloating ? (legRHoriz + legRUp + legRDown + legRHover) : 0.40;
 
-        const legLHoriz = 0.55 * flightHorizRatio;
-        const legLUp = 0.05 * flightUpRatio; // Dangles straight down aligned with pant sockets
-        const legLDown = 0.15 * flightDownRatio;
-        const legLHover = (0.18 - Math.sin(t * 2.8) * 0.08) * hoverRatio;
+        const legLHoriz = 0.50 * flightHorizRatio;
+        const legLUp = 0.20 * flightUpRatio; // Clean backward angle aligned with torso lean
+        const legLDown = 0.30 * flightDownRatio;
+        const legLHover = (0.15 - Math.sin(t * 2.8) * 0.06) * hoverRatio;
         const floatLegLAng = isFloating ? (legLHoriz + legLUp + legLDown + legLHover) : 0.30;
 
         // Fluid Striding Walk Cycle with Organic Foot-Plant Physics
@@ -5476,7 +5550,7 @@
             const walkLegRAng = walkCycleSin * 0.65;
             legRAngle = isDodging ? dodgeLegR : (isClimbing ? (Math.cos(player.y * 0.22) * 0.65) : ((walkLegRAng * wBlend) + (jumpLegRAng * jBlend) + (fallLegRAng * fBlend) + (floatLegRAng * flBlend) + skidLegR));
 
-            const legRY = isFloating ? (10 + floatBob + legHoverWave) : (8 - legRLift + jumpThrustY + (skidTorsoY * 0.35));
+            const legRY = isFloating ? (8 + floatBob) : (8 - legRLift + jumpThrustY + (skidTorsoY * 0.35));
             const pxLeg = (cOffsets.pants ? cOffsets.pants.x : 0) || 0;
             const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
 
@@ -5496,7 +5570,7 @@
             const walkLegLAng = -walkCycleSin * 0.65;
             legLAngle = isDodging ? dodgeLegL : (isClimbing ? (-Math.cos(player.y * 0.22) * 0.65) : ((walkLegLAng * wBlend) + (jumpLegLAng * jBlend) + (fallLegLAng * fBlend) + (floatLegLAng * flBlend) + skidLegL));
 
-            const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY + skidLegLY + (isDodging ? dodgeLegLY : 0));
+            const legLY = isFloating ? (8 + floatBob) : (8 - legLLift + jumpThrustY + skidLegLY + (isDodging ? dodgeLegLY : 0));
             tCtx.save();
             tCtx.translate(-4 + afkTorsoX + pxLeg + totalLegBackShift, legLY + pyLeg);
             tCtx.rotate(legLAngle);
