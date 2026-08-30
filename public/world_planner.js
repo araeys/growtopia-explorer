@@ -3823,30 +3823,50 @@
         // Delta-time normalization: base is 60fps (dt = 0.0166s -> timeScale = 1.0)
         const timeScale = Math.max(0.5, Math.min(2.5, (dt || 0.0166) * 60));
 
-        // Moderator Mode: Ultra-Fast Free 8-Way Flight & Noclip
+        // Moderator Mode: Ultra-Fast Free 8-Way Flight & Noclip (with Cosmic Flight Trail)
         if (player.moderatorMode) {
+          const modSpeedCurrent = Math.hypot(player.vx, player.vy);
           player.sparkleTimer = (player.sparkleTimer || 0) + dt;
-          const nextInterval = player.nextSparkleInterval || 2.2;
-          if (player.sparkleTimer >= nextInterval) {
-            player.sparkleTimer = 0;
-            player.nextSparkleInterval = 2.0 + Math.random() * 1.0; // 2 to 3 seconds
-            const spawnCount = 2; // spawn 2 sparkles
-            for (let s = 0; s < spawnCount; s++) {
+
+          if (modSpeedCurrent > 0.8) {
+            // Rapid streaming cosmic flight trail while moving
+            if (player.sparkleTimer >= 0.035) {
+              player.sparkleTimer = 0;
+              const trailX = (player.x + player.width / 2) - (player.vx * 0.6) + (Math.random() - 0.5) * 12;
+              const trailY = (player.y + player.height / 2) - (player.vy * 0.6) + (Math.random() - 0.5) * 12;
+              const isCyan = Math.random() > 0.45;
+              gameParticles.push({
+                type: "purple_sparkle",
+                x: trailX,
+                y: trailY,
+                vx: -player.vx * 0.12 + (Math.random() - 0.5) * 0.4,
+                vy: -player.vy * 0.12 + (Math.random() - 0.5) * 0.4,
+                scale: 0.90 + Math.random() * 0.50,
+                life: 0.42 + Math.random() * 0.20,
+                maxLife: 0.42 + Math.random() * 0.20,
+                color: isCyan ? "#38bdf8" : "#c084fc"
+              });
+              requestRender();
+            }
+          } else {
+            // Ambient divine floating sparkles while hovering
+            if (player.sparkleTimer >= 0.8) {
+              player.sparkleTimer = 0;
               const offsetX = (Math.random() - 0.5) * 36;
               const offsetY = (Math.random() - 0.5) * 38 - 4;
-              const lifeTime = 0.55 + Math.random() * 0.20;
+              const lifeTime = 0.60 + Math.random() * 0.25;
               gameParticles.push({
                 type: "purple_sparkle",
                 x: (player.x + player.width / 2) + offsetX,
                 y: (player.y + player.height / 2) + offsetY,
                 vx: (Math.random() - 0.5) * 0.4,
                 vy: -(0.3 + Math.random() * 0.4),
-                scale: 0.80 + Math.random() * 0.40,
+                scale: 0.85 + Math.random() * 0.45,
                 life: lifeTime,
                 maxLife: lifeTime
               });
+              requestRender();
             }
-            requestRender();
           }
 
           const modSpeed = 8.5;
@@ -5045,16 +5065,22 @@
         // Dynamic Running Forward Lean (Momentum & Weight)
         const runLean = (player.isGrounded && !isFloating) ? (0.09 * Math.min(1.0, Math.abs(player.vx) / 3.0) * wBlend) : 0;
 
-        // Mod Flying Hover Float Wave
-        const floatBob = isFloating ? Math.sin(t * 4.5) * 1.6 : 0;
-        
+        // Mod Flying Dynamic Aerodynamic Hover & Flight Banking Physics
+        const flightVelMag = isFloating ? Math.hypot(player.vx, player.vy) : 0;
+        const flightMovingRatio = isFloating ? Math.min(1.0, flightVelMag / 7.0) : 0;
+        const floatBob = isFloating ? (Math.sin(t * 3.2) * (2.2 * (1.0 - flightMovingRatio * 0.6))) : 0;
+        const floatSway = isFloating ? (Math.sin(t * 2.2) * 0.05 * (1.0 - flightMovingRatio)) : 0;
+
+        // Aerodynamic Flight Pitch & Banking Angle
+        const flightBankAngle = isFloating ? ((player.vx * (player.facing || 1) * 0.038) + (player.vy * 0.016)) : 0;
+
         // Fluid Striding Walk Cycle with Organic Foot-Plant Physics
         const walkPhase = player.walkPhase || (t * 16);
         const walkCycleSin = Math.sin(walkPhase) * wBlend;
         const walkCycleCos = Math.cos(walkPhase) * wBlend;
         // Dual-dip step impact bob with natural stride bounce
         const walkStepBob = (player.isGrounded && !isFloating) ? (Math.pow(Math.sin(walkPhase), 2) * 2.2 * wBlend) : 0;
-        const legHoverWave = Math.sin(t * 4.0) * 1.4;
+        const legHoverWave = isFloating ? (Math.sin(t * 3.2) * (1.8 * (1.0 - flightMovingRatio * 0.5))) : Math.sin(t * 4.0) * 1.4;
 
         // ── SKELETAL AFK RANDOMIZED ACTION ANIMATIONS WITH SILKY BLEND ──
         const afkBlend = player.afkBlend || 0;
@@ -5219,7 +5245,7 @@
               const walkAng = -walkCycleCos * 0.85;
               const jumpAng = -1.95 - jumpIntensity * 0.35 + Math.sin(t * 10) * 0.08;
               const fallAng = -1.75 - fallIntensity * 0.35 + Math.sin(t * 22) * 0.14;
-              const floatAng = -0.75 + Math.sin(t * 5) * 0.1;
+              const floatAng = isFloating ? ((-0.45 + Math.sin(t * 3.2) * 0.12) * (1.0 - flightMovingRatio) + (-1.35 + Math.sin(t * 12.0) * 0.06) * flightMovingRatio) : -0.75;
               backArmAngle = (idleAng * idleBlend) + (walkAng * wBlend) + (jumpAng * jBlend) + (fallAng * fBlend) + (floatAng * flBlend) + skidBackArmAngle;
             }
 
@@ -5233,7 +5259,7 @@
 
             // 2. Back Leg (Kaki Kanan)
             let legRAngle = 0;
-            const floatLegRAng = 0.40 + Math.sin(t * 4) * 0.08;
+            const floatLegRAng = isFloating ? ((0.35 + Math.sin(t * 3.0) * 0.12) * (1.0 - flightMovingRatio) + (0.65 + Math.sin(t * 8.0) * 0.06) * flightMovingRatio) : 0.40;
             const fallLegRAng = -0.15 + Math.sin(t * 16) * 0.10;
             const jumpLegRAng = -0.45 - jumpIntensity * 0.20;
             const walkLegRAng = walkCycleSin * 0.65;
@@ -5253,7 +5279,7 @@
 
             // 3. Front Leg (Kaki Kiri)
             let legLAngle = 0;
-            const floatLegLAng = 0.30 - Math.sin(t * 4) * 0.08;
+            const floatLegLAng = isFloating ? ((0.25 - Math.sin(t * 3.0) * 0.12) * (1.0 - flightMovingRatio) + (0.55 - Math.sin(t * 8.0) * 0.06) * flightMovingRatio) : 0.30;
             const fallLegLAng = 0.40 + Math.cos(t * 16) * 0.10;
             const jumpLegLAng = 0.55 + jumpIntensity * 0.20;
             const walkLegLAng = -walkCycleSin * 0.65;
@@ -5273,7 +5299,7 @@
             const syShirt = (cOffsets.shirt ? cOffsets.shirt.y : 0) || 0;
             const torsoTwist = (Math.sin(walkPhase) * 0.04 * wBlend) + (isJumping ? -0.06 * jumpIntensity * jBlend : 0);
             const climbTorsoLean = isClimbing ? (Math.sin(player.y * 0.22) * 0.08) : 0;
-            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean;
+            const torsoLean = runLean + torsoTwist + actionTorsoLean + afkTorsoAngle + climbTorsoLean + skidLean + (flightBankAngle * flBlend) + (floatSway * flBlend);
 
             tCtx.save();
             tCtx.translate(afkTorsoX + sxShirt + actionStepX, breatheBob + syShirt + skidTorsoY);
@@ -5358,8 +5384,9 @@
                 const hairJumpSway = (-player.vy * 0.013 * jBlend);
                 const hairFallLift = (-player.vy * 0.015 * fBlend);
                 const hairIdleSway = (Math.sin(t * 3.0) * 0.022 * idleBlend);
+                const hairFlightStream = isFloating ? ((-player.vx * (player.facing || 1) * 0.020 - player.vy * 0.012 + Math.sin(t * 6.0) * 0.04) * flBlend) : 0;
 
-                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + skidHairBend;
+                const totalHairBend = hairWalkSway + hairVelLag + hairJumpSway + hairFallLift + hairIdleSway + skidHairBend + hairFlightStream;
                 tCtx.rotate(totalHairBend);
 
                 // Elastic vertical bounce / wind lift
@@ -5496,7 +5523,7 @@
                 const walkFront = walkCycleCos * 0.85;
                 const jumpFront = -1.75 - jumpIntensity * 0.35 + Math.cos(t * 10) * 0.08;
                 const fallFront = -1.85 - fallIntensity * 0.35 + Math.cos(t * 22) * 0.14;
-                const floatFront = 0.45 - Math.sin(t * 5) * 0.1;
+                const floatFront = isFloating ? ((0.35 - Math.sin(t * 3.2) * 0.12) * (1.0 - flightMovingRatio) + (-1.75 + Math.sin(t * 12.0) * 0.06) * flightMovingRatio) : 0.45;
                 frontArmAngle = (idleFront * idleBlend) + (walkFront * wBlend) + (jumpFront * jBlend) + (fallFront * fBlend) + (floatFront * flBlend) + skidFrontArmAngle;
               }
 
