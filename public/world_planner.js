@@ -5224,16 +5224,22 @@
         const frontArmHover = (0.30 - Math.sin(t * 3.0) * 0.08) * hoverRatio;
         const floatFront = isFloating ? (frontArmHoriz + frontArmUp + frontArmDown + frontArmHover) : 0.45;
 
-        // 4. Legs Angles (Streamlining backwards in flight, straight down when ascending)
+        // 4. Legs Angles and Backward Position Synchronization in Flight
+        const flightLegBackShift = isFloating ? ((flightUpRatio * 4.2) + (flightDownRatio * 3.8) + (flightHorizRatio * 2.5)) : 0;
+        const airDodgeLegBackShift = (player.isDodging && !player.isGrounded) ? 3.5 : 0;
+        const totalLegBackShift = flightLegBackShift + airDodgeLegBackShift;
+
         const legRHoriz = 0.65 * flightHorizRatio;
-        const legRUp = 0.10 * flightUpRatio;
+        const legRUp = 0.05 * flightUpRatio; // Dangles straight down aligned with pant sockets
+        const legRDown = 0.15 * flightDownRatio;
         const legRHover = (0.28 + Math.sin(t * 2.8) * 0.08) * hoverRatio;
-        const floatLegRAng = isFloating ? (legRHoriz + legRUp + legRHover) : 0.40;
+        const floatLegRAng = isFloating ? (legRHoriz + legRUp + legRDown + legRHover) : 0.40;
 
         const legLHoriz = 0.55 * flightHorizRatio;
-        const legLUp = -0.10 * flightUpRatio;
+        const legLUp = 0.05 * flightUpRatio; // Dangles straight down aligned with pant sockets
+        const legLDown = 0.15 * flightDownRatio;
         const legLHover = (0.18 - Math.sin(t * 2.8) * 0.08) * hoverRatio;
-        const floatLegLAng = isFloating ? (legLHoriz + legLUp + legLHover) : 0.30;
+        const floatLegLAng = isFloating ? (legLHoriz + legLUp + legLDown + legLHover) : 0.30;
 
         // Fluid Striding Walk Cycle with Organic Foot-Plant Physics
         const walkPhase = player.walkPhase || (t * 16);
@@ -5431,7 +5437,7 @@
             const pyLeg = (cOffsets.pants ? cOffsets.pants.y : 0) || 0;
 
             tCtx.save();
-            tCtx.translate(8 + afkTorsoX + pxLeg, legRY + pyLeg);
+            tCtx.translate(8 + afkTorsoX + pxLeg + totalLegBackShift, legRY + pyLeg);
             tCtx.rotate(legRAngle);
             if (isReadyDrawable(imgLegR)) {
               tCtx.drawImage(imgLegR, -24, -24, 32, 32);
@@ -5448,7 +5454,7 @@
 
             const legLY = isFloating ? (10 + floatBob - legHoverWave) : (8 - legLLift + jumpThrustY + skidLegLY + (isDodging ? dodgeLegLY : 0));
             tCtx.save();
-            tCtx.translate(-4 + afkTorsoX + pxLeg, legLY + pyLeg);
+            tCtx.translate(-4 + afkTorsoX + pxLeg + totalLegBackShift, legLY + pyLeg);
             tCtx.rotate(legLAngle);
             if (isReadyDrawable(imgLegL)) {
               tCtx.drawImage(imgLegL, -12, -24, 32, 32);
